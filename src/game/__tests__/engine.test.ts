@@ -370,34 +370,43 @@ describe('MEEPLE', () => {
           : m,
       ),
     };
-    // 14a/14b. Сторона, занятая meeple в retryState — edge 0 (canonical N-S
-    // сегмент при повороте rot попадает на rotateEdge(0,rot)). Проверяем:
-    // та же сторона и вторая сторона того же сегмента → FEATURE_OCCUPIED;
-    // другие стороны не являются дорогами этой повёрнутой плитки.
+    // 14a/14b. ФАКТИЧЕСКИЙ КОНТРАКТ ENGINE (src/game/rules/localFeatures.ts):
+    // допустимые позиции meeple — это ТОЛЬКО канонические (base) стороны
+    // каждого сегмента, повёрнутые через rotateEdge(base, rotation):
+    //   placement valid ⇔ ∃ base (min side of segment): edge === (base+steps)%4.
+    // Для T-R-X (segments [[0,2],[1,3]]) при rotation R допустимы ровно два
+    // индекса: road@R (сегмент N-S) и road@(1+R)%4 (сегмент E-W).
+    // В retryState meeple занимает rotated-base-0 сегмента r0, т.е. edge R.
+    // Та же сторона → FEATURE_OCCUPIED (тот же локальный feature id "road:r0").
     const steps = last.rotation / 90;
     const occupiedRotated: EdgeIndex = (0 + steps) % 4 as EdgeIndex;
-    const connectedEdgeIdx = ((occupiedRotated + 2) % 4) as EdgeIndex;
-    expect(occupiedRotated).toBe(0); // retryState использует edge 0 как занятый
 
     const sameEdge = validateAction(
       retryState,
-      { type: 'PLACE_MEEPLE', playerId: p1.id, position: last.position, featureType: 'road', edge: 0 },
+      // фактический контракт: occupiedRotated === rotateEdge(0, last.rotation)
+      { type: 'PLACE_MEEPLE', playerId: p1.id, position: last.position, featureType: 'road', edge: occupiedRotated },
       getTestTile,
     );
     expect(sameEdge).not.toBeNull();
     expect(sameEdge!.code).toBe('FEATURE_OCCUPIED');
 
+    // Контракт engine: допустимы ТОЛЬКО канонические (base=min) стороны
+    // сегментов, повёрнутые rotateEdge(base, rot). Вторая сторона сегмента
+    // (canonical base 2) не является допустимой placement-позицией →
+    // INVALID_FEATURE_POSITION. Проверка «та же feature» покрывается
+    // случаем sameEdge выше (тот же локальный id "road:r0").
+    const connectedEdgeIdx = ((2 + steps) % 4) as EdgeIndex;
     const connectedEdge = validateAction(
       retryState,
       { type: 'PLACE_MEEPLE', playerId: p1.id, position: last.position, featureType: 'road', edge: connectedEdgeIdx },
       getTestTile,
     );
     expect(connectedEdge).not.toBeNull();
-    expect(connectedEdge!.code).toBe('FEATURE_OCCUPIED');
+    expect(connectedEdge!.code).toBe('INVALID_FEATURE_POSITION');
 
     // 14c. Другая НЕсвязанная feature перекрёстка (E-W дорога): её canonical
-    // сторона base=1 → rotated = (1+steps)%4. Для неё второй meeple того же
-    // игрока структурно допустим (другая локальная feature).
+    // base=1 → rotated = (1+steps)%4. Для неё второй meeple того же
+    // игрока структурно допустим (другая локальная feature "road:r1").
     const otherPairStart = ((1 + steps) % 4) as EdgeIndex;
     const otherFeature = validateAction(
       retryState,
