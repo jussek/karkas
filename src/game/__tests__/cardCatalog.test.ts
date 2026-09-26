@@ -284,3 +284,55 @@ describe('Stage 2.5 final river edge verification', () => {
     }
   });
 });
+
+describe('Stage 2.5 exact defect fix (card-141 / card-114)', () => {
+  const byId = new Map(CARD_CATALOG.map((c) => [c.id, c]));
+
+  it('catalog total is exactly 144 with unique ids', () => {
+    expect(CARD_CATALOG.length).toBe(144);
+    expect(new Set(CARD_CATALOG.map((c) => c.id)).size).toBe(144);
+    for (let i = 1; i <= 144; i++) {
+      expect(byId.has(`card-${String(i).padStart(3, '0')}`)).toBe(true);
+    }
+  });
+
+  it('card-077 and card-141 each appear exactly once', () => {
+    expect(CARD_CATALOG.filter((c) => c.id === 'card-077').length).toBe(1);
+    expect(CARD_CATALOG.filter((c) => c.id === 'card-141').length).toBe(1);
+  });
+
+  it('card-141 has the exact required values', () => {
+    const c = byId.get('card-141');
+    expect(c).toBeDefined();
+    expect(c!.asset).toBe('1 (141).jpg');
+    expect(c!.edges).toEqual({ north: 'road', east: 'road', south: 'field', west: 'field' });
+    expect(c!.topology.roads).toEqual([[0, 1]]);
+    expect(c!.topology.cities).toEqual([]);
+    expect(c!.shields).toBe(0);
+    expect(c!.reviewRequired).toBe(true);
+    expect(c!.reviewReason).toBe('NE-village/N-edge road topology requires manual verification');
+  });
+
+  it('card-114 has the exact required values', () => {
+    const c = byId.get('card-114');
+    expect(c).toBeDefined();
+    expect(c!.asset).toBe('1 (114).jpg');
+    expect(c!.edges).toEqual({ north: 'field', east: 'city', south: 'field', west: 'city' });
+    expect(c!.topology.roads).toEqual([]);
+    expect(c!.topology.cities).toEqual([[1, 3]]);
+    expect(c!.shields).toBe(0);
+    expect(c!.reviewRequired ?? false).toBe(false);
+  });
+
+  it('river data untouched: 20 river cards, invariant holds, start/end correct', () => {
+    const river = CARD_CATALOG.filter((c) => c.riverCard);
+    expect(river.length).toBe(20);
+    const c102 = byId.get('card-102')!;
+    expect(c102.topology.riverEdges).toEqual([3]);
+    expect(c102.riverKind).toBe('end');
+    const c129 = byId.get('card-129')!;
+    expect(c129.edges).toEqual({ north: 'field', east: 'field', south: 'river', west: 'field' });
+    expect(c129.topology.riverEdges).toEqual([2]);
+    expect(c129.riverKind).toBe('start');
+  });
+});
