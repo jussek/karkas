@@ -101,8 +101,15 @@ export function getTileEdges(
 
 /**
  * Совместимость стыка двух соседних плиток (Carcassonne 2019):
- * элементы ландшафта на встречающихся сторонах должны совпадать
- * (road-road, city-city, иначе — mismatch).
+ * рисунок на встречеющихся сторонах должен продолжаться —
+ * одинаковый тип ландшафта соединяется с одинаковым:
+ *   field + field = compatible
+ *   road  + road  = compatible
+ *   city  + city  = compatible
+ * Любые остальные комбинации — incompatible.
+ *
+ * Stage 1.5: 'field' участвует только в геометрии стыков;
+ * поля/крестьяне и их подсчёт реализуются позже.
  *
  * @param edgesA стороны первой плитки [N,E,S,W]
  * @param edgeA  сторона первой плитки, обращённая к соседу
@@ -115,7 +122,17 @@ export function areEdgesCompatible(
   edgesB: readonly EdgeType[],
   edgeB: EdgeIndex,
 ): boolean {
-  return edgesA[edgeA] === edgesB[edgeB];
+  const a = edgesA[edgeA];
+  const b = edgesB[edgeB];
+  // Явное правило: каждый тип совместим только сам с собой.
+  switch (a) {
+    case 'field':
+      return b === 'field';
+    case 'road':
+      return b === 'road';
+    case 'city':
+      return b === 'city';
+  }
 }
 
 /** 4 ортогональных соседа (без диагоналей). */

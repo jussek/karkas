@@ -1,6 +1,10 @@
 /**
- * Небольшой набор тестовых плиток (Этап 1) — не все 72.
+ * Небольшой набор тестовых плиток — не все 72.
  * Плитки описываются структурированными данными, без изображений.
+ *
+ * Stage 1.5: каждая из четырёх сторон плитки ЯВНО описана одним из
+ * EdgeType ('road' | 'city' | 'field'). Отсутствие типа не используется
+ * для обозначения поля — поле указывается как 'field'.
  *
  * Соглашение об id сегментов: 'r0','r1' — дороги; 'c0','c1' — города.
  * Одинаковый id у двух сторон = стороны соединены внутри плитки.
@@ -12,12 +16,14 @@ import type { EdgeType, TileDefinition } from '../types/geometry';
 function makeTile(
   id: string,
   name: string,
-  sidesStr: readonly ('R' | 'C')[],
+  sides: readonly EdgeType[],
   roadPairs: readonly (readonly [number, number])[] = [],
   cityPairs: readonly (readonly [number, number])[] = [],
   hasMonastery = false,
 ): TileDefinition {
-  const sides: EdgeType[] = sidesStr.map((s) => (s === 'R' ? 'road' : 'city'));
+  if (sides.length !== 4) {
+    throw new Error(`Tile ${id}: exactly 4 sides must be described`);
+  }
 
   // union-find для склейки сторон в сегменты
   const parent = [0, 1, 2, 3];
@@ -43,7 +49,7 @@ function makeTile(
       }
       roadEdgeSegments[e] = segId;
       cityEdgeSegments[e] = null;
-    } else {
+    } else if (sides[e] === 'city') {
       const root = find(e);
       let segId = citySegIds.get(root);
       if (!segId) {
@@ -52,6 +58,10 @@ function makeTile(
       }
       cityEdgeSegments[e] = segId;
       roadEdgeSegments[e] = null;
+    } else {
+      // field — только геометрия стороны; сегменты полей на Stage 1.5 не моделируются.
+      roadEdgeSegments[e] = null;
+      cityEdgeSegments[e] = null;
     }
   }
 
@@ -71,30 +81,31 @@ function makeTile(
 
 /* ------------------------------------------------------------------ */
 /* Тестовые плитки                                                    */
+/* Все стороны описаны явно: 'road' | 'city' | 'field'.                */
 /* ------------------------------------------------------------------ */
 
-/** Стартовая: город на всех 4 сторонах, один связный сегмент. */
+/** Стартовая (как в базовой игре): город на всех 4 сторонах, один связный сегмент. */
 export const TILE_CITY_ALL = makeTile(
   'T-C-CCCC',
   'City, all four sides (start tile)',
-  ['C', 'C', 'C', 'C'],
+  ['city', 'city', 'city', 'city'],
   [],
   [[0, 1], [1, 2], [2, 3]],
 );
 
-/** Дорога прямая N-S. */
+/** Дорога прямая N-S, города E/W. */
 export const TILE_ROAD_STRAIGHT_NS = makeTile(
   'T-R-NS',
-  'Straight road N-S',
-  ['R', 'C', 'R', 'C'],
+  'Straight road N-S, city E/W',
+  ['road', 'city', 'road', 'city'],
   [[0, 2]],
 );
 
-/** Дорога с поворотом N-E. */
+/** Дорога с поворотом N-E, города S-W. */
 export const TILE_ROAD_CURVE_NE = makeTile(
   'T-R-NE',
-  'Curve road N-E',
-  ['R', 'R', 'C', 'C'],
+  'Curve road N-E, city S-W',
+  ['road', 'road', 'city', 'city'],
   [[0, 1]],
 );
 
@@ -102,15 +113,15 @@ export const TILE_ROAD_CURVE_NE = makeTile(
 export const TILE_ROAD_CROSSING = makeTile(
   'T-R-X',
   'Road crossing (N-S and E-W not connected)',
-  ['R', 'R', 'R', 'R'],
+  ['road', 'road', 'road', 'road'],
   [[0, 2], [1, 3]],
 );
 
-/** Город на двух соседних сторонах N-E (связан), остальные — дороги. */
+/** Город на двух соседних сторонах N-E (связан), дороги S-W. */
 export const TILE_CITY_CORNER_ROADS = makeTile(
   'T-C-CC-RR',
   'City corner N-E, roads S-W',
-  ['C', 'C', 'R', 'R'],
+  ['city', 'city', 'road', 'road'],
   [[2, 3]],
   [[0, 1]],
 );
@@ -119,7 +130,7 @@ export const TILE_CITY_CORNER_ROADS = makeTile(
 export const TILE_MONASTERY = makeTile(
   'T-M',
   'Monastery surrounded by city edges',
-  ['C', 'C', 'C', 'C'],
+  ['city', 'city', 'city', 'city'],
   [],
   [[0, 1], [1, 2], [2, 3]],
   true,
@@ -129,8 +140,22 @@ export const TILE_MONASTERY = makeTile(
 export const TILE_ROAD_ALL = makeTile(
   'T-R-RRRR',
   'Road on all four sides, connected',
-  ['R', 'R', 'R', 'R'],
+  ['road', 'road', 'road', 'road'],
   [[0, 1], [1, 2], [2, 3]],
+);
+
+/** Поле на всех четырёх сторонах (пустая плитка-луг). */
+export const TILE_FIELD_ALL = makeTile(
+  'T-F-FFFF',
+  'Field on all four sides',
+  ['field', 'field', 'field', 'field'],
+);
+
+/** Поле N-E-S, дорога W (тупик дороги в поле). */
+export const TILE_FIELD_WITH_ROAD_END = makeTile(
+  'T-F-RW',
+  'Field N/E/S, dead-end road from W',
+  ['field', 'field', 'field', 'road'],
 );
 
 /** Реестр всех тестовых шаблонов. */
@@ -143,6 +168,8 @@ export const TEST_TILES: ReadonlyMap<string, TileDefinition> = new Map(
     TILE_CITY_CORNER_ROADS,
     TILE_MONASTERY,
     TILE_ROAD_ALL,
+    TILE_FIELD_ALL,
+    TILE_FIELD_WITH_ROAD_END,
   ].map((t) => [t.id, t]),
 );
 
