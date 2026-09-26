@@ -93,3 +93,29 @@ export interface PlacedTile {
 export interface DrawnTile {
   definitionId: string;
 }
+
+/* ------------------------------------------------------------------ */
+/* Мeeple-позиции (структурная модель Stage 2)                         */
+/*                                                                     */
+/* Локальная позиция на плитке однозначно определяет, КУДА ставится   */
+/* подданный:                                                          */
+/*  - road  + edge N/E/S/W — дорога, подходящая к этой стороне;       */
+/*  - city  + edge N/E/S/W — город, подходящий к этой стороне;        */
+/*  - monastery + edge null — монастырь в центре плитки.              */
+/* Глобальное объединение features (connected roads/cities) — Stage 3. */
+/* ------------------------------------------------------------------ */
+
+/** Тип локального элемента плитки для размещения meeple. */
+export type LocalFeatureType = 'road' | 'city' | 'monastery';
+
+/** Однозначная позиция meeple на плитке. */
+export interface MeeplePlacement {
+  featureType: LocalFeatureType;
+  /** Сторона [N,E,S,W] для дорог/городов; null для монастыря. */
+  edge: EdgeIndex | null;
+}
+
+/** Стабильный ключ локальной позиции (для проверки занятости). */
+export function placementKey(p: MeeplePlacement): string {
+  return `${p.featureType}:${p.edge ?? 'center'}`;
+}
