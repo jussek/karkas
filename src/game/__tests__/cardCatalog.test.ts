@@ -110,3 +110,69 @@ describe('card catalog structure', () => {
     }
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* Stage 2.5 river-topology audit tests                                */
+/* ------------------------------------------------------------------ */
+
+const RIVER_CHECKPOINT_IDS = [
+  'card-049','card-050','card-051','card-063','card-075','card-084','card-086',
+  'card-087','card-095','card-096','card-097','card-098','card-102','card-103',
+  'card-104','card-105','card-106','card-107','card-117','card-129',
+] as const;
+
+describe('river topology audit (Stage 2.5)', () => {
+  it('all 20 user-confirmed river checkpoint cards are flagged riverCard=true', () => {
+    for (const id of RIVER_CHECKPOINT_IDS) {
+      const c = CARD_CATALOG.find((x) => x.id === id);
+      expect(c, `missing ${id}`).toBeDefined();
+      expect(c!.riverCard).toBe(true);
+    }
+  });
+
+  it('no river checkpoint card remains fully field/field/field/field without review', () => {
+    for (const id of RIVER_CHECKPOINT_IDS) {
+      const c = CARD_CATALOG.find((x) => x.id === id)!;
+      const allField = ['north','east','south','west'].every(
+        (s) => (c.edges as Record<string, string>)[s] === 'field',
+      );
+      if (allField) {
+        // If edges still read all-field, the river sides were NOT visually
+        // determinable and MUST be flagged for manual verification.
+        expect(c.reviewRequired, `${id} all-field but not flagged`).toBe(true);
+        expect(c.reviewReason).toMatch(/river/i);
+      }
+    }
+  });
+
+  it('riverCard implies riverKind and a river-related review reason until sides verified', () => {
+    for (const c of CARD_CATALOG.filter((x) => x.riverCard)) {
+      expect(['start','middle','end']).toContain(c.riverKind);
+      const hasRiverEdge = Object.values(c.edges).includes('river');
+      if (!hasRiverEdge) {
+        expect(c.reviewRequired).toBe(true);
+        expect(c.reviewReason).toMatch(/river/i);
+      }
+    }
+  });
+
+  it('card-102 is the river end (lake) and card-129 is the river start (source)', () => {
+    expect(CARD_CATALOG.find((c) => c.id === 'card-102')!.riverKind).toBe('end');
+    expect(CARD_CATALOG.find((c) => c.id === 'card-129')!.riverKind).toBe('start');
+  });
+
+  it('any edge typed river is reflected in topology.riverEdges and never in roads/cities', () => {
+    for (const c of CARD_CATALOG) {
+      const riverIdx = (['north','east','south','west'] as const)
+        .map((s, i) => (c.edges[s] === 'river' ? i : -1))
+        .filter((i) => i >= 0);
+      for (const group of [...c.topology.roads, ...c.topology.cities]) {
+        for (const i of group) expect(riverIdx).not.toContain(i);
+      }
+      if (riverIdx.length > 0) {
+        expect(c.riverCard).toBe(true);
+        for (const i of riverIdx) expect(c.topology.riverEdges ?? []).toContain(i);
+      }
+    }
+  });
+});

@@ -68,6 +68,16 @@ export interface CardDefinition {
 
   /** Why manual review is needed */
   reviewReason?: string;
+
+  /**
+   * River marker card: user-confirmed checkpoint (visual verification of real
+   * JPGs) that the river passes through this card. Geometric classification
+   * only — no river gameplay implemented at Stage 2.5.
+   */
+  riverCard?: boolean;
+
+  /** Kind of river card, when riverCard === true (source / middle / lake-end). */
+  riverKind?: 'start' | 'middle' | 'end';
 }
 
 /** Reference to the overview map asset (NOT a playable tile, never in deck) */
