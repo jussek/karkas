@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { GameAction, GameState, Player } from '../types/state';
+import type { EdgeIndex } from '../types/geometry';
 import { posKey } from '../types/state';
 import {
   applyAction,
@@ -342,7 +343,21 @@ describe('MEEPLE', () => {
   it('14. нельзя поставить второй meeple на ту же локальную feature (в т.ч. через объединённый сегмент)', () => {
     // Берём плитку с ДВУМЯ несвязанными дорожными сегментами (перекрёсток):
     // road:edge0 и road:edge1 — разные локальные features.
-    const { state } = turnUntilPlaceMeeple(newGame(), 'T-R-ALL');
+    // T-R-X (crossing) не стыкуется с city-стартом, поэтому сначала кладём
+    // рядом с стартом T-R-NS (его road-стороны смотрят наружу), затем
+    // перекрёсток — на свободную road-сторону этой плитки.
+    const first = turnUntilPlaceMeeple(newGame(), 'T-R-NS');
+    const withDrawn2: GameState = {
+      ...first.state,
+      gamePhase: 'drawTile',
+      drawnTileDefinitionId: null,
+    };
+    const s2 = drawNextTile(withDrawn2);
+    const second = turnUntilPlaceMeeple(
+      { ...s2, tileDeck: { remaining: ['T-R-X', ...s2.tileDeck.remaining] } },
+      'T-R-X',
+    );
+    const { state } = second;
     const last = state.lastPlacedTile!;
     // Симулируем состояние, в котором meeple игрока уже стоит на одной
     // дороге перекрёстка (фаза возвращена в placeMeeple для проверки правила).
@@ -355,7 +370,15 @@ describe('MEEPLE', () => {
           : m,
       ),
     };
-    // 14a. Та же самая сторона той же feature → FEATURE_OCCUPIED.
+    // 14a/14b. Сторона, занятая meeple в retryState — edge 0 (canonical N-S
+    // сегмент при повороте rot попадает на rotateEdge(0,rot)). Проверяем:
+    // та же сторона и вторая сторона того же сегмента → FEATURE_OCCUPIED;
+    // другие стороны не являются дорогами этой повёрнутой плитки.
+    const steps = last.rotation / 90;
+    const occupiedRotated: EdgeIndex = (0 + steps) % 4 as EdgeIndex;
+    const connectedEdgeIdx = ((occupiedRotated + 2) % 4) as EdgeIndex;
+    expect(occupiedRotated).toBe(0); // retryState использует edge 0 как занятый
+
     const sameEdge = validateAction(
       retryState,
       { type: 'PLACE_MEEPLE', playerId: p1.id, position: last.position, featureType: 'road', edge: 0 },
@@ -364,19 +387,21 @@ describe('MEEPLE', () => {
     expect(sameEdge).not.toBeNull();
     expect(sameEdge!.code).toBe('FEATURE_OCCUPIED');
 
-    // 14b. Другая сторона той же связанной дороги (N-S сегмент) → FEATURE_OCCUPIED.
     const connectedEdge = validateAction(
       retryState,
-      { type: 'PLACE_MEEPLE', playerId: p1.id, position: last.position, featureType: 'road', edge: 2 },
+      { type: 'PLACE_MEEPLE', playerId: p1.id, position: last.position, featureType: 'road', edge: connectedEdgeIdx },
       getTestTile,
     );
     expect(connectedEdge).not.toBeNull();
     expect(connectedEdge!.code).toBe('FEATURE_OCCUPIED');
 
-    // 14c. Другая НЕсвязанная feature (E-W дорога) → допустимо структурно.
+    // 14c. Другая НЕсвязанная feature перекрёстка (E-W дорога): её canonical
+    // сторона base=1 → rotated = (1+steps)%4. Для неё второй meeple того же
+    // игрока структурно допустим (другая локальная feature).
+    const otherPairStart = ((1 + steps) % 4) as EdgeIndex;
     const otherFeature = validateAction(
       retryState,
-      { type: 'PLACE_MEEPLE', playerId: p1.id, position: last.position, featureType: 'road', edge: 1 },
+      { type: 'PLACE_MEEPLE', playerId: p1.id, position: last.position, featureType: 'road', edge: otherPairStart },
       getTestTile,
     );
     expect(otherFeature).toBeNull();
@@ -416,9 +441,12 @@ describe('MEEPLE', () => {
 
     const { state: s2 } = turnUntilPlaceMeeple(newGame(), 'T-C-CCCC');
     const last = s2.lastPlacedTile!;
+    // Стартовая плитка T-C-CCCC имеет один связный city-сегмент,
+    // поэтому используется edge 0 (другие стороны того же сегмента
+    // запрещены правилом «одного meeple на локальную feature»).
     const placed = applyAction(
       s2,
-      { type: 'PLACE_MEEPLE', playerId: current(s2).id, position: last.position, featureType: 'city', edge: 2 },
+      { type: 'PLACE_MEEPLE', playerId: current(s2).id, position: last.position, featureType: 'city', edge: 0 },
       getTestTile,
     );
     expect(placed.ok).toBe(true);
