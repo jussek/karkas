@@ -342,7 +342,7 @@ describe('MEEPLE', () => {
   it('14. нельзя поставить второй meeple на ту же локальную feature (в т.ч. через объединённый сегмент)', () => {
     // Берём плитку с ДВУМЯ несвязанными дорожными сегментами (перекрёсток):
     // road:edge0 и road:edge1 — разные локальные features.
-    const { state } = turnUntilPlaceMeeple(newGame(), 'T-R-X');
+    const { state } = turnUntilPlaceMeeple(newGame(), 'T-R-ALL');
     const last = state.lastPlacedTile!;
     // Симулируем состояние, в котором meeple игрока уже стоит на одной
     // дороге перекрёстка (фаза возвращена в placeMeeple для проверки правила).

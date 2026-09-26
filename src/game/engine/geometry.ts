@@ -132,6 +132,8 @@ export function areEdgesCompatible(
       return b === 'road';
     case 'city':
       return b === 'city';
+    case 'river':
+      return b === 'river';
   }
 }
 
