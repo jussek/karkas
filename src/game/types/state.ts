@@ -6,10 +6,14 @@
 
 import type {
   EdgeIndex,
+  LocalFeatureType,
+  MeeplePlacement,
   PlacedTile,
   Rotation,
   TilePosition,
 } from './geometry';
+import { placementKey } from './geometry';
+import type { GameError } from '../engine/errors';
 
 /* ------------------------------------------------------------------ */
 /* Игроки и meeple                                                     */
@@ -23,19 +27,29 @@ export interface Player {
   score: number;
 }
 
-/** Тип элемента, на котором стоит meeple (Этап 1: без полей). */
-export type FeatureType = 'road' | 'city' | 'monastery';
+/** Тип элемента, на котором стоит meeple (пока без полей — Stage 3+). */
+export type FeatureType = LocalFeatureType;
 
-/** Meeple, размещённый на доске (или возвращённый игроку). */
+/**
+ * Meeple на доске.
+ * Stage 2: размещённый meeple однозначно описывается позицией плитки
+ * и локальной feature-позицией (placement). Это позволяет в будущем
+ * сопоставить meeple с глобальной объединённой feature (Stage 3)
+ * и вернуть его при завершении элемента (Stage 4).
+ */
 export interface Meeple {
   id: string;
   playerId: string;
   /** null — meeple дома, у игрока. */
-  placedAt: TilePosition | null;
-  /** На какой стороне плитки стоит meeple (для дорог/городов). */
-  edge: EdgeIndex | null;
-  /** null, если meeple дома. */
-  featureType: FeatureType | null;
+  position: TilePosition | null;
+  /** Локальная позиция на плитке; null, если meeple дома. */
+  placement: MeeplePlacement | null;
+}
+
+/** Позиция meeple как стабильный ключ ("x,y|featureType:edge"). */
+export function meepleBoardKey(m: Meeple): string {
+  if (!m.position || !m.placement) return '';
+  return `${posKey(m.position)}|${placementKey(m.placement)}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -139,6 +153,19 @@ export interface GameState {
   gamePhase: GamePhase;
   /** Плитка, которую текущий игрок вытянул и ещё не разместил. */
   drawnTileDefinitionId: string | null;
+  /**
+   * Данные последнего хода (нужны для PLACE_MEEPLE / COMPLETE_TURN).
+   * Очищаются при COMPLETE_TURN.
+   */
+  lastPlacedTile: LastPlacedTile | null;
+}
+
+/** Информация о плитке, размещённой текущим игроком на этом ходу. */
+export interface LastPlacedTile {
+  definitionId: string;
+  rotation: Rotation;
+  position: TilePosition;
+  playerId: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -146,14 +173,31 @@ export interface GameState {
 /* ------------------------------------------------------------------ */
 
 export type GameActionType =
+  | 'DRAW_TILE'
   | 'PLACE_TILE'
   | 'PLACE_MEEPLE'
   | 'SKIP_MEEPLE'
   | 'COMPLETE_TURN';
 
+/**
+ * DRAW_TILE — детерминированное «тянущее» действие фазы drawTile.
+ * Является частью state machine (§1 Stage 2): переход
+ * drawTile → placeTile происходит через отдельное действие,
+ * а не скрыто внутри UI/движка.
+ */
+export interface DrawTileAction {
+  type: 'DRAW_TILE';
+  playerId: string;
+}
+
 export interface PlaceTileAction {
   type: 'PLACE_TILE';
   playerId: string;
+  /**
+   * Идентичность вытянутой плитки. Должна совпадать с
+   * state.drawnTileDefinitionId — движок НЕ доверяет UI.
+   */
+  tileDefinitionId: string;
   position: TilePosition;
   rotation: Rotation;
 }
@@ -161,8 +205,13 @@ export interface PlaceTileAction {
 export interface PlaceMeepleAction {
   type: 'PLACE_MEEPLE';
   playerId: string;
+  /** Позиция только что размещённой плитки. */
   position: TilePosition;
-  /** Сторона для дорог/городов; для монастыря — 'center' (null edge). */
+  /**
+   * Однозначная локальная feature-позиция подданного:
+   * road/city + edge N/E/S/W, monastery + edge null.
+   */
+  featureType: LocalFeatureType;
   edge: EdgeIndex | null;
 }
 
@@ -177,12 +226,13 @@ export interface CompleteTurnAction {
 }
 
 export type GameAction =
+  | DrawTileAction
   | PlaceTileAction
   | PlaceMeepleAction
   | SkipMeepleAction
   | CompleteTurnAction;
 
-/** Результат применения действия: новое состояние или ошибка валидации. */
+/** Результат применения действия: новое состояние или структурированная ошибка. */
 export type ActionResult =
   | { ok: true; state: GameState }
-  | { ok: false; error: string };
+  | { ok: false; error: GameError };
