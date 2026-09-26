@@ -1,0 +1,52 @@
+card-009 | road/field/road/field | roads= [[2]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-010 | field/field/road/road | roads= [[2]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-011 | city/field/road/city | roads= [[2]] | cities= [[0], [3]] | mona= False | city segmentation (one city vs separate segments) not derivable from e
+card-021 | road/field/road/field | roads= [[2]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-023 | field/field/road/road | roads= [[2, 3]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-024 | road/city/road/road | roads= [[0, 2, 3]] | cities= ? | mona= True | road connection topology (straight/corner/T-junction) not derivable fr
+card-025 | field/field/field/field | roads= [[3]] | cities= [] | mona= False | edge color ambiguous: S
+card-029 | field/field/city/city | roads= [] | cities= ? | mona= True | city segmentation (one city vs separate segments) not derivable from e
+card-031 | road/field/field/field | roads= [[0]] | cities= [] | mona= False | edge color ambiguous: E
+card-034 | road/field/road/field | roads= [[0, 2]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-035 | city/road/road/road | roads= [[1, 2, 3]] | cities= [[0]] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-039 | road/road/field/field | roads= [[0, 1]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-040 | city/field/city/field | roads= [] | cities= [[0], [2]] | mona= False | city segmentation (one city vs separate segments) not derivable from e
+card-042 | field/field/field/road | roads= [[3]] | cities= [] | mona= False | edge color ambiguous: S
+card-043 | road/field/field/field | roads= [[0]] | cities= [] | mona= False | edge color ambiguous: N,E
+card-044 | field/road/field/field | roads= [[0]] | cities= [] | mona= False | edge color ambiguous: N,E
+card-046 | field/field/field/road | roads= [[3]] | cities= [] | mona= False | edge color ambiguous: N
+card-047 | field/road/field/field | roads= [[1]] | cities= [] | mona= False | edge color ambiguous: N
+card-048 | field/field/road/road | roads= [[3]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-052 | field/field/field/field | roads= [] | cities= [] | mona= False | edge color ambiguous: E
+card-053 | field/road/road/field | roads= [[0]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-056 | field/field/field/field | roads= [] | cities= [] | mona= False | edge color ambiguous: S
+card-057 | field/field/field/field | roads= [] | cities= [] | mona= False | edge color ambiguous: E
+card-060 | field/road/field/field | roads= [[1]] | cities= [] | mona= False | edge color ambiguous: W
+card-062 | field/field/field/field | roads= [] | cities= [] | mona= False | edge color ambiguous: S
+card-065 | city/field/field/city | roads= [] | cities= [[0], [3]] | mona= False | city segmentation (one city vs separate segments) not derivable from e
+card-067 | city/field/road/field | roads= [[2]] | cities= [[0]] | mona= False | edge color ambiguous: S,W
+card-070 | road/field/field/road | roads= [[0, 3]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-071 | road/road/road/field | roads= [[0, 1, 2]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-072 | field/field/field/field | roads= [] | cities= [] | mona= False | edge color ambiguous: W
+card-076 | road/field/field/field | roads= [[0]] | cities= [] | mona= False | edge color ambiguous: E,W
+card-077 | road/field/field/road | roads= [[0, 3]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-078 | road/road/road/road | roads= [[3]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-079 | field/city/road/field | roads= [[2]] | cities= [[1]] | mona= False | edge color ambiguous: E
+card-080 | field/road/field/road | roads= [[1, 3]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-081 | field/road/field/road | roads= [[1, 3]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-082 | field/road/field/field | roads= [[1]] | cities= [] | mona= False | edge color ambiguous: W
+card-083 | field/road/field/field | roads= [[1]] | cities= [] | mona= False | edge color ambiguous: E
+card-092 | field/field/field/field | roads= [] | cities= ? | mona= True | possible center building detected; monastery/shields need manual check
+card-113 | field/city/field/field | roads= [[3]] | cities= [[1]] | mona= False | edge color ambiguous: E
+card-114 | field/road/field/field | roads= [[3]] | cities= [] | mona= False | edge color ambiguous: W
+card-116 | field/road/field/road | roads= [[1, 3]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-118 | road/road/field/field | roads= [[0, 1]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-122 | field/field/road/road | roads= [[2, 3]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-126 | field/city/field/city | roads= [] | cities= [[1], [3]] | mona= False | city segmentation (one city vs separate segments) not derivable from e
+card-127 | field/field/city/field | roads= [] | cities= [[2]] | mona= False | edge color ambiguous: E
+card-129 | field/field/river/field | roads= [[1]] | cities= [] , monastery: true, riverEdges: [2] | mona= True | possible center building detected; monastery/shields need manual check
+card-130 | road/field/road/field | roads= [[0]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-140 | road/road/field/road | roads= [[2]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-141 | field/road/field/field | roads= [[1]] | cities= [] | mona= False | edge color ambiguous: E
+card-142 | road/field/field/road | roads= [[0, 3]] | cities= [] | mona= False | road connection topology (straight/corner/T-junction) not derivable fr
+card-143 | field/field/field/field | roads= [[1]] | cities= [] | mona= False | edge color ambiguous: N
