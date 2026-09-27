@@ -4,7 +4,7 @@ import { applyActionWithResolution, createGame } from '../engine/gameEngine';
 import { buildTurnResolution } from '../engine/turnResolution';
 import { isLegalTilePlacement } from '../rules/placement';
 import type { Rotation } from '../types/geometry';
-import type { GameState, Player } from '../types/state';
+import type { Board, GameState, Player } from '../types/state';
 
 /**
  * Stage 4A: монастырь завершается, когда все 8 соседних координат заняты.
@@ -17,69 +17,122 @@ import type { GameState, Player } from '../types/state';
 const p1: Player = { id: 'p1', name: 'Игрок 1', color: 'blue', score: 0 };
 const p2: Player = { id: 'p2', name: 'Игрок 2', color: 'red', score: 0 };
 
-const FILLER_ROTATIONS = new Map<string, Rotation>();
+/** Позиция → выбранная ротация fillera (фиксируется DFS-поиском фикстуры). */
+type PlacementChoice = { tileId: string; rotation: Rotation; pos: { x: number; y: number } };
 
-interface MonasterySetup {
+interface MonasteryFixture {
   monasteryId: string;
-  fillers: string[];
+  /** 8 соседей в порядке заполнения DFS (7 первых — до monastery, последний — завершающий). */
+  neighbors: PlacementChoice[];
 }
 
+const NEIGHBOR_OFFSETS = [
+  { x: 0, y: -1 }, { x: 1, y: -1 }, { x: 2, y: -1 },
+  { x: -1, y: 0 }, { x: 2, y: 0 },
+  { x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 },
+];
+
 /**
- * Детерминированный поиск по canonical-каталогу (через engine legality,
- * без ручных предположений о топологии):
- * - monastery-плитка: ровно одно городское ребро и ноль дорог;
- * - fillers: НЕ river, без монастырей, с хотя бы одним городским ребром.
- *   Кандидат принимается, если существует ротация, легальная во ВСЕХ 8
- *   ортогональных соседях вокруг card-091 (тогда им можно заполнить любую
- *   позицию независимо от уже занятых соседей — все они тоже city-совместимы).
+ * Детерминированный поиск ЛЕГАЛЬНОЙ фикстуры через authoritative engine API.
+ *
+ * КЛЮЧЕВОЕ: легальность проверяется PER POSITION против ТЕКУЩЕЙ доски после
+ * каждого размещения (кандидат, легальный рядом с card-091, может стать
+ * нелегальным после ортогонального соседа). Поэтому используется DFS с
+ * backtracking по 8 позициям; следующим выбирается позиция с наименьшим
+ * числом текущих легальных кандидатов (эвристика fail-first).
+ *
+ * Fillers — уникальные non-river карты без монастырей (deck uniqueness
+ * соблюдается); monastery — первая canonical карта с монастырём и без дорог.
  */
-function findMonasteryFixture(): MonasterySetup {
+function findMonasteryFixture(): MonasteryFixture {
+  // 1) monastery candidate (engine topology, без ручных предположений)
   let monasteryId: string | null = null;
-  const fillers: string[] = [];
-  const NEIGHBOR_OFFSETS = [
-    { x: 0, y: -1 }, { x: 1, y: -1 }, { x: 2, y: -1 },
-    { x: -1, y: 0 }, { x: 2, y: 0 },
-    { x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 },
-  ];
-  const startBoard = { '0,0': { definitionId: 'card-091', rotation: 0 as Rotation, position: { x: 0, y: 0 } } };
-  for (let i = 1; i <= 144 && (!monasteryId || fillers.length < 8); i += 1) {
+  const fillerIds: string[] = [];
+  for (let i = 1; i <= 144 && fillerIds.length < 24; i += 1) {
     const id = `card-${String(i).padStart(3, '0')}`;
     let def;
     try {
       if (getCardDefinition(id).riverCard) continue;
       def = getTileDefinition(id);
     } catch {
-      continue; // card-106 исключён
+      continue; // card-106 исключён из runtime
     }
-    const cityCount = def.topology.cityEdgeSegments.filter((v) => v !== null).length;
     const roadCount = def.topology.roadEdgeSegments.filter((v) => v !== null).length;
-    if (!monasteryId && def.topology.hasMonastery && cityCount === 1 && roadCount === 0) {
+    if (!monasteryId && def.topology.hasMonastery && roadCount === 0) {
       monasteryId = id;
       continue;
     }
-    if (def.topology.hasMonastery || cityCount === 0) continue;
-    // filler: нужна ротация, легальная во всех 8 позициях вокруг старта
-    for (let step = 0; step < 4; step += 1) {
-      const rotation = (step * 90) as Rotation;
-      const allLegal = NEIGHBOR_OFFSETS.every(
-        (pos) => isLegalTilePlacement(
-          { board: startBoard, getDefinition: getTileDefinition }, def, rotation, pos,
-        ).legal,
-      );
-      if (allLegal) {
-        FILLER_ROTATIONS.set(id, rotation);
-        fillers.push(id);
-        break;
+    if (!def.topology.hasMonastery) fillerIds.push(id);
+  }
+  if (!monasteryId) throw new Error('monastery fixture not found in canonical catalog');
+
+  // 2) DFS: заполняем 8 соседей вокруг старта (0,0), легальность — engine'ом.
+  //    Диагональные позиции (например (1,-1)) не имеют ортогонального соседа,
+  //    пока не заполнены их ортогональные соседи, — DFS это учитывает сам,
+  //    т.к. легальность всегда проверяется против ТЕКУЩЕЙ доски.
+  const board: Board = {
+    '0,0': { definitionId: 'card-091', rotation: 0, position: { x: 0, y: 0 } },
+  };
+  const used = new Set<string>();
+  const chosen: PlacementChoice[] = [];
+
+  const legalChoicesFor = (pos: { x: number; y: number }): PlacementChoice[] => {
+    const out: PlacementChoice[] = [];
+    for (const tileId of fillerIds) {
+      if (used.has(tileId)) continue;
+      const def = getTileDefinition(tileId);
+      for (const step of [0, 1, 2, 3]) {
+        const rotation = (step * 90) as Rotation;
+        if (isLegalTilePlacement(
+          { board, getDefinition: getTileDefinition }, def, rotation, pos,
+        ).legal) {
+          out.push({ tileId, rotation, pos: { x: pos.x, y: pos.y } });
+        }
       }
     }
+    return out;
+  };
+
+  const unfilled = () =>
+    NEIGHBOR_OFFSETS.map((_, idx) => idx).filter((idx) => !chosen[idx]);
+
+  const solve = (): boolean => {
+    const remaining = unfilled();
+    if (remaining.length === 0) return true;
+    // fail-first: позиция с минимумом текущих легальных кандидатов
+    let bestIdx = remaining[0];
+    let bestChoices = legalChoicesFor(NEIGHBOR_OFFSETS[bestIdx]);
+    for (const idx of remaining.slice(1)) {
+      const choices = legalChoicesFor(NEIGHBOR_OFFSETS[idx]);
+      if (choices.length < bestChoices.length) {
+        bestIdx = idx;
+        bestChoices = choices;
+        if (choices.length === 0) break;
+      }
+    }
+    for (const choice of bestChoices) {
+      const pos = NEIGHBOR_OFFSETS[bestIdx];
+      board[`${pos.x},${pos.y}`] = { definitionId: choice.tileId, rotation: choice.rotation, position: pos };
+      used.add(choice.tileId);
+      chosen[bestIdx] = { ...choice, pos };
+      if (solve()) return true;
+      delete board[`${pos.x},${pos.y}`];
+      used.delete(choice.tileId);
+      delete chosen[bestIdx];
+    }
+    return false;
+  };
+
+  if (!solve()) {
+    throw new Error('no legal monastery neighbor arrangement found via engine DFS');
   }
-  if (!monasteryId || fillers.length < 8) {
-    throw new Error('monastery fixture not found in canonical catalog');
-  }
-  return { monasteryId, fillers };
+  return { monasteryId, neighbors: chosen };
 }
 
 const FIXTURE = findMonasteryFixture();
+const FILLER_ROTATIONS = new Map<string, Rotation>(
+  FIXTURE.neighbors.map((c) => [c.tileId, c.rotation]),
+);
 
 /** Пустое игровое состояние: старт card-091 в (0,0), фаза drawTile. */
 function freshGame(gameId: string, deck: string[]): GameState {
@@ -147,25 +200,28 @@ function playFullTurn(
   return playCompleteOnly(skipped.state, playerId).state;
 }
 
-/** 7 соседей monastery в (1,0), кроме последнего (1,1). */
-const SEVEN_NEIGHBORS = [
-  { x: 0, y: -1 }, { x: 1, y: -1 }, { x: 2, y: -1 },
-  { x: -1, y: 0 }, { x: 2, y: 0 },
-  { x: -1, y: 1 }, { x: 0, y: 1 },
-];
-const LAST_NEIGHBOR = { x: 1, y: 1 };
+/**
+ * Порядок заполнения соседей monastery (1,0): все 8 ортогональных соседей
+ * фикстуры, кроме последнего — его кладём завершающим ходом. Позиции и
+ * карты берутся из DFS-результата, поэтому каждая placement легальна против
+ * доски, построенной предыдущими ходами (порядок fill-first сохранён).
+ */
+const MONASTERY_POS = { x: 1, y: 0 };
+const SEVEN_STEPS = FIXTURE.neighbors.slice(0, 7).map((c) => ({ ...c }));
+const LAST_STEP = FIXTURE.neighbors[7];
 
 /** Готовит доску: 7 соседей заняты, monastery в (1,0) с meeple p1, его ход завершён. */
 function boardWithIncompleteMonastery(gameId: string): GameState {
-  let game = freshGame(gameId, [...FIXTURE.fillers]);
-  for (let idx = 0; idx < 7; idx += 1) {
-    game = playFullTurn(game, p1.id, FIXTURE.fillers[idx], SEVEN_NEIGHBORS[idx]);
+  const deckIds = SEVEN_STEPS.map((s) => s.tileId).concat([FIXTURE.monasteryId, LAST_STEP.tileId]);
+  let game = freshGame(gameId, deckIds);
+  for (const step of SEVEN_STEPS) {
+    game = playFullTurn(game, p1.id, step.tileId, step.pos);
   }
   const drawn = applyActionWithResolution(game, { type: 'DRAW_TILE', playerId: p1.id }, getTileDefinition);
   if (!drawn.ok) throw new Error('draw monastery failed');
-  const placedState = placeAtAnyRotation(drawn.state, p1.id, FIXTURE.monasteryId, { x: 1, y: 0 });
+  const placedState = placeAtAnyRotation(drawn.state, p1.id, FIXTURE.monasteryId, MONASTERY_POS);
   const withMeeple = applyActionWithResolution(placedState, {
-    type: 'PLACE_MEEPLE', playerId: p1.id, position: { x: 1, y: 0 }, featureType: 'monastery', edge: null,
+    type: 'PLACE_MEEPLE', playerId: p1.id, position: MONASTERY_POS, featureType: 'monastery', edge: null,
   }, getTileDefinition);
   if (!withMeeple.ok) throw new Error(`monastery meeple failed: ${withMeeple.error.code}`);
   return playCompleteOnly(withMeeple.state, p1.id).state;
@@ -180,7 +236,7 @@ describe('Stage 4A monastery completion scoring through End Turn', () => {
     // Последний сосед: DRAW → PLACE (очков нет) → SKIP → COMPLETE_TURN (+9).
     const drawnLast = applyActionWithResolution(game, { type: 'DRAW_TILE', playerId: p1.id }, getTileDefinition);
     if (!drawnLast.ok) throw new Error('draw last failed');
-    const placedLast = placeAtAnyRotation(drawnLast.state, p1.id, FIXTURE.fillers[7], LAST_NEIGHBOR);
+    const placedLast = placeAtAnyRotation(drawnLast.state, p1.id, LAST_STEP.tileId, LAST_STEP.pos);
     expect(placedLast.scores[p1.id]).toBe(0); // НЕ при placement
     const skippedLast = applyActionWithResolution(placedLast, { type: 'SKIP_MEEPLE', playerId: p1.id }, getTileDefinition);
     if (!skippedLast.ok) throw new Error('skip last failed');
@@ -199,7 +255,7 @@ describe('Stage 4A monastery completion scoring through End Turn', () => {
     const game = boardWithIncompleteMonastery('mono-idem');
     const drawnLast = applyActionWithResolution(game, { type: 'DRAW_TILE', playerId: p1.id }, getTileDefinition);
     if (!drawnLast.ok) throw new Error('draw last failed');
-    const placedLast = placeAtAnyRotation(drawnLast.state, p1.id, FIXTURE.fillers[7], LAST_NEIGHBOR);
+    const placedLast = placeAtAnyRotation(drawnLast.state, p1.id, LAST_STEP.tileId, LAST_STEP.pos);
     const skippedLast = applyActionWithResolution(placedLast, { type: 'SKIP_MEEPLE', playerId: p1.id }, getTileDefinition);
     if (!skippedLast.ok) throw new Error('skip last failed');
     const once = playCompleteOnly(skippedLast.state, p1.id);
