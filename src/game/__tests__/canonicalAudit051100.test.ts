@@ -4,7 +4,7 @@ import { AUDITED_051_100 } from '../cards/audited051100';
 describe('Stage 3H canonical visual audit 051..100', () => {
   it('contains every card from 051 through 100 exactly once', () => {
     expect(AUDITED_051_100).toHaveLength(50);
-    expect(new Set(AUDITED_051_100.map((card) => card.id)).toHaveLength(50);
+    expect(new Set(AUDITED_051_100.map((card) => card.id)).size).toBe(50);
     expect(AUDITED_051_100[0].id).toBe('card-051');
     expect(AUDITED_051_100[49].id).toBe('card-100');
   });
