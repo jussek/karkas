@@ -114,6 +114,14 @@ function wobble(seed: string, index: number, maxAbs: number): Point {
 /** Approximate road width in logical units (spec: ~13–17). */
 export const ROAD_WIDTH = 15;
 
+/** Semantic geometry: endpoints + SVG path, kept separate from serialization. */
+export interface SemanticGeometry {
+  /** Exact semantic endpoints (edge anchors and/or internal terminals). */
+  endpoints: Point[];
+  /** Serialized SVG path `d` string for rendering. */
+  path: string;
+}
+
 /** Depth of the control region used when a road bends between edges. */
 const BEND_CONTROL_DEPTH = 34;
 
@@ -147,25 +155,23 @@ function junctionPoint(edges: readonly EdgeIndex[], seed: string): Point {
 }
 
 /**
- * Build the SVG path `d` string for one road feature.
- * The path always starts at the first listed edge's anchor and ends at
- * the last listed edge's anchor (single-edge roads end at an internal
- * dead-end point). Endpoints are NEVER moved by the organic wobble —
+ * Semantic geometry for one road feature: the exact endpoints plus the
+ * serialized SVG path. Endpoints are NEVER moved by the organic wobble —
  * only intermediate control points are, so semantic connectivity stays
  * exact while lines look hand-drawn.
  */
-export function buildRoadPath(
+export function roadGeometry(
   edges: readonly EdgeIndex[],
   seed: string,
   slot: number,
-): string {
-  if (edges.length === 0) return '';
+): SemanticGeometry {
+  if (edges.length === 0) return { endpoints: [], path: '' };
   if (edges.length === 1) {
     const a = edgeAnchor(edges[0]);
     const e = roadDeadEndEndpoint(edges[0], slot, seed);
     const c1 = edgeInwardPoint(edges[0], 16);
     const c2 = add(e, scale(EDGE_INWARD[edges[0]], -10));
-    return `M ${fmt(a)} C ${fmt(c1)} ${fmt(c2)} ${fmt(e)}`;
+    return { endpoints: [a, e], path: `M ${fmt(a)} C ${fmt(c1)} ${fmt(c2)} ${fmt(e)}` };
   }
   if (edges.length === 2) {
     const [e0, e1] = edges;
@@ -174,7 +180,7 @@ export function buildRoadPath(
     if ((e0 + 2) % 4 === e1) {
       // straight (slightly organic) line across the tile
       const m = add(mid(a, b), wobble(seed, slot * 7 + 1, 2));
-      return `M ${fmt(a)} Q ${fmt(m)} ${fmt(b)}`;
+      return { endpoints: [a, b], path: `M ${fmt(a)} Q ${fmt(m)} ${fmt(b)}` };
     }
     // bend through the quadrant between the two edges
     const c = add(
@@ -182,7 +188,7 @@ export function buildRoadPath(
       edgeInwardPoint(e1, BEND_CONTROL_DEPTH),
     );
     const cw = add(c, wobble(seed, slot * 7 + 2, 3));
-    return `M ${fmt(a)} Q ${fmt(cw)} ${fmt(b)}`;
+    return { endpoints: [a, b], path: `M ${fmt(a)} Q ${fmt(cw)} ${fmt(b)}` };
   }
   // 3- or 4-edge junction: every listed edge reaches the same junction
   const j = junctionPoint(edges, seed);
@@ -193,7 +199,21 @@ export function buildRoadPath(
     const cw = add(c, wobble(seed, slot * 11 + i + 3, 2));
     parts.push(`M ${fmt(a)} Q ${fmt(cw)} ${fmt(j)}`);
   });
-  return parts.join(' ');
+  return { endpoints: [...edges.map(edgeAnchor), j], path: parts.join(' ') };
+}
+
+/**
+ * Build the SVG path `d` string for one road feature.
+ * The path always starts at the first listed edge's anchor and ends at
+ * the last listed edge's anchor (single-edge roads end at an internal
+ * dead-end point).
+ */
+export function buildRoadPath(
+  edges: readonly EdgeIndex[],
+  seed: string,
+  slot: number,
+): string {
+  return roadGeometry(edges, seed, slot).path;
 }
 
 /* ------------------------------------------------------------------ */
@@ -209,20 +229,22 @@ export function riverTerminalPoint(edge: EdgeIndex, seed: string): Point {
 }
 
 /**
- * SVG path for one river feature. Same endpoint guarantees as roads:
- * declared edge anchors are hit exactly; only control points wobble.
+ * Semantic geometry for one river feature: exact endpoints (declared edge
+ * anchors, plus the internal source/lake terminal for single-edge rivers)
+ * and the serialized SVG path. Declared edge anchors are hit exactly;
+ * only control points wobble.
  */
-export function buildRiverPath(
+export function riverGeometry(
   edges: readonly EdgeIndex[],
   seed: string,
-): string {
-  if (edges.length === 0) return '';
+): SemanticGeometry {
+  if (edges.length === 0) return { endpoints: [], path: '' };
   if (edges.length === 1) {
     const a = edgeAnchor(edges[0]);
     const e = riverTerminalPoint(edges[0], seed);
     const c1 = edgeInwardPoint(edges[0], 18);
     const c2 = add(e, scale(EDGE_INWARD[edges[0]], -12));
-    return `M ${fmt(a)} C ${fmt(c1)} ${fmt(c2)} ${fmt(e)}`;
+    return { endpoints: [a, e], path: `M ${fmt(a)} C ${fmt(c1)} ${fmt(c2)} ${fmt(e)}` };
   }
   if (edges.length === 2) {
     const [e0, e1] = edges;
@@ -231,14 +253,14 @@ export function buildRiverPath(
     if ((e0 + 2) % 4 === e1) {
       const m1 = add(edgeInwardPoint(e0, 25), wobble(seed, 40, 3));
       const m2 = add(edgeInwardPoint(e1, 25), wobble(seed, 41, 3));
-      return `M ${fmt(a)} C ${fmt(m1)} ${fmt(m2)} ${fmt(b)}`;
+      return { endpoints: [a, b], path: `M ${fmt(a)} C ${fmt(m1)} ${fmt(m2)} ${fmt(b)}` };
     }
     const corner = add(
       edgeInwardPoint(e0, BEND_CONTROL_DEPTH + 4),
       edgeInwardPoint(e1, BEND_CONTROL_DEPTH + 4),
     );
     const cw = add(corner, wobble(seed, 42, 4));
-    return `M ${fmt(a)} Q ${fmt(cw)} ${fmt(b)}`;
+    return { endpoints: [a, b], path: `M ${fmt(a)} Q ${fmt(cw)} ${fmt(b)}` };
   }
   // three-way river: all declared edges meet at one confluence
   const j = add(CENTER, wobble(seed, 43, 2));
@@ -249,7 +271,17 @@ export function buildRiverPath(
     const cw = add(c, wobble(seed, 50 + i, 3));
     parts.push(`M ${fmt(a)} Q ${fmt(cw)} ${fmt(j)}`);
   });
-  return parts.join(' ');
+  return { endpoints: [...edges.map(edgeAnchor), j], path: parts.join(' ') };
+}
+
+/**
+ * SVG path for one river feature. Same endpoint guarantees as roads.
+ */
+export function buildRiverPath(
+  edges: readonly EdgeIndex[],
+  seed: string,
+): string {
+  return riverGeometry(edges, seed).path;
 }
 
 /* ------------------------------------------------------------------ */
@@ -369,6 +401,21 @@ export function buildCityMassPath(edges: readonly EdgeIndex[]): string {
 export function cityMassCenter(edges: readonly EdgeIndex[]): Point {
   const bb = cityBoundingBox(edges);
   return { x: (bb.minX + bb.maxX) / 2, y: (bb.minY + bb.maxY) / 2 };
+}
+
+/**
+ * Edges whose border the city mass actually touches (mass boundary lies
+ * ON the tile border for that edge). This is the semantic connectivity
+ * contract used by tests: it must equal the declared feature edges.
+ */
+export function cityTouchedEdges(edges: readonly EdgeIndex[]): EdgeIndex[] {
+  const bb = cityBoundingBox(edges);
+  const touched: EdgeIndex[] = [];
+  if (bb.minY <= CITY_EDGE_MARGIN) touched.push(0);
+  if (bb.maxX >= 100 - CITY_EDGE_MARGIN) touched.push(1);
+  if (bb.maxY >= 100 - CITY_EDGE_MARGIN) touched.push(2);
+  if (bb.minX <= CITY_EDGE_MARGIN) touched.push(3);
+  return touched;
 }
 
 /**

@@ -19,6 +19,7 @@ import {
   RIVER_WIDTH,
   cityBoundingBox,
   cityBuildings,
+  riverTerminalPoint,
 } from './tileGeometry';
 import { buildFieldDecorations } from './tileDecoration';
 import { PALETTE } from './tilePalette';
@@ -82,8 +83,17 @@ function RoadLayer({ feature }: { feature: RenderFeature }) {
   );
 }
 
-function RiverLayer({ feature }: { feature: RenderFeature }) {
+function RiverLayer({
+  feature,
+  seed,
+}: {
+  feature: RenderFeature;
+  seed: string;
+}) {
   const single = feature.edges.length === 1;
+  // Semantic terminal coordinate — the SAME helper used to generate the
+  // river path. No SVG path-string parsing is involved.
+  const terminal = single ? riverTerminalPoint(feature.edges[0], seed) : null;
   return (
     <g data-feature={feature.id}>
       <path
@@ -108,11 +118,11 @@ function RiverLayer({ feature }: { feature: RenderFeature }) {
         strokeLinecap="round"
         opacity={0.6}
       />
-      {single ? (
+      {terminal ? (
         /* source spring / lake bulge at the internal terminus */
         <circle
-          cx={Number(feature.path.split(' ').pop()?.split(',')[0] ?? 50)}
-          cy={Number(feature.path.split(' ').pop()?.split(',')[1] ?? 50)}
+          cx={terminal.x}
+          cy={terminal.y}
           r={RIVER_WIDTH * 0.85}
           fill={PALETTE.riverWater}
           stroke={PALETTE.riverBank}
@@ -314,7 +324,7 @@ export function TileRenderer({
 
       {/* 3. river (below roads so roads can cross it visually later) */}
       {model.rivers.map((f) => (
-        <RiverLayer key={f.id} feature={f} />
+        <RiverLayer key={f.id} feature={f} seed={model.decorationSeed} />
       ))}
 
       {/* 4. roads */}
