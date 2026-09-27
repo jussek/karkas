@@ -29,6 +29,7 @@ import {
   seededFloat,
   type Point,
 } from '../tileGeometry';
+import { TILE_ASSETS } from '../tileAssets';
 
 const samePoint = (a: Point, b: Point) => a.x === b.x && a.y === b.y;
 
@@ -268,14 +269,13 @@ describe('renderer source guards', () => {
     }
   });
 
-  it('no JPG references in src/game-ui/tiles sources', () => {
-    const files = readdirSync(tilesDir).filter(
-      // @ts-expect-error -- implicit any: node fs typings unavailable in this tsconfig.
-      (f) => f.endsWith('.ts') || f.endsWith('.tsx'),
-    );
-    for (const f of files) {
-      const src = readFileSync(join(tilesDir, f), 'utf8').toLowerCase();
-      expect(src.includes('.jpg'), f).toBe(false);
-    }
+  it('maps all 144 card ids to their authoritative JPG assets', () => {
+    expect(TILE_ASSETS).toHaveLength(144);
+    TILE_ASSETS.forEach((asset, index) => {
+      const number = index + 1;
+      expect(asset.cardId).toBe(`card-${String(number).padStart(3, '0')}`);
+      expect(asset.filename).toBe(`1 (${number}).jpg`);
+      expect(asset.url).toBeTruthy();
+    });
   });
 });
