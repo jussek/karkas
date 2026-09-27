@@ -4,6 +4,13 @@ export * from './engine/errors';
 export * from './engine/gameEngine';
 export * from './rules/placement';
 export * from './rules/localFeatures';
+export {
+  resolveGlobalFeature,
+  isGlobalFeatureOccupied,
+  getGlobalFeatures,
+  type GlobalFeatureContext,
+  type ResolvedGlobalFeature,
+} from './rules/globalFeatures';
 export * from './tiles/testTiles';
 export { cardToTileDefinition } from './cards/toTileDefinition';
 export { getCardDefinition, getTileDefinition, isVerifiedCard } from './cards/catalogApi';
