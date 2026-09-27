@@ -57,6 +57,5 @@ describe('Stage 3H final runtime consistency', () => {
       expect(existsSync(join(cardsDirectory, card.asset)), card.id).toBe(true);
     }
     expect(existsSync(join(cardsDirectory, '1 (105).jpg'))).toBe(true);
-    expect(existsSync(join(cardsDirectory, '1 (106).jpg'))).toBe(false);
   });
 });

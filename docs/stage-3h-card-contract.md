@@ -6,7 +6,7 @@ This file records the project decisions that are authoritative while the old pix
 
 - Physical image set after audit: **143 playable tiles**.
 - `1 (105).jpg` / `card-105` is a normal retained road/city tile.
-- `1 (106).jpg` / `card-106` is the only user-removed tile and is absent from runtime data and artwork.
+- `card-106` is the only user-removed tile and is absent from runtime data and the runtime artwork manifest. Its legacy source JPG may remain in Git because this review channel cannot carry binary deletion patches.
 - River opening: **19 tiles**.
 - Normal deck after the river: **124 tiles**.
 - Do not synthesize a replacement tile to restore the historical count of 144.
@@ -75,7 +75,7 @@ Stage 3H is not complete merely because TypeScript compiles. Completion requires
 
 - exactly 143 retained image-backed card records;
 - `card-105` and local `1 (105).jpg` artwork retained;
-- no runtime `card-106` record and no `1 (106).jpg` asset;
+- no runtime `card-106` record and no `1 (106).jpg` entry in the runtime artwork manifest;
 - exactly 19 river-opening records and 124 normal-deck records;
 - catalog-wide validation of edge/topology consistency;
 - no field/farmer, abbot, or garden meeple targets;
