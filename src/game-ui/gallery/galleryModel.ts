@@ -1,6 +1,6 @@
 /** Stage 3E/3H — Pure helpers for the semantic tile gallery. */
 import type { EdgeIndex } from '../../game/types/geometry';
-import { GAME_CARD_CATALOG } from '../../game/cards/canonicalCatalog';
+import { RUNTIME_CARD_CATALOG } from '../../game/cards/runtimeCatalog';
 import { cardToTileDefinition } from '../../game/cards/toTileDefinition';
 import { createTileRenderModel } from '../tiles/tileRenderModel';
 import type { TileRenderModel } from '../tiles/tileRenderModel';
@@ -9,7 +9,7 @@ export type GalleryFilter = 'all' | 'road' | 'city' | 'river' | 'monastery';
 export interface GalleryEntry { id: string; definition: ReturnType<typeof cardToTileDefinition>; model: TileRenderModel }
 
 export function buildGalleryEntries(): GalleryEntry[] {
-  return GAME_CARD_CATALOG.map((card) => {
+  return RUNTIME_CARD_CATALOG.map((card) => {
     const definition = cardToTileDefinition(card);
     return { id: card.id, definition, model: createTileRenderModel(definition) };
   });
@@ -65,8 +65,8 @@ export function discoverExamples(entries: readonly GalleryEntry[] = buildGallery
 
 export function discoverRiverKinds(): { source: string | null; end: string | null } {
   return {
-    source: GAME_CARD_CATALOG.find((card) => card.riverKind === 'start')?.id ?? null,
-    end: GAME_CARD_CATALOG.find((card) => card.riverKind === 'end')?.id ?? null,
+    source: RUNTIME_CARD_CATALOG.find((card) => card.riverKind === 'start')?.id ?? null,
+    end: RUNTIME_CARD_CATALOG.find((card) => card.riverKind === 'end')?.id ?? null,
   };
 }
 

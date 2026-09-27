@@ -1,6 +1,4 @@
 import { CARD_CATALOG } from './catalog';
-import { AUDITED_051_100 } from './audited051100';
-import { AUDITED_101_144 } from './audited101144';
 import type { CardDefinition } from './types';
 
 /**
@@ -9,8 +7,7 @@ import type { CardDefinition } from './types';
  * Edge order in topology is N=0, E=1, S=2, W=3.
  * Crossroads split roads into independent road features, as they terminate a road.
  * Blue coat-of-arms shields are scoring shields; expansion/edition badges are ignored.
- * The legacy catalog is an import/source layer only. Runtime consumers use
- * GAME_CARD_CATALOG, which excludes only the user-removed card 106.
+ * Card 105 is intentionally removed from the game by product decision.
  */
 const AUDITED_001_050: readonly CardDefinition[] = [
   { id:'card-001', asset:'1 (1).jpg', edges:{north:'city',east:'city',south:'field',west:'field'}, topology:{roads:[],cities:[[0,1]],cityShields:[0]}, shields:0 },
@@ -100,5 +97,11 @@ export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
     };
     return card;
   });
+const AUDITED_BY_ID = new Map(AUDITED_001_050.map((card) => [card.id, card]));
+
+/** Runtime catalog: audited cards override legacy pixel guesses; card-105 is absent. */
+export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
+  .filter((card) => card.id !== 'card-105')
+  .map((card) => AUDITED_BY_ID.get(card.id) ?? card);
 
 export const AUDITED_CARD_IDS_001_050: readonly string[] = AUDITED_001_050.map((card) => card.id);

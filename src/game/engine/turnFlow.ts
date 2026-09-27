@@ -1,5 +1,6 @@
 import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
 import { GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
+import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { seededShuffle } from '../deck/seededShuffle';
 import { edgeOffset, rotateEdge } from './geometry';
 import { applyAction, createGame } from './gameEngine';
@@ -36,6 +37,7 @@ export interface CreateTurnFlowOptions {
 
 export function getRiverCards() {
   return GAME_CARD_CATALOG.filter((card) => card.riverCard === true);
+  return RUNTIME_CARD_CATALOG.filter((card) => card.riverCard === true);
 }
 
 function riverOrder(seed: number): string[] {
@@ -53,6 +55,7 @@ export function createTurnFlow(options: CreateTurnFlowOptions): TurnFlowState {
   const sourceId = river[0];
   const land = seededShuffle(
     GAME_CARD_CATALOG.filter((card) => !card.riverCard).map((card) => card.id),
+    RUNTIME_CARD_CATALOG.filter((card) => !card.riverCard).map((card) => card.id),
     options.seed ^ 0x3f3f3f3f,
   );
   const game = createGame({
