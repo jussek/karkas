@@ -1,3 +1,5 @@
+/** @deprecated Import GAME_CARD_CATALOG from canonicalCatalog in runtime code. */
+export { GAME_CARD_CATALOG as RUNTIME_CARD_CATALOG } from './canonicalCatalog';
 import { GAME_CARD_CATALOG as AUDITED_001_050_BASE } from './canonicalCatalog';
 import { AUDITED_051_100 } from './audited051100';
 import { AUDITED_101_144 } from './audited101144';

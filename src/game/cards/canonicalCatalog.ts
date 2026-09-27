@@ -62,6 +62,41 @@ const AUDITED_001_050: readonly CardDefinition[] = [
   { id:'card-050', asset:'1 (50).jpg', edges:{north:'city',east:'field',south:'city',west:'city'}, topology:{roads:[],cities:[[0,2,3]],cityShields:[1]}, shields:1 },
 ] as const;
 
+const AUDITED_BY_ID = new Map<string, CardDefinition>([
+  ...AUDITED_001_050,
+  ...AUDITED_051_100,
+  ...AUDITED_101_144,
+].map((card) => [card.id, card]));
+
+/**
+ * Authoritative Stage 3H runtime catalog.
+ *
+ * Overrides below record the final product audit: 091/133 are the sole river
+ * terminals and 096 is a land tile with decorative pond artwork. Gardens and
+ * edition badges intentionally have no semantic representation.
+ */
+export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
+  .filter((card) => card.id !== 'card-106')
+  .map((legacy) => AUDITED_BY_ID.get(legacy.id) ?? legacy)
+  .map((card): CardDefinition => {
+    if (card.id === 'card-091') return {
+      ...card,
+      edges: { north: 'field', east: 'field', south: 'river', west: 'field' },
+      topology: { roads: [], cities: [], riverEdges: [2] },
+      shields: 0,
+      riverCard: true,
+      riverKind: 'start',
+    };
+    if (card.id === 'card-096') return {
+      ...card,
+      edges: { north: 'road', east: 'field', south: 'road', west: 'field' },
+      topology: { roads: [[0, 2]], cities: [] },
+      shields: 0,
+      riverCard: undefined,
+      riverKind: undefined,
+    };
+    return card;
+  });
 const AUDITED_BY_ID = new Map(AUDITED_001_050.map((card) => [card.id, card]));
 
 /** Runtime catalog: audited cards override legacy pixel guesses; card-105 is absent. */
