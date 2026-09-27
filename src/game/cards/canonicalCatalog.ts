@@ -7,7 +7,7 @@ import type { CardDefinition } from './types';
  * Edge order in topology is N=0, E=1, S=2, W=3.
  * Crossroads split roads into independent road features, as they terminate a road.
  * Blue coat-of-arms shields are scoring shields; expansion/edition badges are ignored.
- * Card 105 is intentionally removed from the game by product decision.
+ * Card 106 is intentionally removed from the game by product decision; card 105 remains.
  */
 const AUDITED_001_050: readonly CardDefinition[] = [
   { id:'card-001', asset:'1 (1).jpg', edges:{north:'city',east:'city',south:'field',west:'field'}, topology:{roads:[],cities:[[0,1]],cityShields:[0]}, shields:0 },
@@ -64,9 +64,9 @@ const AUDITED_001_050: readonly CardDefinition[] = [
 
 const AUDITED_BY_ID = new Map(AUDITED_001_050.map((card) => [card.id, card]));
 
-/** Runtime catalog: audited cards override legacy pixel guesses; card-105 is absent. */
+/** Runtime base catalog: audited cards override legacy pixel guesses; only card-106 is absent. */
 export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
-  .filter((card) => card.id !== 'card-105')
+  .filter((card) => card.id !== 'card-106')
   .map((card) => AUDITED_BY_ID.get(card.id) ?? card);
 
 export const AUDITED_CARD_IDS_001_050: readonly string[] = AUDITED_001_050.map((card) => card.id);
