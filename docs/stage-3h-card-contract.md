@@ -7,7 +7,6 @@ This file records the project decisions that are authoritative while the old pix
 - Physical image set after audit: **143 playable tiles**.
 - `1 (105).jpg` / `card-105` is a normal retained road/city tile.
 - `card-106` is the only user-removed tile and is absent from runtime data and the runtime artwork manifest. Its legacy source JPG may remain in Git because this review channel cannot carry binary deletion patches.
-- `1 (105).jpg` / `card-105` is intentionally excluded from the game and removed from the repository.
 - River opening: **19 tiles**.
 - Normal deck after the river: **124 tiles**.
 - Do not synthesize a replacement tile to restore the historical count of 144.

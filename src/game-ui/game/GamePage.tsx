@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { getTileDefinition } from '../../game/cards/catalogApi';
 import {
+  RIVER_CARD_COUNT,
   createTurnFlow,
   drawTurnTile,
   endTurn,
@@ -13,6 +14,7 @@ import { getLegalMeeplePlacements } from '../../game/rules/localFeatures';
 import type { MeeplePlacement } from '../../game/types/geometry';
 import { TileRenderer } from '../tiles/TileRenderer';
 import { anchorForPlacement } from '../tiles/tileSemanticManifest';
+import { createLocalGame } from './localGameBootstrap';
 import './gamePage.css';
 
 const CELL = 92;
@@ -34,6 +36,7 @@ function key(target: MeeplePlacement) {
 }
 
 export function GamePage() {
+  const [flow, setFlow] = useState(createLocalGame);
   const [flow, setFlow] = useState(newDemoGame);
   const [meepleMode, setMeepleMode] = useState(false);
   const heldId = flow.game.drawnTileDefinitionId;
@@ -56,6 +59,7 @@ export function GamePage() {
   return (
     <main className="game-page">
       <header className="game-header">
+        <div><strong>Каркассон</strong><span>{flow.riverPlaced < RIVER_CARD_COUNT ? `Собираем реку — ${flow.riverPlaced}/${RIVER_CARD_COUNT}` : `Ход ${flow.game.turnNumber}`}</span></div>
         <div><strong>Каркассон</strong><span>{flow.riverPlaced < 20 ? `Собираем реку — ${flow.riverPlaced}/20` : `Ход ${flow.game.turnNumber}`}</span></div>
         <div className="game-scores">
           {flow.game.players.map((item, index) => (

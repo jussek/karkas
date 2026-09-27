@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getTileDefinition } from '../cards/catalogApi';
 import {
   createTurnFlow, drawTurnTile, endTurn, getRiverCards, legalPlacementsFor,
+  placeTurnTile, rotateTurnTile, ROTATIONS, RIVER_CARD_COUNT, TURN_PHASES,
   placeTurnTile, rotateTurnTile, ROTATIONS, RIVER_CARD_COUNT,
 } from '../engine/turnFlow';
 import { getLegalTilePlacements } from '../rules/placement';
@@ -13,6 +14,10 @@ const players: Player[] = [
 ];
 
 describe('Stage 3G turn flow', () => {
+  it('exposes only phases used by the current state machine', () => {
+    expect(TURN_PHASES).toEqual(['AWAITING_DRAW', 'TILE_IN_HAND', 'TILE_PLACED', 'MEEPLE_SELECTION', 'GAME_OVER']);
+  });
+
   it('starts with the source placed and requires an explicit draw', () => {
     const state = createTurnFlow({ gameId: 'g', players, seed: 12 });
     expect(state.phase).toBe('AWAITING_DRAW');
@@ -60,6 +65,16 @@ describe('Stage 3G turn flow', () => {
     expect(ended.game.currentPlayerIndex).toBe(1);
     expect(endTurn(ended)).toBe(ended);
     expect(ended.game.drawnTileDefinitionId).toBeNull();
+  });
+
+  it('never injects a fake card id while completing a turn', () => {
+    const drawn = drawTurnTile(createTurnFlow({ gameId: 'g', players, seed: 62 }));
+    const placed = placeTurnTile(drawn, drawn.legalPlacements[0]);
+    const ended = endTurn(placed);
+    const serialized = JSON.stringify(ended.game);
+    expect(serialized).not.toContain('sentinel');
+    expect(serialized).not.toContain('dummy');
+    expect(serialized).not.toContain('fake');
   });
 
   it('uses all four rotations when deciding whether a candidate is playable', () => {
