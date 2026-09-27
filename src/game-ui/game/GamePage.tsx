@@ -71,6 +71,9 @@ export interface GamePageProps {
 }
 
 export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
+}
+
+export function GamePage({ config }: GamePageProps) {
   const [flow, setFlow] = useState<TurnFlowState>(() =>
     config ? createLocalGame(config) : createLocalGame(),
   );
@@ -155,6 +158,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
     <main className="game-page">
       <header className="game-header">
         <div className="game-brand">
+        <div>
           <strong>Каркассон</strong>
           <span>{flow.riverPlaced < RIVER_CARD_COUNT ? `Река — ${flow.riverPlaced}/${RIVER_CARD_COUNT}` : `Ход ${flow.game.turnNumber}`}</span>
         </div>
@@ -275,6 +279,13 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
         {heldId && <div className="held-tile"><TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={86} /><span>{flow.rotation}°</span></div>}
         <button type="button" className="draw-action" disabled={flow.phase !== 'AWAITING_DRAW'} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
         <button type="button" className="rotate-action" aria-label="Повернуть карту по часовой стрелке" disabled={flow.phase !== 'TILE_IN_HAND'} onClick={() => setFlow(rotateTurnTile)}>↻ <span>Повернуть</span></button>
+        </section>
+      )}
+
+      <section className="turn-controls" aria-label="Действия хода">
+        {heldId && <div className="held-tile"><TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={76} /><span>{flow.rotation}°</span></div>}
+        <button type="button" disabled={flow.phase !== 'AWAITING_DRAW'} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
+        <button type="button" aria-label="Повернуть карту по часовой стрелке" disabled={flow.phase !== 'TILE_IN_HAND'} onClick={() => setFlow(rotateTurnTile)}>↻ <span>Повернуть</span></button>
         <button
           type="button"
           aria-pressed={meepleMode}
@@ -290,6 +301,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
           disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase)}
           onClick={endTurnAction}
         ><b>✓</b><span>Закончить ход</span></button>
+        >Закончить ход</button>
       </section>
     </main>
   );

@@ -46,6 +46,9 @@ function App() {
     </>;
   }
   if (screen === "setup" || !config) {
+  // Stage 4A: local setup → game. No persistence (state only in memory).
+  const [config, setConfig] = useState<LocalGameConfig | null>(null);
+  if (!config) {
     return (
       <GameSetupPage
         makeGameId={browserGameId}
@@ -56,6 +59,11 @@ function App() {
     );
   }
   return <GamePage config={config} key={config.gameId} onExit={() => { setConfig(null); setScreen("menu"); }} onNewGame={() => { setConfig(null); setScreen("setup"); }} />;
+        onStart={setConfig}
+      />
+    );
+  }
+  return <GamePage config={config} key={config.gameId} />;
 }
 
 const root = document.getElementById("root");

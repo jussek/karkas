@@ -21,6 +21,9 @@ export interface GameSetupPageProps {
 }
 
 export function GameSetupPage({ onStart, makeGameId, makeSeed, onBack }: GameSetupPageProps) {
+}
+
+export function GameSetupPage({ onStart, makeGameId, makeSeed }: GameSetupPageProps) {
   const [count, setCount] = useState<number>(MIN_PLAYERS);
   const [names, setNames] = useState<(string | undefined)[]>([]);
 

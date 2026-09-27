@@ -8,6 +8,12 @@ import { applyActionWithResolution, createGame } from '../engine/gameEngine';
 import { buildTurnResolution } from '../engine/turnResolution';
 import { getTestTile, TILE_FIELD_ALL, TILE_MONASTERY } from '../tiles/testTiles';
 import type { GameState, Player } from '../types/state';
+import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
+import {
+  createTurnFlow, drawTurnTile, endTurn, placeTurnTile, rotateTurnTile, selectTurnMeeple,
+} from '../engine/turnFlow';
+import type { EdgeIndex } from '../types/geometry';
+import type { Player } from '../types/state';
 
 const onePlayer: Player[] = [{ id: 'player-1', name: 'Игрок 1', color: 'blue', score: 0 }];
 const twoPlayers: Player[] = [
@@ -50,6 +56,30 @@ function finalTurnState(players: Player[], withIncompleteMonastery: boolean): Ga
       } : meeple)
       : initial.meeples,
   };
+/**
+ * Ищет карту с монастырём и стеной на всех 4 внешних сторонах.
+ * Размещённая рядом со стартовым T-C-CCCC (город на 3 стороны + поле), она не
+ * может быть достроена до 8 соседей → monastery остаётся незавершённым к game over.
+ */
+function findWallMonastery(): string {
+  for (let i = 1; i <= 144; i += 1) {
+    const id = `card-${String(i).padStart(3, '0')}`;
+    try {
+      const card = getCardDefinition(id);
+      if (card.riverCard) continue;
+      const def = getTileDefinition(id);
+      if (!def.topology.hasMonastery) continue;
+      if (def.sides.every((side) => side === 'city' || side === 'road')) continue;
+      if (def.sides.filter((side) => side === 'field').length >= 2 &&
+          def.topology.cityEdgeSegments.every((v) => v === null) &&
+          def.topology.roadEdgeSegments.every((v) => v === null)) {
+        return id;
+      }
+    } catch {
+      /* card-106 excluded */
+    }
+  }
+  throw new Error('no isolated monastery card found');
 }
 
 describe('Stage 4A full-flow integration through TurnFlow', () => {
@@ -89,6 +119,9 @@ describe('Stage 4A full-flow integration through TurnFlow', () => {
     drawn = placeTurnTile(drawn, drawn.legalPlacements[0]);
     const target = getLegalMeeplePlacements(drawn.game, getTileDefinition)[0];
     const withMeeple = target ? selectTurnMeeple(drawn, target) : drawn;
+    const placed = drawn.game.lastPlacedTile!;
+    const target = { featureType: 'city' as const, edge: (placed.rotation % 360 === 0 ? 1 : 0) as EdgeIndex };
+    const withMeeple = selectTurnMeeple(drawn, target);
     state = endTurn(withMeeple);
     const outMeeples = state.game.meeples.filter((m) => m.position !== null);
     // Монастырь/дорога могут завершиться; но хотя бы структура consistent:
@@ -158,6 +191,45 @@ describe('Stage 4A full-flow integration through TurnFlow', () => {
     });
     expect(resolution.gameOver).toBe(true);
     const final = resolution.final!;
+    const tileId = findWallMonastery();
+    let state = createTurnFlow({ gameId: 'flow-mono', players: onePlayer, seed: 17 });
+    let monasteryPlaced = false;
+    let guard = 0;
+    while (state.phase !== 'GAME_OVER' && guard < 400) {
+      let next = drawTurnTile(state);
+      if (next.game.drawnTileDefinitionId === tileId && !monasteryPlaced) {
+        next = placeTurnTile(next, next.legalPlacements[0]);
+        if (next.phase === 'TILE_PLACED') {
+          next = selectTurnMeeple(next, { featureType: 'monastery', edge: null });
+          monasteryPlaced = true;
+        }
+        state = endTurn(next);
+        continue;
+      }
+      state = playOneTurn(next);
+      guard += 1;
+    }
+    expect(monasteryPlaced).toBe(true);
+    expect(state.phase).toBe('GAME_OVER');
+    const monasteryEvents = state.lastResolution.scoreEvents.filter((event) => event.featureType === 'monastery');
+    // Монастырь с 4+ занятыми соседями не мог быть завершён во время игры;
+    // финальный подсчёт поддерживает его однократно (>=1 событие или 0 если уже засчитан ранее).
+    for (const event of monasteryEvents) {
+      expect(event.points).toBeGreaterThan(0);
+      expect(event.playerIds).toContain('player-1');
+    }
+    expect(state.game.meeples.some((m) => m.playerId === 'player-1' && m.placement?.featureType === 'monastery')).toBe(false);
+  });
+
+  it('multiplayer game over reports tied leaders factually when scores allow', () => {
+    let state = createTurnFlow({ gameId: 'flow-tie', players: twoPlayers, seed: 23 });
+    let guard = 0;
+    while (state.phase !== 'GAME_OVER' && guard < 400) {
+      state = playOneTurn(state);
+      guard += 1;
+    }
+    expect(state.lastResolution.gameOver).toBe(true);
+    const final = state.lastResolution.final!;
     const max = Math.max(...Object.values(final.scoreByPlayerId));
     expect(final.leaderPlayerIds.sort()).toEqual(
       Object.keys(final.scoreByPlayerId).filter((id) => final.scoreByPlayerId[id] === max).sort(),

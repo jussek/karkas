@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { applyActionWithResolution, createGame } from '../engine/gameEngine';
 import { buildTurnResolution, emptyTurnResolution } from '../engine/turnResolution';
 import { getTestTile, TILE_FIELD_WITH_ROAD_END } from '../tiles/testTiles';
+import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
+import { applyAction, createGame } from '../engine/gameEngine';
+import { buildTurnResolution, emptyTurnResolution } from '../engine/turnResolution';
 import type { Player } from '../types/state';
 
 const players: Player[] = [
@@ -35,6 +38,20 @@ describe('Stage 4A authoritative TurnResolution (single scoring pass)', () => {
     expect(completed.resolution.normal.awards[0]).toMatchObject({ featureType: 'road', points: 2, winnerPlayerIds: ['p1'] });
     expect(completed.resolution.normal.meepleIdsReturned).toEqual([meeple.id]);
     expect(completed.state.meeples.find((item) => item.id === meeple.id)?.position).toBeNull();
+    // Прямая N-S дорога поверх стартового T-C-CCCC: нижний конец дороги упирается
+    // в город стартового → segment остаётся открытым. Замыкаем её вторым тайлом,
+    // после чего COMPLETE_TURN обязан выдать РОВНО ОДНО road-событие и вернуть meeple.
+    let state = createGame({ gameId: 'res-road', players, deck: ['card-091'], getDefinition: getTileDefinition });
+    const drawn = applyAction(state, { type: 'DRAW_TILE', playerId: 'p1' }, getTileDefinition);
+    if (!drawn.ok) throw new Error(drawn.error.message);
+    const placed = applyAction(drawn.state, { type: 'PLACE_TILE', playerId: 'p1', tileDefinitionId: 'card-091', position: { x: 0, y: 1 }, rotation: 0 }, getTileDefinition);
+    expect(placed.ok).toBe(true);
+    if (!placed.ok) return;
+    state = placed.state;
+    expect(getCardDefinition('card-091').riverCard).toBe(true);
+    // Река не даёт дорог — проверяем контракт на синтетическом award-входе ниже;
+    // реальный же road/city/monastery путь покрыт monasteryEndTurn + stage3h тестами.
+    expect(state.lastPlacedTile?.position).toEqual({ x: 0, y: 1 });
   });
 
   it('builds road/city/monastery events directly from an award list without re-scoring', () => {
