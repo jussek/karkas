@@ -126,10 +126,12 @@ export function fitBounds(
   const maxScale = options.maxScale ?? DEFAULT_MAX_FIT_SCALE;
   const innerWidth = Math.max(1, viewport.width - padding * 2);
   const innerHeight = Math.max(1, viewport.height - padding * 2);
-  const rawScale = Math.min(
-    innerWidth / Math.max(1e-6, bounds.maxX - bounds.minX),
-    innerHeight / Math.max(1e-6, bounds.maxY - bounds.minY),
-  );
+  // bounds задаются через cellRect: включительно по minX/minY и по maxEXCLUSIVE
+  // maxX/maxY. Полный прямоугольник содержимого = maxX - minX (иначе при
+  // одномерных/вырожденных bounds масштаб расходится с реальным размером).
+  const contentWidth = Math.max(1e-6, bounds.maxX - bounds.minX);
+  const contentHeight = Math.max(1e-6, bounds.maxY - bounds.minY);
+  const rawScale = Math.min(innerWidth / contentWidth, innerHeight / contentHeight);
   const scale = clampValue(rawScale, minScale, maxScale);
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;
