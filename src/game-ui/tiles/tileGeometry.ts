@@ -298,7 +298,7 @@ const CITY_HALF_SPAN = 26;
 const CITY_EDGE_MARGIN = 1;
 
 function clampCoord(v: number): number {
-  return Math.min(100 - CITY_EDGE_MARGIN, Math.max(CITY_EDGE_MARGIN, v));
+  return Math.min(100, Math.max(0, v));
 }
 
 function clampPoint(p: Point): Point {
@@ -313,34 +313,6 @@ function clampPoint(p: Point): Point {
 export function cityBoundingBox(
   edges: readonly EdgeIndex[],
 ): { minX: number; minY: number; maxX: number; maxY: number } {
-  let minX = 0;
-  let minY = 0;
-  let maxX = 100;
-  let maxY = 100;
-  for (const e of edges) {
-    switch (e) {
-      case 0:
-        minY = 0;
-        break;
-      case 2:
-        maxY = 100;
-        break;
-      case 3:
-        minX = 0;
-        break;
-      case 1:
-        maxX = 100;
-        break;
-    }
-  }
-  // Inward reach: the mass extends CITY_REACH from each declared edge.
-  if (minY === 0) maxY = Math.min(maxY, CITY_REACH);
-  if (maxY === 100) minY = Math.max(minY, 100 - CITY_REACH);
-  if (minX === 0) maxX = Math.min(maxX, CITY_REACH);
-  if (maxX === 100) minX = Math.max(minX, 100 - CITY_REACH);
-  // Band width along each declared edge is limited so that undeclared
-  // edges are never reached; a single-edge city spans its whole edge but
-  // still stops short of the corners.
   const spanMinX = 50 - CITY_HALF_SPAN;
   const spanMaxX = 50 + CITY_HALF_SPAN;
   const spanMinY = 50 - CITY_HALF_SPAN;
@@ -349,24 +321,19 @@ export function cityBoundingBox(
   const touchesBottom = edges.includes(2);
   const touchesLeft = edges.includes(3);
   const touchesRight = edges.includes(1);
-  if (touchesTop || touchesBottom) {
-    if (edges.length >= 2) {
-      minX = Math.max(minX, spanMinX);
-      maxX = Math.min(maxX, spanMaxX);
-    } else {
-      minX = Math.max(minX, CITY_EDGE_MARGIN);
-      maxX = Math.min(maxX, 100 - CITY_EDGE_MARGIN);
-    }
-  }
-  if (touchesLeft || touchesRight) {
-    if (edges.length >= 2) {
-      minY = Math.max(minY, spanMinY);
-      maxY = Math.min(maxY, spanMaxY);
-    } else {
-      minY = Math.max(minY, CITY_EDGE_MARGIN);
-      maxY = Math.min(maxY, 100 - CITY_EDGE_MARGIN);
-    }
-  }
+
+  let minX = touchesLeft ? 0 : spanMinX;
+  let maxX = touchesRight ? 100 : spanMaxX;
+  let minY = touchesTop ? 0 : spanMinY;
+  let maxY = touchesBottom ? 100 : spanMaxY;
+
+  // A mass connected to only one side stops after the configured inward
+  // reach. This keeps separate, opposite single-edge city groups disjoint.
+  if (touchesTop && !touchesBottom && !touchesLeft && !touchesRight) maxY = CITY_REACH;
+  if (touchesBottom && !touchesTop && !touchesLeft && !touchesRight) minY = 100 - CITY_REACH;
+  if (touchesLeft && !touchesRight && !touchesTop && !touchesBottom) maxX = CITY_REACH;
+  if (touchesRight && !touchesLeft && !touchesTop && !touchesBottom) minX = 100 - CITY_REACH;
+
   return { minX, minY, maxX, maxY };
 }
 
