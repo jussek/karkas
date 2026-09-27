@@ -1,16 +1,28 @@
 import { GAME_CARD_CATALOG as AUDITED_001_050_BASE } from './canonicalCatalog';
 import { AUDITED_051_100 } from './audited051100';
+import { AUDITED_101_144 } from './audited101144';
 import type { CardDefinition } from './types';
 
-const AUDITED_051_100_BY_ID = new Map<string, CardDefinition>(
-  AUDITED_051_100.map((card) => [card.id, card]),
-);
+const AUDITED_BY_ID = new Map<string, CardDefinition>([
+  ...AUDITED_051_100,
+  ...AUDITED_101_144,
+].map((card) => [card.id, card]));
 
 /**
  * Runtime game catalog.
- * 001..050 come from the first manual audit, 051..100 from the second.
- * 101..144 retain legacy definitions until their visual audit; card-105 remains excluded.
+ * All surviving source images 001..144 are manually audited.
+ * Product decision: card-106 is removed from the game, leaving 143 cards.
+ * card-096 is corrected here: its blue artwork is an internal pond, not a river edge.
  */
-export const RUNTIME_CARD_CATALOG: readonly CardDefinition[] = AUDITED_001_050_BASE.map(
-  (card) => AUDITED_051_100_BY_ID.get(card.id) ?? card,
-);
+export const RUNTIME_CARD_CATALOG: readonly CardDefinition[] = AUDITED_001_050_BASE
+  .filter((card) => card.id !== 'card-106')
+  .map((card) => AUDITED_BY_ID.get(card.id) ?? card)
+  .map((card) => card.id === 'card-096'
+    ? {
+        ...card,
+        edges: { north:'road', east:'field', south:'road', west:'field' },
+        topology: { roads:[[0,2]], cities:[] },
+        riverCard: undefined,
+        riverKind: undefined,
+      }
+    : card);
