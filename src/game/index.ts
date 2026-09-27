@@ -36,3 +36,11 @@ export {
   createCatalogGame,
   type CreateCatalogGameOptions,
 } from './engine/createCatalogGame';
+export * from './session';
+export {
+  buildTurnResolution,
+  emptyTurnResolution,
+  type TurnResolution,
+  type TurnScoreEvent,
+  type TurnFinalScores,
+} from './engine/turnResolution';

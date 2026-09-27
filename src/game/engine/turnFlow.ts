@@ -1,8 +1,9 @@
 import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
-import { GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
+import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { seededShuffle } from '../deck/seededShuffle';
 import { edgeOffset, rotateEdge } from './geometry';
-import { applyAction, createGame } from './gameEngine';
+import { applyAction, applyActionWithResolution, createGame } from './gameEngine';
+import { buildTurnResolution, emptyTurnResolution, type TurnResolution } from './turnResolution';
 import { getLegalTilePlacements } from '../rules/placement';
 import type { MeeplePlacement, Rotation, TilePosition } from '../types/geometry';
 import type { GameState, Player } from '../types/state';
@@ -25,6 +26,12 @@ export interface TurnFlowState {
   riverDeck: string[];
   landDeck: string[];
   discardedTileIds: string[];
+  /**
+   * Авторитетное разрешение последнего завершённого хода (End Turn).
+   * Пустое до первого End Turn; сохраняется при повторных no-op вызовах,
+   * поэтому duplicate events невозможны.
+   */
+  lastResolution: TurnResolution;
 }
 
 export interface CreateTurnFlowOptions {
@@ -34,7 +41,7 @@ export interface CreateTurnFlowOptions {
 }
 
 export function getRiverCards() {
-  return GAME_CARD_CATALOG.filter((card) => card.riverCard === true);
+  return RUNTIME_CARD_CATALOG.filter((card) => card.riverCard === true);
 }
 
 function riverOrder(seed: number): string[] {
@@ -51,7 +58,7 @@ export function createTurnFlow(options: CreateTurnFlowOptions): TurnFlowState {
   const river = riverOrder(options.seed);
   const sourceId = river[0];
   const land = seededShuffle(
-    GAME_CARD_CATALOG.filter((card) => !card.riverCard).map((card) => card.id),
+    RUNTIME_CARD_CATALOG.filter((card) => !card.riverCard).map((card) => card.id),
     options.seed ^ 0x3f3f3f3f,
   );
   const game = createGame({
@@ -71,6 +78,7 @@ export function createTurnFlow(options: CreateTurnFlowOptions): TurnFlowState {
     riverDeck: river.slice(1),
     landDeck: land,
     discardedTileIds: [],
+    lastResolution: emptyTurnResolution(game.players[0]?.id ?? ''),
   };
 }
 
@@ -173,22 +181,32 @@ export function selectTurnMeeple(state: TurnFlowState, target: MeeplePlacement |
 
 export function endTurn(state: TurnFlowState): TurnFlowState {
   if (!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(state.phase)) return state;
-  const playerId = state.game.players[state.game.currentPlayerIndex]?.id ?? '';
+  const previousPlayerId = state.game.players[state.game.currentPlayerIndex]?.id ?? '';
   const last = state.game.lastPlacedTile;
   if (!last) return state;
   const decision = state.selectedMeepleTarget
-    ? applyAction(state.game, { type: 'PLACE_MEEPLE', playerId, position: last.position, ...state.selectedMeepleTarget }, getTileDefinition)
-    : applyAction(state.game, { type: 'SKIP_MEEPLE', playerId }, getTileDefinition);
+    ? applyAction(state.game, { type: 'PLACE_MEEPLE', playerId: previousPlayerId, position: last.position, ...state.selectedMeepleTarget }, getTileDefinition)
+    : applyAction(state.game, { type: 'SKIP_MEEPLE', playerId: previousPlayerId }, getTileDefinition);
   if (!decision.ok) return state;
 
-  // COMPLETE_TURN decides between normal turn advancement and final scoring from
-  // real remaining card ids. Never inject an impossible/sentinel card into GameState.
+  // COMPLETE_TURN решает между обычным переходом и финальным подсчётом по
+  // реальным оставшимся id карт. Sentinel-карты в GameState не допускаются.
+  // Скоринг выполняется ЕДИНОЖДЫ: события строятся из того же прохода.
   const remainingCardIds = [...state.riverDeck, ...state.landDeck];
   const scoringInput = { ...decision.state, tileDeck: { remaining: remainingCardIds } };
-  const completed = applyAction(scoringInput, { type: 'COMPLETE_TURN', playerId }, getTileDefinition);
-  if (!completed.ok) return state;
+  const completed = applyActionWithResolution(scoringInput, { type: 'COMPLETE_TURN', playerId: previousPlayerId }, getTileDefinition);
+  if (!completed.ok || !completed.resolution) return state;
   const riverPlaced = state.riverPlaced + (getCardDefinition(last.definitionId).riverCard ? 1 : 0);
   const decksEmpty = riverPlaced >= RIVER_CARD_COUNT && state.landDeck.length === 0;
+  const nextPlayerId = completed.resolution.state.players[completed.resolution.state.currentPlayerIndex]?.id ?? previousPlayerId;
+  const lastResolution = buildTurnResolution({
+    previousPlayerId,
+    nextPlayerId,
+    gameOver: decksEmpty,
+    normal: completed.resolution.normal,
+    final: completed.resolution.final ?? null,
+    finalScores: decksEmpty ? completed.state.scores : null,
+  });
   return {
     ...state,
     game: { ...completed.state, tileDeck: { remaining: [] } },
@@ -197,5 +215,6 @@ export function endTurn(state: TurnFlowState): TurnFlowState {
     legalPlacements: [],
     rotation: 0,
     riverPlaced,
+    lastResolution,
   };
 }
