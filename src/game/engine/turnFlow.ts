@@ -1,5 +1,5 @@
 import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
-import { CARD_CATALOG } from '../cards/catalog';
+import { GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
 import { seededShuffle } from '../deck/seededShuffle';
 import { edgeOffset, rotateEdge } from './geometry';
 import { applyAction, createGame } from './gameEngine';
@@ -14,6 +14,7 @@ export const TURN_PHASES = [
 ] as const;
 export type TurnPhase = (typeof TURN_PHASES)[number];
 export const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];
+export const RIVER_CARD_COUNT = 19;
 
 export interface TurnFlowState {
   game: GameState;
@@ -34,14 +35,14 @@ export interface CreateTurnFlowOptions {
 }
 
 export function getRiverCards() {
-  return CARD_CATALOG.filter((card) => card.riverCard === true);
+  return GAME_CARD_CATALOG.filter((card) => card.riverCard === true);
 }
 
 function riverOrder(seed: number): string[] {
   const cards = getRiverCards();
   const source = cards.find((card) => card.riverKind === 'start');
   const end = cards.find((card) => card.riverKind === 'end');
-  if (!source || !end || cards.length !== 20) throw new Error('River requires one source, one end, and 18 middle tiles.');
+  if (!source || !end || cards.length !== RIVER_CARD_COUNT) throw new Error('River requires one source, one end, and 17 middle tiles.');
   const middle = seededShuffle(cards.filter((card) => card.riverKind === 'middle').map((card) => card.id), seed);
   return [source.id, ...middle, end.id];
 }
@@ -50,7 +51,7 @@ export function createTurnFlow(options: CreateTurnFlowOptions): TurnFlowState {
   const river = riverOrder(options.seed);
   const sourceId = river[0];
   const land = seededShuffle(
-    CARD_CATALOG.filter((card) => !card.riverCard).map((card) => card.id),
+    GAME_CARD_CATALOG.filter((card) => !card.riverCard).map((card) => card.id),
     options.seed ^ 0x3f3f3f3f,
   );
   const game = createGame({
@@ -74,7 +75,7 @@ export function createTurnFlow(options: CreateTurnFlowOptions): TurnFlowState {
 }
 
 function isRiverTurn(state: TurnFlowState): boolean {
-  return state.riverPlaced < 20;
+  return state.riverPlaced < RIVER_CARD_COUNT;
 }
 
 function openRiverPlacement(state: TurnFlowState, definitionId: string, rotation: Rotation): TilePosition[] {
@@ -89,7 +90,6 @@ function openRiverPlacement(state: TurnFlowState, definitionId: string, rotation
       if (!state.game.board[posKey(position)]) open.push({ position, requiredEdge: (edge + 2) % 4 });
     }
   }
-  // A valid river chain has exactly one exposed continuation after its source.
   if (open.length !== 1) return [];
   const card = getCardDefinition(definitionId);
   const rotatedRiverEdges = (card.topology.riverEdges ?? []).map((edge) => rotateEdge(edge, rotation));
@@ -119,7 +119,6 @@ function playableRotation(state: TurnFlowState, id: string): Rotation | null {
   return ROTATIONS.find((rotation) => legalPlacementsFor(state, id, rotation).length > 0) ?? null;
 }
 
-/** Draws at most one playable tile, discarding candidates that fail all rotations. */
 export function drawTurnTile(state: TurnFlowState): TurnFlowState {
   if (state.phase !== 'AWAITING_DRAW') return state;
   const deckKey = isRiverTurn(state) ? 'riverDeck' : 'landDeck';
@@ -172,7 +171,6 @@ export function selectTurnMeeple(state: TurnFlowState, target: MeeplePlacement |
   return { ...state, phase: target ? 'MEEPLE_SELECTION' : 'TILE_PLACED', selectedMeepleTarget: target };
 }
 
-/** Commits the optional meeple and all scoring exactly once. */
 export function endTurn(state: TurnFlowState): TurnFlowState {
   if (!['TILE_PLACED', 'MEEPLE_SELECTION', 'READY_TO_END'].includes(state.phase)) return state;
   const playerId = state.game.players[state.game.currentPlayerIndex]?.id ?? '';
@@ -182,12 +180,11 @@ export function endTurn(state: TurnFlowState): TurnFlowState {
     ? applyAction(state.game, { type: 'PLACE_MEEPLE', playerId, position: last.position, ...state.selectedMeepleTarget }, getTileDefinition)
     : applyAction(state.game, { type: 'SKIP_MEEPLE', playerId }, getTileDefinition);
   if (!decision.ok) return state;
-  // Keep a sentinel tile while legacy scoring advances; turn flow owns the real decks.
   const scoringInput = { ...decision.state, tileDeck: { remaining: ['turn-flow-sentinel'] } };
   const completed = applyAction(scoringInput, { type: 'COMPLETE_TURN', playerId }, getTileDefinition);
   if (!completed.ok) return state;
   const riverPlaced = state.riverPlaced + (getCardDefinition(last.definitionId).riverCard ? 1 : 0);
-  const decksEmpty = riverPlaced >= 20 && state.landDeck.length === 0;
+  const decksEmpty = riverPlaced >= RIVER_CARD_COUNT && state.landDeck.length === 0;
   return {
     ...state,
     game: { ...completed.state, tileDeck: { remaining: [] } },
