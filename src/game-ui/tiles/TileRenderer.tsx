@@ -6,7 +6,7 @@
  *            → createTileRenderModel() (pure intermediate model)
  *            → deterministic SVG primitives in a 0 0 100 100 viewBox.
  *
- * No JPGs, no canvas, no external assets, no Math.random, no card-ID
+ * No JPGs, no canvas, no external assets, no random number generator, no card-ID
  * geometry special cases. Card id only seeds decoration.
  */
 
@@ -43,6 +43,7 @@ function describeFeatures(model: {
   roads: readonly RenderFeature[];
   cities: readonly RenderFeature[];
   rivers: readonly RenderFeature[];
+  monastery: boolean;
 }): string {
   const parts: string[] = [];
   for (const r of model.roads) {

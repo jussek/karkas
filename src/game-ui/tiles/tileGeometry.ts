@@ -81,7 +81,7 @@ const round1 = (n: number): number => Math.round(n * 10) / 10;
 const fmt = (p: Point): string => `${round1(p.x)},${round1(p.y)}`;
 
 /* ------------------------------------------------------------------ */
-/* Organic wobble (deterministic, seed-derived — no Math.random)       */
+/* Organic wobble (deterministic, seed-derived — no random number generator) */
 /* ------------------------------------------------------------------ */
 
 /** FNV-1a style string hash → 32-bit unsigned int. Deterministic. */
@@ -182,11 +182,13 @@ export function roadGeometry(
       const m = add(mid(a, b), wobble(seed, slot * 7 + 1, 2));
       return { endpoints: [a, b], path: `M ${fmt(a)} Q ${fmt(m)} ${fmt(b)}` };
     }
-    // bend through the quadrant between the two edges
-    const c = add(
-      edgeInwardPoint(e0, BEND_CONTROL_DEPTH),
-      edgeInwardPoint(e1, BEND_CONTROL_DEPTH),
-    );
+    // bend through the quadrant between the two edges: the quadratic
+    // control point sits at the CORNER of the bounding box spanned by
+    // the two anchors, pulled inward so the curve hugs that quadrant.
+    const c = {
+      x: 50 + ((a.x - 50) / 50) * BEND_CONTROL_DEPTH + ((b.x - 50) / 50) * BEND_CONTROL_DEPTH,
+      y: 50 + ((a.y - 50) / 50) * BEND_CONTROL_DEPTH + ((b.y - 50) / 50) * BEND_CONTROL_DEPTH,
+    };
     const cw = add(c, wobble(seed, slot * 7 + 2, 3));
     return { endpoints: [a, b], path: `M ${fmt(a)} Q ${fmt(cw)} ${fmt(b)}` };
   }
@@ -319,28 +321,50 @@ export function cityBoundingBox(
     switch (e) {
       case 0:
         minY = 0;
-        maxY = CITY_REACH;
-        minX = 50 - CITY_HALF_SPAN;
-        maxX = 50 + CITY_HALF_SPAN;
         break;
       case 2:
         maxY = 100;
-        minY = 100 - CITY_REACH;
-        minX = 50 - CITY_HALF_SPAN;
-        maxX = 50 + CITY_HALF_SPAN;
         break;
       case 3:
         minX = 0;
-        maxX = CITY_REACH;
-        minY = 50 - CITY_HALF_SPAN;
-        maxY = 50 + CITY_HALF_SPAN;
         break;
       case 1:
         maxX = 100;
-        minX = 100 - CITY_REACH;
-        minY = 50 - CITY_HALF_SPAN;
-        maxY = 50 + CITY_HALF_SPAN;
         break;
+    }
+  }
+  // Inward reach: the mass extends CITY_REACH from each declared edge.
+  if (minY === 0) maxY = Math.min(maxY, CITY_REACH);
+  if (maxY === 100) minY = Math.max(minY, 100 - CITY_REACH);
+  if (minX === 0) maxX = Math.min(maxX, CITY_REACH);
+  if (maxX === 100) minX = Math.max(minX, 100 - CITY_REACH);
+  // Band width along each declared edge is limited so that undeclared
+  // edges are never reached; a single-edge city spans its whole edge but
+  // still stops short of the corners.
+  const spanMinX = 50 - CITY_HALF_SPAN;
+  const spanMaxX = 50 + CITY_HALF_SPAN;
+  const spanMinY = 50 - CITY_HALF_SPAN;
+  const spanMaxY = 50 + CITY_HALF_SPAN;
+  const touchesTop = edges.includes(0);
+  const touchesBottom = edges.includes(2);
+  const touchesLeft = edges.includes(3);
+  const touchesRight = edges.includes(1);
+  if (touchesTop || touchesBottom) {
+    if (edges.length >= 2) {
+      minX = Math.max(minX, spanMinX);
+      maxX = Math.min(maxX, spanMaxX);
+    } else {
+      minX = Math.max(minX, CITY_EDGE_MARGIN);
+      maxX = Math.min(maxX, 100 - CITY_EDGE_MARGIN);
+    }
+  }
+  if (touchesLeft || touchesRight) {
+    if (edges.length >= 2) {
+      minY = Math.max(minY, spanMinY);
+      maxY = Math.min(maxY, spanMaxY);
+    } else {
+      minY = Math.max(minY, CITY_EDGE_MARGIN);
+      maxY = Math.min(maxY, 100 - CITY_EDGE_MARGIN);
     }
   }
   return { minX, minY, maxX, maxY };

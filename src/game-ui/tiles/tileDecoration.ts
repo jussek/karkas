@@ -2,7 +2,7 @@
  * Stage 3E — Deterministic, NON-SEMANTIC field decorations.
  *
  * Rules enforced here:
- *  - No Math.random(): every element comes from a seeded PRNG keyed by
+ *  - No random-number calls: every element comes from a seeded PRNG
  *    the card id (via the render model's decorationSeed).
  *  - Safety zones: decorations are rejected near edge anchors, along
  *    road/river paths, inside city masses and around the monastery.

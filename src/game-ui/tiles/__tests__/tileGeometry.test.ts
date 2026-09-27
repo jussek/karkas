@@ -6,7 +6,9 @@
  * anchor, and no undeclared border anchor may appear as an endpoint.
  */
 
+// @ts-expect-error -- Node builtins are available under the vitest runtime but not in the DOM tsconfig types.
 import { readFileSync, readdirSync } from 'node:fs';
+// @ts-expect-error -- Node builtins are available under the vitest runtime but not in the DOM tsconfig types.
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { EdgeIndex } from '../../../game/types/geometry';
@@ -252,10 +254,11 @@ describe('deterministic hashing helpers', () => {
 /* ------------------------------------------------------------------ */
 
 describe('renderer source guards', () => {
-  const tilesDir = join(__dirname, '..');
+  const tilesDir = join(new URL('.', import.meta.url).pathname, '..');
 
   it('no executable Math.random in src/game-ui/tiles sources', () => {
     const files = readdirSync(tilesDir).filter(
+      // @ts-expect-error -- implicit any: node fs typings unavailable in this tsconfig.
       (f) => f.endsWith('.ts') || f.endsWith('.tsx'),
     );
     expect(files.length).toBeGreaterThan(0);
@@ -267,6 +270,7 @@ describe('renderer source guards', () => {
 
   it('no JPG references in src/game-ui/tiles sources', () => {
     const files = readdirSync(tilesDir).filter(
+      // @ts-expect-error -- implicit any: node fs typings unavailable in this tsconfig.
       (f) => f.endsWith('.ts') || f.endsWith('.tsx'),
     );
     for (const f of files) {

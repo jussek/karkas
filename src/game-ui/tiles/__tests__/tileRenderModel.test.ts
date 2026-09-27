@@ -62,7 +62,7 @@ function makeDef(
   };
 }
 
-const keysOf = (features: { edges: readonly EdgeIndex[] }[]) =>
+const keysOf = (features: readonly { edges: readonly EdgeIndex[] }[]) =>
   features.map((f) => groupKey(f.edges));
 
 /* ------------------------------------------------------------------ */
