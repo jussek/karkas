@@ -1,5 +1,5 @@
 import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
-import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
+import { GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
 import { seededShuffle } from '../deck/seededShuffle';
 import { edgeOffset, rotateEdge } from './geometry';
 import { applyAction, createGame } from './gameEngine';
@@ -34,7 +34,7 @@ export interface CreateTurnFlowOptions {
 }
 
 export function getRiverCards() {
-  return RUNTIME_CARD_CATALOG.filter((card) => card.riverCard === true);
+  return GAME_CARD_CATALOG.filter((card) => card.riverCard === true);
 }
 
 function riverOrder(seed: number): string[] {
@@ -51,7 +51,7 @@ export function createTurnFlow(options: CreateTurnFlowOptions): TurnFlowState {
   const river = riverOrder(options.seed);
   const sourceId = river[0];
   const land = seededShuffle(
-    RUNTIME_CARD_CATALOG.filter((card) => !card.riverCard).map((card) => card.id),
+    GAME_CARD_CATALOG.filter((card) => !card.riverCard).map((card) => card.id),
     options.seed ^ 0x3f3f3f3f,
   );
   const game = createGame({
@@ -101,7 +101,11 @@ function openRiverPlacement(state: TurnFlowState, definitionId: string, rotation
   ).filter((position) => position.x === open[0].position.x && position.y === open[0].position.y);
 }
 
-export function legalPlacementsFor(state: TurnFlowState, definitionId: string, rotation: Rotation): TilePosition[] {
+export function legalPlacementsFor(
+  state: TurnFlowState,
+  definitionId: string,
+  rotation: Rotation,
+): TilePosition[] {
   return isRiverTurn(state)
     ? openRiverPlacement(state, definitionId, rotation)
     : getLegalTilePlacements(
@@ -177,6 +181,8 @@ export function endTurn(state: TurnFlowState): TurnFlowState {
     : applyAction(state.game, { type: 'SKIP_MEEPLE', playerId }, getTileDefinition);
   if (!decision.ok) return state;
 
+  // COMPLETE_TURN decides between normal turn advancement and final scoring from
+  // real remaining card ids. Never inject an impossible/sentinel card into GameState.
   const remainingCardIds = [...state.riverDeck, ...state.landDeck];
   const scoringInput = { ...decision.state, tileDeck: { remaining: remainingCardIds } };
   const completed = applyAction(scoringInput, { type: 'COMPLETE_TURN', playerId }, getTileDefinition);

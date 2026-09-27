@@ -16,7 +16,7 @@ describe('Stage 3H canonical visual audit 101-144', () => {
     expect(GAME_CARD_CATALOG).toHaveLength(143);
     expect(GAME_CARD_CATALOG.filter((card) => card.riverCard)).toHaveLength(19);
     expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(false);
-    expect(AUDITED_CARD_IDS_101_144.at(-1)).toBe('card-144');
+    expect(AUDITED_CARD_IDS_101_144[AUDITED_CARD_IDS_101_144.length - 1]).toBe('card-144');
   });
 
   it('keeps exactly 143 playable cards and 19 river cards', () => {

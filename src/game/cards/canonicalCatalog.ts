@@ -101,11 +101,4 @@ export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
     };
     return card;
   });
-const AUDITED_BY_ID = new Map(AUDITED_001_050.map((card) => [card.id, card]));
-
-/** Runtime base catalog: audited cards override legacy pixel guesses; only card-106 is absent. */
-export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
-  .filter((card) => card.id !== 'card-106')
-  .map((card) => AUDITED_BY_ID.get(card.id) ?? card);
-
 export const AUDITED_CARD_IDS_001_050: readonly string[] = AUDITED_001_050.map((card) => card.id);
