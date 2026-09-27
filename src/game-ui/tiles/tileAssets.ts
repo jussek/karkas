@@ -1,6 +1,9 @@
 import { GAME_CARD_CATALOG } from '../../game/cards/canonicalCatalog';
 
-const importedAssets = import.meta.glob('../../game/cards/*.jpg', {
+const importedAssets = import.meta.glob([
+  '../../game/cards/*.jpg',
+  '!../../game/cards/1 (106).jpg',
+], {
   eager: true,
   import: 'default',
   query: '?url',
