@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
 import { applyAction, createGame } from '../engine/gameEngine';
 import { buildTurnResolution, emptyTurnResolution } from '../engine/turnResolution';
-import type { GameState, Player } from '../types/state';
+import type { Player } from '../types/state';
 
 const players: Player[] = [
   { id: 'p1', name: 'Игрок 1', color: 'blue', score: 0 },

@@ -75,15 +75,15 @@ export function expandBounds(bounds: Bounds, margin: number): Bounds {
 }
 
 /**
- * Прямоугольник одной клетки content-координатах.
- * contentX/contentY — произвольная «мировая» система (обычно boardX*cell).
+ * Pixel-space rectangle of a board cell at grid coordinates (col,row).
+ * A tile occupies [col*cellSize, (col+1)*cellSize] on both axes.
  */
-export function cellRect(contentX: number, contentY: number, cellSize: number): Bounds {
+export function cellRect(col: number, row: number, cellSize: number): Bounds {
   return {
-    minX: contentX,
-    minY: contentY,
-    maxX: contentX + cellSize,
-    maxY: contentY + cellSize,
+    minX: col * cellSize,
+    minY: row * cellSize,
+    maxX: (col + 1) * cellSize,
+    maxY: (row + 1) * cellSize,
   };
 }
 

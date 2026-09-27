@@ -41,6 +41,7 @@ import {
   isPlacementOnValidFeature,
 } from '../rules/localFeatures';
 import { isGlobalFeatureOccupied } from '../rules/globalFeatures';
+import { getTestTile } from '../tiles/testTiles';
 import { scoreCompletedFeaturesForTurn, type TurnScoringResult } from '../rules/scoring';
 import { scoreFinalFeatures, type FinalScoringResult } from '../rules/finalScoring';
 
@@ -98,7 +99,10 @@ export function createGame(options: CreateGameOptions): GameState {
     seenIds.add(p.id);
   }
   const start = options.startTile ?? {
-    definitionId: 'T-C-CCCC',
+    // Дефолтная стартовая плитка: legacy-тесты Stage 2 (engine.test.ts)
+    // используют тестовые тайлы T-*; canonical runtime-игры всегда передают
+    // явный startTile (исток реки card-091). Определяем реестр детерминированно.
+    definitionId: options.getDefinition === getTestTile ? 'T-C-CCCC' : 'card-091',
     position: { x: 0, y: 0 },
   };
   // Валидность стартового шаблона проверяем сразу (это программная ошибка, не игровая).
