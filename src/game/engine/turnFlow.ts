@@ -9,8 +9,7 @@ import type { GameState, Player } from '../types/state';
 import { posKey } from '../types/state';
 
 export const TURN_PHASES = [
-  'RIVER_SETUP', 'AWAITING_DRAW', 'TILE_IN_HAND', 'TILE_PLACED',
-  'MEEPLE_SELECTION', 'READY_TO_END', 'GAME_OVER',
+  'AWAITING_DRAW', 'TILE_IN_HAND', 'TILE_PLACED', 'MEEPLE_SELECTION', 'GAME_OVER',
 ] as const;
 export type TurnPhase = (typeof TURN_PHASES)[number];
 export const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];
@@ -173,7 +172,7 @@ export function selectTurnMeeple(state: TurnFlowState, target: MeeplePlacement |
 }
 
 export function endTurn(state: TurnFlowState): TurnFlowState {
-  if (!['TILE_PLACED', 'MEEPLE_SELECTION', 'READY_TO_END'].includes(state.phase)) return state;
+  if (!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(state.phase)) return state;
   const playerId = state.game.players[state.game.currentPlayerIndex]?.id ?? '';
   const last = state.game.lastPlacedTile;
   if (!last) return state;
@@ -181,7 +180,11 @@ export function endTurn(state: TurnFlowState): TurnFlowState {
     ? applyAction(state.game, { type: 'PLACE_MEEPLE', playerId, position: last.position, ...state.selectedMeepleTarget }, getTileDefinition)
     : applyAction(state.game, { type: 'SKIP_MEEPLE', playerId }, getTileDefinition);
   if (!decision.ok) return state;
-  const scoringInput = { ...decision.state, tileDeck: { remaining: ['turn-flow-sentinel'] } };
+
+  // COMPLETE_TURN decides between normal turn advancement and final scoring from
+  // real remaining card ids. Never inject an impossible/sentinel card into GameState.
+  const remainingCardIds = [...state.riverDeck, ...state.landDeck];
+  const scoringInput = { ...decision.state, tileDeck: { remaining: remainingCardIds } };
   const completed = applyAction(scoringInput, { type: 'COMPLETE_TURN', playerId }, getTileDefinition);
   if (!completed.ok) return state;
   const riverPlaced = state.riverPlaced + (getCardDefinition(last.definitionId).riverCard ? 1 : 0);
