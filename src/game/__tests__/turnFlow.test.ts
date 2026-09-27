@@ -1,14 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { getTileDefinition } from '../cards/catalogApi';
 import {
-  createTurnFlow,
-  drawTurnTile,
-  endTurn,
-  getRiverCards,
-  legalPlacementsFor,
-  placeTurnTile,
-  rotateTurnTile,
-  ROTATIONS,
+  createTurnFlow, drawTurnTile, endTurn, getRiverCards, legalPlacementsFor,
+  placeTurnTile, rotateTurnTile, ROTATIONS, RIVER_CARD_COUNT,
 } from '../engine/turnFlow';
 import { getLegalTilePlacements } from '../rules/placement';
 import type { Player } from '../types/state';
@@ -27,10 +21,11 @@ describe('Stage 3G turn flow', () => {
     expect(state.game.drawnTileDefinitionId).toBeNull();
   });
 
-  it('defines exactly 20 river cards with source first and end last', () => {
+  it('defines exactly 19 river cards with source first and end last', () => {
     const state = createTurnFlow({ gameId: 'g', players, seed: 12 });
-    expect(getRiverCards()).toHaveLength(20);
-    expect(state.riverDeck).toHaveLength(19);
+    expect(RIVER_CARD_COUNT).toBe(19);
+    expect(getRiverCards()).toHaveLength(19);
+    expect(state.riverDeck).toHaveLength(18);
     expect(getRiverCards().find((card) => card.id === state.riverDeck[state.riverDeck.length - 1])?.riverKind).toBe('end');
     expect(state.riverDeck.slice(0, -1).every((id) => getRiverCards().find((card) => card.id === id)?.riverKind === 'middle')).toBe(true);
   });
