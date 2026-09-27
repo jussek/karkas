@@ -2,13 +2,11 @@ import { useMemo, useState } from 'react';
 import { getTileDefinition } from '../../game/cards/catalogApi';
 import {
   RIVER_CARD_COUNT,
-  createTurnFlow,
   drawTurnTile,
   endTurn,
   placeTurnTile,
   rotateTurnTile,
   selectTurnMeeple,
-  type TurnFlowState,
 } from '../../game/engine/turnFlow';
 import { getLegalMeeplePlacements } from '../../game/rules/localFeatures';
 import type { MeeplePlacement } from '../../game/types/geometry';
@@ -20,24 +18,12 @@ import './gamePage.css';
 const CELL = 92;
 const ORIGIN = 8;
 
-function newDemoGame(): TurnFlowState {
-  return createTurnFlow({
-    gameId: 'local-game',
-    seed: Date.now() & 0xffffffff,
-    players: [
-      { id: 'blue', name: 'Андрей', color: 'blue', score: 0 },
-      { id: 'red', name: 'Мария', color: 'red', score: 0 },
-    ],
-  });
-}
-
 function key(target: MeeplePlacement) {
   return `${target.featureType}:${target.edge ?? 'center'}`;
 }
 
 export function GamePage() {
   const [flow, setFlow] = useState(createLocalGame);
-  const [flow, setFlow] = useState(newDemoGame);
   const [meepleMode, setMeepleMode] = useState(false);
   const heldId = flow.game.drawnTileDefinitionId;
   const legalMeeples = useMemo(
@@ -60,7 +46,6 @@ export function GamePage() {
     <main className="game-page">
       <header className="game-header">
         <div><strong>Каркассон</strong><span>{flow.riverPlaced < RIVER_CARD_COUNT ? `Собираем реку — ${flow.riverPlaced}/${RIVER_CARD_COUNT}` : `Ход ${flow.game.turnNumber}`}</span></div>
-        <div><strong>Каркассон</strong><span>{flow.riverPlaced < 20 ? `Собираем реку — ${flow.riverPlaced}/20` : `Ход ${flow.game.turnNumber}`}</span></div>
         <div className="game-scores">
           {flow.game.players.map((item, index) => (
             <span className={index === flow.game.currentPlayerIndex ? 'is-current' : ''} key={item.id}>
