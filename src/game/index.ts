@@ -20,6 +20,12 @@ export {
   type FeatureScoreAward,
   type TurnScoringResult,
 } from './rules/scoring';
+export {
+  getFinalFeaturePoints,
+  scoreFinalFeatures,
+  type FinalFeatureScoreAward,
+  type FinalScoringResult,
+} from './rules/finalScoring';
 export * from './tiles/testTiles';
 export { cardToTileDefinition } from './cards/toTileDefinition';
 export { getCardDefinition, getTileDefinition, isVerifiedCard } from './cards/catalogApi';

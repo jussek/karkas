@@ -42,6 +42,7 @@ import {
 } from '../rules/localFeatures';
 import { isGlobalFeatureOccupied } from '../rules/globalFeatures';
 import { scoreCompletedFeaturesForTurn } from '../rules/scoring';
+import { scoreFinalFeatures } from '../rules/finalScoring';
 
 /* ------------------------------------------------------------------ */
 /* Мееплы на игрока (базовая игра: 7 подданных)                       */
@@ -433,10 +434,43 @@ function applyCompleteTurn(
   for (const [playerId, delta] of Object.entries(scoring.scoreDeltaByPlayerId)) {
     scores[playerId] = (scores[playerId] ?? 0) + delta;
   }
+  const meeplesAfterNormalScoring = state.meeples.map((meeple) =>
+    returned.has(meeple.id)
+      ? { ...meeple, position: null, placement: null }
+      : meeple,
+  );
+
+  if (state.tileDeck.remaining.length === 0) {
+    const finalScoring = scoreFinalFeatures({
+      board: state.board,
+      meeples: meeplesAfterNormalScoring,
+      getDefinition,
+    });
+    for (const [playerId, delta] of Object.entries(finalScoring.scoreDeltaByPlayerId)) {
+      scores[playerId] = (scores[playerId] ?? 0) + delta;
+    }
+    const finalReturned = new Set(finalScoring.meepleIdsReturned);
+    return {
+      ...state,
+      status: 'finished',
+      scores,
+      meeples: meeplesAfterNormalScoring.map((meeple) =>
+        finalReturned.has(meeple.id)
+          ? { ...meeple, position: null, placement: null }
+          : meeple,
+      ),
+      turnNumber: state.turnNumber + 1,
+      drawnTileDefinitionId: null,
+      lastPlacedTile: null,
+      gamePhase: 'turnComplete',
+    };
+  }
+
   const nextIndex = (state.currentPlayerIndex + 1) % state.players.length;
   return {
     ...state,
     scores,
+    meeples: meeplesAfterNormalScoring,
     meeples: state.meeples.map((meeple) =>
       returned.has(meeple.id)
         ? { ...meeple, position: null, placement: null }
