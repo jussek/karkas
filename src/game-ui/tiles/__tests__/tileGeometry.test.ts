@@ -278,5 +278,13 @@ describe('renderer source guards', () => {
       expect(asset.url).toBeTruthy();
     });
     expect(TILE_ASSETS.some((asset) => asset.filename === '1 (106).jpg')).toBe(false);
+  it('maps all 144 card ids to their authoritative JPG assets', () => {
+    expect(TILE_ASSETS).toHaveLength(144);
+    TILE_ASSETS.forEach((asset, index) => {
+      const number = index + 1;
+      expect(asset.cardId).toBe(`card-${String(number).padStart(3, '0')}`);
+      expect(asset.filename).toBe(`1 (${number}).jpg`);
+      expect(asset.url).toBeTruthy();
+    });
   });
 });

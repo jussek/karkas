@@ -1,4 +1,5 @@
 import { GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
+import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { getCardDefinition } from '../cards/catalogApi';
 
 export interface CatalogDeckOptions {
@@ -10,6 +11,7 @@ export function createCatalogDeck(options: CatalogDeckOptions): string[] {
   getCardDefinition(options.startCardId);
 
   return GAME_CARD_CATALOG.filter(
+  return RUNTIME_CARD_CATALOG.filter(
     (card) =>
       card.id !== options.startCardId &&
       (options.includeReviewRequired === true || card.reviewRequired !== true),
