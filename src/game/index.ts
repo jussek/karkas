@@ -11,6 +11,15 @@ export {
   type GlobalFeatureContext,
   type ResolvedGlobalFeature,
 } from './rules/globalFeatures';
+export {
+  getCompletedFeaturePoints,
+  getFeatureMeepleCounts,
+  getFeatureMajorityPlayers,
+  scoreCompletedFeaturesForTurn,
+  type FeatureScoreType,
+  type FeatureScoreAward,
+  type TurnScoringResult,
+} from './rules/scoring';
 export * from './tiles/testTiles';
 export { cardToTileDefinition } from './cards/toTileDefinition';
 export { getCardDefinition, getTileDefinition, isVerifiedCard } from './cards/catalogApi';

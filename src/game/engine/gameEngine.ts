@@ -41,6 +41,7 @@ import {
   isPlacementOnValidFeature,
 } from '../rules/localFeatures';
 import { isGlobalFeatureOccupied } from '../rules/globalFeatures';
+import { scoreCompletedFeaturesForTurn } from '../rules/scoring';
 
 /* ------------------------------------------------------------------ */
 /* Мееплы на игрока (базовая игра: 7 подданных)                       */
@@ -359,7 +360,7 @@ export function applyAction(
     case 'SKIP_MEEPLE':
       return { ok: true, state: advanceToScoringPhase(state) };
     case 'COMPLETE_TURN':
-      return { ok: true, state: applyCompleteTurn(state) };
+      return { ok: true, state: applyCompleteTurn(state, getDefinition) };
   }
 }
 
@@ -417,10 +418,30 @@ function advanceToScoringPhase(state: GameState): GameState {
   return { ...state, gamePhase: 'scoreFeatures' };
 }
 
-function applyCompleteTurn(state: GameState): GameState {
+function applyCompleteTurn(
+  state: GameState,
+  getDefinition: (id: string) => TileDefinition,
+): GameState {
+  const scoring = state.lastPlacedTile
+    ? scoreCompletedFeaturesForTurn(
+        { board: state.board, meeples: state.meeples, getDefinition },
+        state.lastPlacedTile.position,
+      )
+    : { scoreDeltaByPlayerId: {}, awards: [], meepleIdsReturned: [] };
+  const returned = new Set(scoring.meepleIdsReturned);
+  const scores = { ...state.scores };
+  for (const [playerId, delta] of Object.entries(scoring.scoreDeltaByPlayerId)) {
+    scores[playerId] = (scores[playerId] ?? 0) + delta;
+  }
   const nextIndex = (state.currentPlayerIndex + 1) % state.players.length;
   return {
     ...state,
+    scores,
+    meeples: state.meeples.map((meeple) =>
+      returned.has(meeple.id)
+        ? { ...meeple, position: null, placement: null }
+        : meeple,
+    ),
     currentPlayerIndex: nextIndex,
     turnNumber: state.turnNumber + 1,
     drawnTileDefinitionId: null,
