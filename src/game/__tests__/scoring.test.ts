@@ -184,7 +184,10 @@ describe('engine scoring transition', () => {
     expect(result.ok && result.state.meeples[0]).toMatchObject({ position: null, placement: null });
   });
   it('ENGINE_SCORE_03 preserves an incomplete-feature meeple and awards nothing', () => {
-    const state = stateFor(board(tile('road-corner', 0, 0)), [roadMeeple('m', 'p1')]);
+    const state = {
+      ...stateFor(board(tile('road-corner', 0, 0)), [roadMeeple('m', 'p1')]),
+      tileDeck: { remaining: ['next'] },
+    };
     const result = completeTurn(state);
     expect(result.ok && result.state.scores.p1).toBe(0);
     expect(result.ok && result.state.meeples[0].position).toEqual({ x: 0, y: 0 });
