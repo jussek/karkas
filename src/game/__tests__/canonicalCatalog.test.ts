@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { AUDITED_CARD_IDS_001_050, GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
+import { AUDITED_CARD_IDS_001_050 } from '../cards/canonicalCatalog';
+import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { getCardDefinition } from '../cards/catalogApi';
 
 describe('Stage 3H canonical visual audit 001-050', () => {
-  it('contains 143 playable cards and permanently excludes card-105', () => {
-    expect(GAME_CARD_CATALOG).toHaveLength(143);
-    expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-105')).toBe(false);
-    expect(() => getCardDefinition('card-105')).toThrow();
+  it('contains 143 playable cards, restores 105, and permanently excludes user-confirmed card-106', () => {
+    expect(RUNTIME_CARD_CATALOG).toHaveLength(143);
+    expect(RUNTIME_CARD_CATALOG.some((card) => card.id === 'card-105')).toBe(true);
+    expect(RUNTIME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(false);
+    expect(getCardDefinition('card-105').asset).toBe('1 (105).jpg');
+    expect(() => getCardDefinition('card-106')).toThrow();
   });
 
   it('marks the complete first audit batch', () => {
