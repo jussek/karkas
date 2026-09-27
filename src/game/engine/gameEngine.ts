@@ -34,14 +34,15 @@ import type {
 } from '../types/state';
 import { meepleBoardKey, posKey } from '../types/state';
 import type { TileDefinition, TilePosition } from '../types/geometry';
-import type { MeeplePlacement } from '../types/geometry';
 import type { ValidationResult } from './errors';
 import { gameError } from './errors';
 import { isLegalTilePlacement, type PlacementCheckContext } from '../rules/placement';
 import {
   isPlacementOnValidFeature,
-  localFeatureIdForPlacement,
 } from '../rules/localFeatures';
+import { isGlobalFeatureOccupied } from '../rules/globalFeatures';
+import { scoreCompletedFeaturesForTurn } from '../rules/scoring';
+import { scoreFinalFeatures } from '../rules/finalScoring';
 
 /* ------------------------------------------------------------------ */
 /* Мееплы на игрока (базовая игра: 7 подданных)                       */
@@ -164,28 +165,6 @@ function checkCommon(state: GameState, playerId: string): ValidationResult {
   return null;
 }
 
-/**
- * Есть ли уже meeple текущего игрока на ТОЙ ЖЕ ЛОКАЛЬНОЙ feature.
- * Две стороны одной связанной сегмент-фичи (например N и S прямой
- * дороги) — это одна feature: meeple нельзя ставить дважды.
- */
-function hasOwnMeepleOnSameLocalFeature(
-  state: GameState,
-  last: NonNullable<GameState['lastPlacedTile']>,
-  candidatePlacement: MeeplePlacement,
-  getDefinition: (id: string) => TileDefinition,
-): boolean {
-  const definition = getDefinition(last.definitionId);
-  const candidateId = localFeatureIdForPlacement(definition, last.rotation, candidatePlacement);
-  if (candidateId === null) return false;
-  return state.meeples.some((m) => {
-    if (m.playerId !== last.playerId || !m.position || !m.placement) return false;
-    if (m.position.x !== last.position.x || m.position.y !== last.position.y) return false;
-    const existingId = localFeatureIdForPlacement(definition, last.rotation, m.placement);
-    return existingId === candidateId;
-  });
-}
-
 /* ------------------------------------------------------------------ */
 /* validateAction                                                      */
 /* ------------------------------------------------------------------ */
@@ -306,16 +285,21 @@ function validatePlaceMeeple(
       `No ${action.featureType}${action.edge !== null ? ` at edge ${action.edge}` : ''} on this tile.`,
     );
   }
-  // Нельзя второй meeple на той же локальной feature этого же игрока.
+  const featureCtx = {
+    board: state.board,
+    meeples: state.meeples,
+    getDefinition,
+  };
   if (
-    hasOwnMeepleOnSameLocalFeature(
-      state,
-      last,
-      { featureType: action.featureType, edge: action.edge },
-      getDefinition,
-    )
+    isGlobalFeatureOccupied(featureCtx, last.position, {
+      featureType: action.featureType,
+      edge: action.edge,
+    })
   ) {
-    return gameError('FEATURE_OCCUPIED', 'You already have a meeple on this feature.');
+    return gameError(
+      'FEATURE_OCCUPIED',
+      'This connected feature already contains a meeple.',
+    );
   }
   // У игрока должен быть свободный meeple.
   const available = state.meeples.some(
@@ -377,7 +361,7 @@ export function applyAction(
     case 'SKIP_MEEPLE':
       return { ok: true, state: advanceToScoringPhase(state) };
     case 'COMPLETE_TURN':
-      return { ok: true, state: applyCompleteTurn(state) };
+      return { ok: true, state: applyCompleteTurn(state, getDefinition) };
   }
 }
 
@@ -435,10 +419,58 @@ function advanceToScoringPhase(state: GameState): GameState {
   return { ...state, gamePhase: 'scoreFeatures' };
 }
 
-function applyCompleteTurn(state: GameState): GameState {
+function applyCompleteTurn(
+  state: GameState,
+  getDefinition: (id: string) => TileDefinition,
+): GameState {
+  const scoring = state.lastPlacedTile
+    ? scoreCompletedFeaturesForTurn(
+        { board: state.board, meeples: state.meeples, getDefinition },
+        state.lastPlacedTile.position,
+      )
+    : { scoreDeltaByPlayerId: {}, awards: [], meepleIdsReturned: [] };
+  const returned = new Set(scoring.meepleIdsReturned);
+  const scores = { ...state.scores };
+  for (const [playerId, delta] of Object.entries(scoring.scoreDeltaByPlayerId)) {
+    scores[playerId] = (scores[playerId] ?? 0) + delta;
+  }
+  const meeplesAfterNormalScoring = state.meeples.map((meeple) =>
+    returned.has(meeple.id)
+      ? { ...meeple, position: null, placement: null }
+      : meeple,
+  );
+
+  if (state.tileDeck.remaining.length === 0) {
+    const finalScoring = scoreFinalFeatures({
+      board: state.board,
+      meeples: meeplesAfterNormalScoring,
+      getDefinition,
+    });
+    for (const [playerId, delta] of Object.entries(finalScoring.scoreDeltaByPlayerId)) {
+      scores[playerId] = (scores[playerId] ?? 0) + delta;
+    }
+    const finalReturned = new Set(finalScoring.meepleIdsReturned);
+    return {
+      ...state,
+      status: 'finished',
+      scores,
+      meeples: meeplesAfterNormalScoring.map((meeple) =>
+        finalReturned.has(meeple.id)
+          ? { ...meeple, position: null, placement: null }
+          : meeple,
+      ),
+      turnNumber: state.turnNumber + 1,
+      drawnTileDefinitionId: null,
+      lastPlacedTile: null,
+      gamePhase: 'turnComplete',
+    };
+  }
+
   const nextIndex = (state.currentPlayerIndex + 1) % state.players.length;
   return {
     ...state,
+    scores,
+    meeples: meeplesAfterNormalScoring,
     currentPlayerIndex: nextIndex,
     turnNumber: state.turnNumber + 1,
     drawnTileDefinitionId: null,
