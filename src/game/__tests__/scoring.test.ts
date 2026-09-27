@@ -188,7 +188,6 @@ describe('engine scoring transition', () => {
       ...stateFor(board(tile('road-corner', 0, 0)), [roadMeeple('m', 'p1')]),
       tileDeck: { remaining: ['next'] },
     };
-    const state = stateFor(board(tile('road-corner', 0, 0)), [roadMeeple('m', 'p1')]);
     const result = completeTurn(state);
     expect(result.ok && result.state.scores.p1).toBe(0);
     expect(result.ok && result.state.meeples[0].position).toEqual({ x: 0, y: 0 });
