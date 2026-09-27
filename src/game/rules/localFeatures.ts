@@ -22,6 +22,8 @@ import type {
 } from '../types/geometry';
 import { EDGES } from '../types/geometry';
 import { rotateEdge } from '../engine/geometry';
+import type { GameState } from '../types/state';
+import { isGlobalFeatureOccupied } from './globalFeatures';
 
 /**
  * Множество поворотов sides-индексов: baseEdge -> [rotatedEdges...].
@@ -118,6 +120,25 @@ export function isPlacementOnValidFeature(
 ): boolean {
   return getLocalFeaturePlacements(definition, rotation).some(
     (p) => p.featureType === placement.featureType && p.edge === placement.edge,
+  );
+}
+
+/**
+ * Authoritative meeple targets for the tile placed during the current turn.
+ * The UI consumes this list and never duplicates global occupancy rules.
+ */
+export function getLegalMeeplePlacements(
+  state: GameState,
+  getDefinition: (id: string) => TileDefinition,
+): MeeplePlacement[] {
+  const last = state.lastPlacedTile;
+  const player = state.players[state.currentPlayerIndex];
+  if (state.gamePhase !== 'placeMeeple' || !last || !player) return [];
+  if (!state.meeples.some((m) => m.playerId === player.id && m.position === null)) return [];
+
+  const context = { board: state.board, meeples: state.meeples, getDefinition };
+  return getLocalFeaturePlacements(getDefinition(last.definitionId), last.rotation).filter(
+    (placement) => !isGlobalFeatureOccupied(context, last.position, placement),
   );
 }
 
