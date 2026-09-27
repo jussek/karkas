@@ -34,14 +34,13 @@ import type {
 } from '../types/state';
 import { meepleBoardKey, posKey } from '../types/state';
 import type { TileDefinition, TilePosition } from '../types/geometry';
-import type { MeeplePlacement } from '../types/geometry';
 import type { ValidationResult } from './errors';
 import { gameError } from './errors';
 import { isLegalTilePlacement, type PlacementCheckContext } from '../rules/placement';
 import {
   isPlacementOnValidFeature,
-  localFeatureIdForPlacement,
 } from '../rules/localFeatures';
+import { isGlobalFeatureOccupied } from '../rules/globalFeatures';
 
 /* ------------------------------------------------------------------ */
 /* Мееплы на игрока (базовая игра: 7 подданных)                       */
@@ -164,28 +163,6 @@ function checkCommon(state: GameState, playerId: string): ValidationResult {
   return null;
 }
 
-/**
- * Есть ли уже meeple текущего игрока на ТОЙ ЖЕ ЛОКАЛЬНОЙ feature.
- * Две стороны одной связанной сегмент-фичи (например N и S прямой
- * дороги) — это одна feature: meeple нельзя ставить дважды.
- */
-function hasOwnMeepleOnSameLocalFeature(
-  state: GameState,
-  last: NonNullable<GameState['lastPlacedTile']>,
-  candidatePlacement: MeeplePlacement,
-  getDefinition: (id: string) => TileDefinition,
-): boolean {
-  const definition = getDefinition(last.definitionId);
-  const candidateId = localFeatureIdForPlacement(definition, last.rotation, candidatePlacement);
-  if (candidateId === null) return false;
-  return state.meeples.some((m) => {
-    if (m.playerId !== last.playerId || !m.position || !m.placement) return false;
-    if (m.position.x !== last.position.x || m.position.y !== last.position.y) return false;
-    const existingId = localFeatureIdForPlacement(definition, last.rotation, m.placement);
-    return existingId === candidateId;
-  });
-}
-
 /* ------------------------------------------------------------------ */
 /* validateAction                                                      */
 /* ------------------------------------------------------------------ */
@@ -306,16 +283,21 @@ function validatePlaceMeeple(
       `No ${action.featureType}${action.edge !== null ? ` at edge ${action.edge}` : ''} on this tile.`,
     );
   }
-  // Нельзя второй meeple на той же локальной feature этого же игрока.
+  const featureCtx = {
+    board: state.board,
+    meeples: state.meeples,
+    getDefinition,
+  };
   if (
-    hasOwnMeepleOnSameLocalFeature(
-      state,
-      last,
-      { featureType: action.featureType, edge: action.edge },
-      getDefinition,
-    )
+    isGlobalFeatureOccupied(featureCtx, last.position, {
+      featureType: action.featureType,
+      edge: action.edge,
+    })
   ) {
-    return gameError('FEATURE_OCCUPIED', 'You already have a meeple on this feature.');
+    return gameError(
+      'FEATURE_OCCUPIED',
+      'This connected feature already contains a meeple.',
+    );
   }
   // У игрока должен быть свободный meeple.
   const available = state.meeples.some(
