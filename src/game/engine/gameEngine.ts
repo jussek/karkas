@@ -471,6 +471,11 @@ function applyCompleteTurn(
     ...state,
     scores,
     meeples: meeplesAfterNormalScoring,
+    meeples: state.meeples.map((meeple) =>
+      returned.has(meeple.id)
+        ? { ...meeple, position: null, placement: null }
+        : meeple,
+    ),
     currentPlayerIndex: nextIndex,
     turnNumber: state.turnNumber + 1,
     drawnTileDefinitionId: null,
