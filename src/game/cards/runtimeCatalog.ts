@@ -10,20 +10,13 @@ const AUDITED_BY_ID = new Map<string, CardDefinition>([
   ...AUDITED_101_144,
 ].map((card) => [card.id, card]));
 
-const RESTORED_CARD_105 = AUDITED_101_144.find((card) => card.id === 'card-105');
-if (!RESTORED_CARD_105) throw new Error('Audited card-105 is missing');
-
 /**
  * Runtime game catalog after the complete visual pass.
- * The earlier branch removed 105 by mistake; the user confirmed 106 is the deleted river tile.
+ * Card 106 is the intentionally deleted river tile; card 105 remains a normal game tile.
  * 091 is the one-edge river source and 133 is the one-edge river end.
  * 096 contains an internal pond and is not a river card.
  */
-export const RUNTIME_CARD_CATALOG: readonly CardDefinition[] = [
-  ...AUDITED_001_050_BASE,
-  RESTORED_CARD_105,
-]
-  .filter((card) => card.id !== 'card-106')
+export const RUNTIME_CARD_CATALOG: readonly CardDefinition[] = AUDITED_001_050_BASE
   .map((card) => AUDITED_BY_ID.get(card.id) ?? card)
   .map((card): CardDefinition => {
     if (card.id === 'card-091') return {
