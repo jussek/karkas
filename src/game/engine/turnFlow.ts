@@ -1,5 +1,4 @@
 import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
-import { GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
 import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { seededShuffle } from '../deck/seededShuffle';
 import { edgeOffset, rotateEdge } from './geometry';
@@ -11,8 +10,6 @@ import { posKey } from '../types/state';
 
 export const TURN_PHASES = [
   'AWAITING_DRAW', 'TILE_IN_HAND', 'TILE_PLACED', 'MEEPLE_SELECTION', 'GAME_OVER',
-  'RIVER_SETUP', 'AWAITING_DRAW', 'TILE_IN_HAND', 'TILE_PLACED',
-  'MEEPLE_SELECTION', 'READY_TO_END', 'GAME_OVER',
 ] as const;
 export type TurnPhase = (typeof TURN_PHASES)[number];
 export const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];
@@ -37,7 +34,6 @@ export interface CreateTurnFlowOptions {
 }
 
 export function getRiverCards() {
-  return GAME_CARD_CATALOG.filter((card) => card.riverCard === true);
   return RUNTIME_CARD_CATALOG.filter((card) => card.riverCard === true);
 }
 
@@ -55,7 +51,6 @@ export function createTurnFlow(options: CreateTurnFlowOptions): TurnFlowState {
   const river = riverOrder(options.seed);
   const sourceId = river[0];
   const land = seededShuffle(
-    GAME_CARD_CATALOG.filter((card) => !card.riverCard).map((card) => card.id),
     RUNTIME_CARD_CATALOG.filter((card) => !card.riverCard).map((card) => card.id),
     options.seed ^ 0x3f3f3f3f,
   );
@@ -106,11 +101,7 @@ function openRiverPlacement(state: TurnFlowState, definitionId: string, rotation
   ).filter((position) => position.x === open[0].position.x && position.y === open[0].position.y);
 }
 
-export function legalPlacementsFor(
-  state: TurnFlowState,
-  definitionId: string,
-  rotation: Rotation,
-): TilePosition[] {
+export function legalPlacementsFor(state: TurnFlowState, definitionId: string, rotation: Rotation): TilePosition[] {
   return isRiverTurn(state)
     ? openRiverPlacement(state, definitionId, rotation)
     : getLegalTilePlacements(
@@ -178,7 +169,6 @@ export function selectTurnMeeple(state: TurnFlowState, target: MeeplePlacement |
 
 export function endTurn(state: TurnFlowState): TurnFlowState {
   if (!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(state.phase)) return state;
-  if (!['TILE_PLACED', 'MEEPLE_SELECTION', 'READY_TO_END'].includes(state.phase)) return state;
   const playerId = state.game.players[state.game.currentPlayerIndex]?.id ?? '';
   const last = state.game.lastPlacedTile;
   if (!last) return state;
@@ -187,11 +177,8 @@ export function endTurn(state: TurnFlowState): TurnFlowState {
     : applyAction(state.game, { type: 'SKIP_MEEPLE', playerId }, getTileDefinition);
   if (!decision.ok) return state;
 
-  // COMPLETE_TURN decides between normal turn advancement and final scoring from
-  // real remaining card ids. Never inject an impossible/sentinel card into GameState.
   const remainingCardIds = [...state.riverDeck, ...state.landDeck];
   const scoringInput = { ...decision.state, tileDeck: { remaining: remainingCardIds } };
-  const scoringInput = { ...decision.state, tileDeck: { remaining: ['turn-flow-sentinel'] } };
   const completed = applyAction(scoringInput, { type: 'COMPLETE_TURN', playerId }, getTileDefinition);
   if (!completed.ok) return state;
   const riverPlaced = state.riverPlaced + (getCardDefinition(last.definitionId).riverCard ? 1 : 0);
