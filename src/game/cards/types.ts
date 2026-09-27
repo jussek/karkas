@@ -32,6 +32,8 @@ export interface CardTopology {
   roads: readonly (readonly EdgeIndex[])[];
   /** City features as groups of connected edge indices */
   cities: readonly (readonly EdgeIndex[])[];
+  /** Shield count aligned with each independent city segment, when present. */
+  cityShields?: readonly number[];
   /** Sides where the river touches the card border (optional) */
   riverEdges?: readonly EdgeIndex[];
   /** True if a monastery/abbey stands in the center of the card */

@@ -91,3 +91,31 @@ export function isLegalTilePlacement(
 
   return { legal: true };
 }
+
+/** Empty orthogonal frontier of the current board, in stable display order. */
+export function getPlacementFrontier(board: Board): TilePosition[] {
+  const candidates = new Map<string, TilePosition>();
+  for (const tile of Object.values(board)) {
+    for (const edge of EDGES) {
+      const offset = edgeOffset(edge);
+      const position = { x: tile.position.x + offset.x, y: tile.position.y + offset.y };
+      const key = posKey(position);
+      if (board[key] === undefined) candidates.set(key, position);
+    }
+  }
+  return [...candidates.values()].sort((a, b) => a.y - b.y || a.x - b.x);
+}
+
+/**
+ * Authoritative highlight source. UI code deliberately receives coordinates,
+ * rather than reproducing edge matching rules.
+ */
+export function getLegalTilePlacements(
+  ctx: PlacementCheckContext,
+  definition: TileDefinition,
+  rotation: Rotation,
+): TilePosition[] {
+  return getPlacementFrontier(ctx.board).filter((position) =>
+    isLegalTilePlacement(ctx, definition, rotation, position).legal,
+  );
+}
