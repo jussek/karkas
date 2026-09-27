@@ -1,0 +1,137 @@
+/* Stage 3E — Tile gallery (visual semantic audit). Dark neutral shell,
+   responsive grid, sticky controls, no horizontal overflow. */
+
+.tile-gallery {
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px clamp(12px, 4vw, 48px) 64px;
+  background: #171a14;
+  color: #e8e6df;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow-x: hidden;
+}
+
+.tile-gallery__header {
+  margin-bottom: 16px;
+}
+
+.tile-gallery__title {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+  font-weight: 650;
+}
+
+.tile-gallery__subtitle {
+  margin: 0;
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.tile-gallery__controls {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  background: rgba(23, 26, 20, 0.92);
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tile-gallery__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tile-gallery__chip {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tile-gallery__chip.is-active {
+  background: #d7c88f;
+  border-color: #d7c88f;
+  color: #202417;
+  font-weight: 600;
+}
+
+.tile-gallery__rotation {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.tile-gallery__rotation select {
+  background: #23271e;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font: inherit;
+}
+
+.tile-gallery__grid {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.tile-gallery__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #1e2219;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tile-gallery__card svg {
+  width: 100%;
+  height: auto;
+  max-width: 140px;
+  border-radius: 6px;
+}
+
+.tile-gallery__id {
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  opacity: 0.85;
+}
+
+.tile-gallery__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+
+.tile-gallery__badge {
+  font-style: normal;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tile-gallery__badge--road { color: #efe3c8; }
+.tile-gallery__badge--city { color: #e8926f; }
+.tile-gallery__badge--river { color: #8ec3e6; }
+.tile-gallery__badge--monastery { color: #d8cdb6; }

@@ -1,8 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
+import { TileGalleryPage } from "./game-ui/gallery/TileGalleryPage";
 
 function App() {
+  // Stage 3E: minimal temporary route switch. Full routing arrives in Stage 4A.
+  if (typeof window !== "undefined" && window.location.pathname === "/tiles") {
+    return <TileGalleryPage />;
+  }
   return (
     <main className="page-shell">
       <section className="hero" aria-labelledby="page-title">
