@@ -4,6 +4,9 @@ const importedAssets = import.meta.glob([
   '../../game/cards/*.jpg',
   '!../../game/cards/1 (106).jpg',
 ], {
+import { RUNTIME_CARD_CATALOG } from '../../game/cards/runtimeCatalog';
+
+const importedAssets = import.meta.glob('../../game/cards/*.jpg', {
   eager: true,
   import: 'default',
   query: '?url',
@@ -16,6 +19,7 @@ export interface TileAssetEntry {
 }
 
 export const TILE_ASSETS: readonly TileAssetEntry[] = GAME_CARD_CATALOG.map((card) => {
+export const TILE_ASSETS: readonly TileAssetEntry[] = RUNTIME_CARD_CATALOG.map((card) => {
   const path = `../../game/cards/${card.asset}`;
   const url = importedAssets[path];
   if (!url) throw new Error(`Missing tile artwork for ${card.id}: ${card.asset}`);

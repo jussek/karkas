@@ -48,6 +48,7 @@ Confirmed corrections include:
 - card 091: the one-edge river source;
 - card 133: the one-edge river end;
 - card 096: a normal land tile whose blue pond is not river topology.
+- card 105: excluded entirely.
 
 Each retained tile must ultimately be verified for:
 
@@ -68,6 +69,11 @@ After excluding card 106 and correcting the pond on card 096, the canonical audi
 `053, 054, 055, 067, 079, 088, 090, 091, 099, 100, 101, 102, 107, 108, 109, 110, 111, 121, 133`.
 
 `card-091` is the sole source, `card-133` is the sole end, and the other 17 cards are middle tiles. The previous catalog's river flags are not authoritative.
+After excluding card 105, the current image audit identified these 19 river-image candidates:
+
+`053, 054, 067, 079, 088, 090, 091, 099, 100, 101, 102, 106, 107, 108, 109, 110, 111, 121, 133`.
+
+This list is the Stage 3H image-audit set. The previous catalog's river flags are not authoritative. No three-way river behavior is required after card 105 is removed.
 
 ## Acceptance gates
 
@@ -76,6 +82,7 @@ Stage 3H is not complete merely because TypeScript compiles. Completion requires
 - exactly 143 retained image-backed card records;
 - `card-105` and local `1 (105).jpg` artwork retained;
 - no runtime `card-106` record and no `1 (106).jpg` entry in the runtime artwork manifest;
+- no `card-105` record and no `1 (105).jpg` asset;
 - exactly 19 river-opening records and 124 normal-deck records;
 - catalog-wide validation of edge/topology consistency;
 - no field/farmer, abbot, or garden meeple targets;

@@ -11,6 +11,7 @@ import type { CardDefinition } from './types';
  * Blue coat-of-arms shields are scoring shields; expansion/edition badges are ignored.
  * The legacy catalog is an import/source layer only. Runtime consumers use
  * GAME_CARD_CATALOG, which excludes only the user-removed card 106.
+ * Card 106 is intentionally removed from the game by product decision; card 105 remains.
  */
 const AUDITED_001_050: readonly CardDefinition[] = [
   { id:'card-001', asset:'1 (1).jpg', edges:{north:'city',east:'city',south:'field',west:'field'}, topology:{roads:[],cities:[[0,1]],cityShields:[0]}, shields:0 },
@@ -100,5 +101,11 @@ export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
     };
     return card;
   });
+const AUDITED_BY_ID = new Map(AUDITED_001_050.map((card) => [card.id, card]));
+
+/** Runtime base catalog: audited cards override legacy pixel guesses; only card-106 is absent. */
+export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
+  .filter((card) => card.id !== 'card-106')
+  .map((card) => AUDITED_BY_ID.get(card.id) ?? card);
 
 export const AUDITED_CARD_IDS_001_050: readonly string[] = AUDITED_001_050.map((card) => card.id);

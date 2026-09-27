@@ -1,4 +1,5 @@
 import { GAME_CARD_CATALOG } from '../../game/cards/canonicalCatalog';
+import { RUNTIME_CARD_CATALOG } from '../../game/cards/runtimeCatalog';
 import { rotateEdge } from '../../game/engine/geometry';
 import type { EdgeIndex, MeeplePlacement, Rotation } from '../../game/types/geometry';
 
@@ -28,6 +29,7 @@ export function rotateMeepleAnchor(anchor: MeepleAnchor, rotation: Rotation): Me
 }
 
 export const TILE_SEMANTIC_MANIFEST = GAME_CARD_CATALOG.map((card) => {
+export const TILE_SEMANTIC_MANIFEST = RUNTIME_CARD_CATALOG.map((card) => {
   const anchors: MeepleAnchor[] = [];
   card.topology.roads.forEach((edges) => {
     const edge = Math.min(...edges) as EdgeIndex;
