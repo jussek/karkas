@@ -1,3 +1,9 @@
+import { GAME_CARD_CATALOG } from '../../game/cards/canonicalCatalog';
+
+const importedAssets = import.meta.glob([
+  '../../game/cards/*.jpg',
+  '!../../game/cards/1 (106).jpg',
+], {
 import { RUNTIME_CARD_CATALOG } from '../../game/cards/runtimeCatalog';
 
 const importedAssets = import.meta.glob('../../game/cards/*.jpg', {
@@ -12,6 +18,7 @@ export interface TileAssetEntry {
   url: string;
 }
 
+export const TILE_ASSETS: readonly TileAssetEntry[] = GAME_CARD_CATALOG.map((card) => {
 export const TILE_ASSETS: readonly TileAssetEntry[] = RUNTIME_CARD_CATALOG.map((card) => {
   const path = `../../game/cards/${card.asset}`;
   const url = importedAssets[path];

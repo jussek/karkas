@@ -1,4 +1,6 @@
 import { CARD_CATALOG } from './catalog';
+import { AUDITED_051_100 } from './audited051100';
+import { AUDITED_101_144 } from './audited101144';
 import type { CardDefinition } from './types';
 
 /**
@@ -7,6 +9,8 @@ import type { CardDefinition } from './types';
  * Edge order in topology is N=0, E=1, S=2, W=3.
  * Crossroads split roads into independent road features, as they terminate a road.
  * Blue coat-of-arms shields are scoring shields; expansion/edition badges are ignored.
+ * The legacy catalog is an import/source layer only. Runtime consumers use
+ * GAME_CARD_CATALOG, which excludes only the user-removed card 106.
  * Card 106 is intentionally removed from the game by product decision; card 105 remains.
  */
 const AUDITED_001_050: readonly CardDefinition[] = [

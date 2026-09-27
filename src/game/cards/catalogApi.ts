@@ -1,9 +1,11 @@
+import { GAME_CARD_CATALOG } from './canonicalCatalog';
 import { RUNTIME_CARD_CATALOG } from './runtimeCatalog';
 import type { CardDefinition } from './types';
 import type { TileDefinition } from '../types/geometry';
 import { cardToTileDefinition } from './toTileDefinition';
 
 const CARD_BY_ID: ReadonlyMap<string, CardDefinition> = new Map(
+  GAME_CARD_CATALOG.map((card) => [card.id, card]),
   RUNTIME_CARD_CATALOG.map((card) => [card.id, card]),
 );
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getCardDefinition } from '../cards/catalogApi';
+import { GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
 import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { AUDITED_CARD_IDS_101_144 } from '../cards/audited101144';
 
@@ -8,6 +9,13 @@ describe('Stage 3H canonical visual audit 101-144', () => {
     expect(AUDITED_CARD_IDS_101_144).toHaveLength(43);
     expect(AUDITED_CARD_IDS_101_144).toContain('card-105');
     expect(AUDITED_CARD_IDS_101_144).not.toContain('card-106');
+    expect(AUDITED_CARD_IDS_101_144[AUDITED_CARD_IDS_101_144.length - 1]).toBe('card-144');
+  });
+
+  it('keeps exactly 143 playable cards and 19 river cards', () => {
+    expect(GAME_CARD_CATALOG).toHaveLength(143);
+    expect(GAME_CARD_CATALOG.filter((card) => card.riverCard)).toHaveLength(19);
+    expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(false);
     expect(AUDITED_CARD_IDS_101_144.at(-1)).toBe('card-144');
   });
 

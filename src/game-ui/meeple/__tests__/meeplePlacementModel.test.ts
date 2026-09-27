@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { TileDefinition } from '../../../game/types/geometry';
 import type { GameState, Meeple, Player } from '../../../game/types/state';
+import { GAME_CARD_CATALOG } from '../../../game/cards/canonicalCatalog';
 import { CARD_CATALOG } from '../../../game/cards/catalog';
 import { TILE_ASSETS } from '../../tiles/tileAssets';
 import { tileImageTransform } from '../../tiles/TileRenderer';
@@ -125,6 +126,13 @@ describe('atomic end turn', () => {
 });
 
 describe('artwork, anchors, and mobile guards', () => {
+  it('maps all 143 runtime ids and contains no field anchors', () => {
+    expect(TILE_ASSETS).toHaveLength(143);
+    expect(TILE_SEMANTIC_MANIFEST).toHaveLength(143);
+    expect(TILE_SEMANTIC_MANIFEST.flatMap((tile) => tile.meepleAnchors).every((a) => (a.featureType as string) !== 'field')).toBe(true);
+  });
+  it('preserves the audited project river set of 19 tiles', () => {
+    expect(GAME_CARD_CATALOG.filter((card) => card.riverCard === true)).toHaveLength(19);
   it('maps all 144 ids and contains no field anchors', () => {
     expect(TILE_ASSETS).toHaveLength(144);
     expect(TILE_SEMANTIC_MANIFEST).toHaveLength(144);
