@@ -101,7 +101,7 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.tile-gallery__card svg {
+.tile-gallery__card img {
   width: 100%;
   height: auto;
   max-width: 140px;

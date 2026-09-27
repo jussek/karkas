@@ -1,0 +1,23 @@
+.game-page { min-height: 100dvh; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) calc(116px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); background: #152219; }
+.game-header { display: flex; justify-content: space-between; gap: 12px; max-width: 980px; margin: auto; }
+.game-header > div:first-child { display: grid; gap: 4px; }
+.game-header span { color: #cfd9c8; font-size: .82rem; }
+.game-scores { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.game-scores span { padding: 6px 10px; border-radius: 999px; background: #223529; }
+.game-scores .is-current { color: white; outline: 2px solid #e9b957; }
+.turn-message { margin: 10px auto; max-width: 980px; color: #f3d890; font-weight: 700; }
+.board-viewport { width: min(100%, 980px); height: min(68dvh, 700px); margin: auto; overflow: auto; border: 1px solid #ffffff24; border-radius: 18px; background: #233c2a; overscroll-behavior: contain; touch-action: pan-x pan-y; scrollbar-width: thin; }
+.board { position: relative; background-image: linear-gradient(#ffffff0a 1px, transparent 1px), linear-gradient(90deg, #ffffff0a 1px, transparent 1px); background-size: 92px 92px; }
+.board-tile, .legal-cell { position: absolute; width: 92px; height: 92px; }
+.board-tile img { display: block; }
+.legal-cell { border: 3px dashed #ffd76a; background: #ffe48c29; color: #ffe899; cursor: pointer; touch-action: manipulation; }
+.legal-cell span { display: grid; place-items: center; margin: auto; width: 52px; height: 52px; border-radius: 50%; background: #183c24cc; font-size: 2rem; }
+.board-meeple-target { position: absolute; z-index: 4; width: 48px; height: 48px; margin: -24px; border: 2px solid #fff; border-radius: 50%; background: #17231bd9; color: white; touch-action: manipulation; }
+.board-meeple-target.is-selected { background: #e8b94f; }
+.turn-controls { position: fixed; z-index: 10; right: 0; bottom: 0; left: 0; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 10px max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); border-top: 1px solid #ffffff26; background: #101a14f2; backdrop-filter: blur(12px); }
+.turn-controls button { min-height: 52px; padding: 10px 16px; border: 0; border-radius: 14px; color: #172015; background: #e7d8ad; font-weight: 800; touch-action: manipulation; }
+.turn-controls button:disabled { opacity: .38; }
+.turn-controls .end-turn { background: #e9b957; }
+.held-tile { display: flex; align-items: center; gap: 5px; font-size: .75rem; }
+.held-tile img { border-radius: 8px; }
+@media (max-width: 620px) { .game-header { display: grid; } .game-scores { justify-content: flex-start; } .turn-controls { justify-content: stretch; overflow-x: auto; } .turn-controls button { flex: 1 0 auto; padding-inline: 12px; } .held-tile { display: none; } .board-viewport { height: calc(100dvh - 230px); } }

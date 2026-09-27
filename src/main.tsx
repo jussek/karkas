@@ -2,28 +2,14 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { TileGalleryPage } from "./game-ui/gallery/TileGalleryPage";
+import { GamePage } from "./game-ui/game/GamePage";
 
 function App() {
   // Stage 3E: minimal temporary route switch. Full routing arrives in Stage 4A.
   if (typeof window !== "undefined" && window.location.pathname === "/tiles") {
     return <TileGalleryPage />;
   }
-  return (
-    <main className="page-shell">
-      <section className="hero" aria-labelledby="page-title">
-        <p className="eyebrow">Настольная стратегия</p>
-        <h1 id="page-title">Каркассон онлайн</h1>
-        <p className="lead">
-          Игровой движок готов. Скоро здесь можно будет строить города, прокладывать
-          дороги и собирать друзей за одной картой.
-        </p>
-        <div className="status" role="status">
-          <span className="status-dot" aria-hidden="true" />
-          Проект готов к следующему этапу
-        </div>
-      </section>
-    </main>
-  );
+  return <GamePage />;
 }
 
 const root = document.getElementById("root");
