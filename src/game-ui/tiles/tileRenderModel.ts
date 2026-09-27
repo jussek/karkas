@@ -17,7 +17,7 @@ import type {
   TileDefinition,
 } from '../../game/types/geometry';
 import { rotateTile } from '../../game/engine/geometry';
-import { CARD_CATALOG } from '../../game/cards/catalog';
+import { GAME_CARD_CATALOG } from '../../game/cards/canonicalCatalog';
 import {
   buildCityMassPath,
   buildCitySpine,
@@ -77,7 +77,7 @@ export function groupKey(edges: readonly EdgeIndex[]): string {
  * built once from the catalog. The catalog itself is never modified.
  */
 const RIVER_EDGES_BY_CARD: ReadonlyMap<string, readonly EdgeIndex[]> = new Map(
-  CARD_CATALOG.filter(
+  GAME_CARD_CATALOG.filter(
     (c) => c.topology.riverEdges !== undefined && c.topology.riverEdges.length > 0,
   ).map((c) => [c.id, c.topology.riverEdges as readonly EdgeIndex[]]),
 );

@@ -1,9 +1,7 @@
 /**
  * Stage 3E — TileGalleryPage (/tiles)
  *
- * Human semantic-audit tool: renders every catalog tile through the
- * rule-driven SVG TileRenderer so we can verify that game topology and
- * rendered topology agree before building the board. No JPG thumbnails.
+ * Human audit tool for the authoritative supplied tile artwork.
  */
 
 import { useMemo, useState } from 'react';
@@ -51,8 +49,8 @@ export function TileGalleryPage() {
       <header className="tile-gallery__header">
         <h1 className="tile-gallery__title">Каркас плитки — визуальный аудит</h1>
         <p className="tile-gallery__subtitle">
-          Геометрия строится из структурированных данных топологии (TileDefinition),
-          не из изображений. {visible.length} / {entries.length} плиток
+          Изображение — визуальный слой; правила берутся из TileDefinition.{' '}
+          {visible.length} / {entries.length} плиток
         </p>
       </header>
 

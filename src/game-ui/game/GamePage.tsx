@@ -1,0 +1,296 @@
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { getTileDefinition } from '../../game/cards/catalogApi';
+import {
+  RIVER_CARD_COUNT,
+  drawTurnTile,
+  endTurn,
+  placeTurnTile,
+  rotateTurnTile,
+  selectTurnMeeple,
+} from '../../game/engine/turnFlow';
+import type { TurnFlowState } from '../../game/engine/turnFlow';
+import type { TurnResolution, TurnScoreEvent } from '../../game/engine/turnResolution';
+import { getLegalMeeplePlacements } from '../../game/rules/localFeatures';
+import type { MeeplePlacement } from '../../game/types/geometry';
+import { playerIdentity } from '../../game/session';
+import type { LocalGameConfig } from '../../game/session';
+import { TileRenderer } from '../tiles/TileRenderer';
+import { anchorForPlacement } from '../tiles/tileSemanticManifest';
+import { createLocalGame } from './localGameBootstrap';
+import { useBoardCamera } from './useBoardCamera';
+import './gamePage.css';
+
+const CELL = 92;
+const ORIGIN = 8;
+const BOARD_CELLS = 17;
+
+function key(target: MeeplePlacement) {
+  return `${target.featureType}:${target.edge ?? 'center'}`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Feedback: React ТОЛЬКО форматирует authoritative-события движка.    */
+/* Никакого повторного скоринга в UI — данные берутся из               */
+/* flow.lastResolution (создан единым scoring pass в engine).          */
+/* ------------------------------------------------------------------ */
+
+const FEATURE_LABELS: Record<TurnScoreEvent['featureType'], string> = {
+  road: 'Дорога завершена',
+  city: 'Город завершён',
+  monastery: 'Монастырь завершён',
+};
+
+export function formatResolution(
+  resolution: TurnResolution,
+  playerName: (id: string) => string,
+): string[] {
+  const lines: string[] = [];
+  for (const event of resolution.scoreEvents) {
+    if (event.tied) {
+      const names = event.playerIds.map(playerName).join(' и ');
+      lines.push(`Ничья: ${names} получают по ${event.points}`);
+    } else {
+      const who = event.playerIds.length > 0 ? ` (${playerName(event.playerIds[0])})` : '';
+      lines.push(`${FEATURE_LABELS[event.featureType]}: +${event.points}${who}`);
+    }
+  }
+  if (resolution.returnedMeepleIds.length > 0) {
+    lines.push(`Возвращено подданных: ${resolution.returnedMeepleIds.length}`);
+  }
+  return lines;
+}
+
+/* ------------------------------------------------------------------ */
+/* Game page                                                           */
+/* ------------------------------------------------------------------ */
+
+export interface GamePageProps {
+  config?: LocalGameConfig;
+  onExit?: () => void;
+  onNewGame?: () => void;
+}
+
+export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
+  const [flow, setFlow] = useState<TurnFlowState>(() =>
+    config ? createLocalGame(config) : createLocalGame(),
+  );
+  const [meepleMode, setMeepleMode] = useState(false);
+  const [feedbackTick, setFeedbackTick] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  /** Клетки для ближайшего вызова fitContent (для «Показать ходы»). */
+  const fitOverrideRef = useRef<{ x: number; y: number }[] | null>(null);
+
+  const heldId = flow.game.drawnTileDefinitionId;
+  const legalMeeples = useMemo(
+    () => (flow.phase === 'TILE_PLACED' || flow.phase === 'MEEPLE_SELECTION')
+      ? getLegalMeeplePlacements(flow.game, getTileDefinition)
+      : [],
+    [flow],
+  );
+  const player = flow.game.players[flow.game.currentPlayerIndex];
+  const available = flow.game.meeples.filter((m) => m.playerId === player?.id && !m.position).length;
+
+  const nameById = useCallback(
+    (id: string) => flow.game.players.find((p) => p.id === id)?.name ?? id,
+    [flow.game.players],
+  );
+  const feedbackLines = useMemo(
+    () => formatResolution(flow.lastResolution, nameById),
+    [flow.lastResolution, nameById],
+  );
+  const hasFeedback = feedbackTick > 0 && feedbackLines.length > 0;
+
+  const message = flow.phase === 'GAME_OVER'
+    ? 'Игра окончена'
+    : flow.phase === 'AWAITING_DRAW'
+      ? 'Возьмите карту'
+      : flow.phase === 'TILE_IN_HAND'
+        ? 'Поверните карту или выберите подсвеченное место'
+        : 'Карта установлена. Можно поставить подданного или закончить ход';
+
+  /* --- camera ------------------------------------------------------ */
+  const placedCells = useMemo(
+    () => Object.values(flow.game.board).map((tile) => tile.position),
+    [flow.game.board],
+  );
+  const getFitCells = useCallback(() => {
+    if (fitOverrideRef.current) return fitOverrideRef.current;
+    const cells = [...placedCells];
+    if (flow.phase === 'TILE_IN_HAND') cells.push(...flow.legalPlacements);
+    return cells;
+  }, [placedCells, flow.phase, flow.legalPlacements]);
+
+  const camera = useBoardCamera({
+    viewportRef,
+    contentWidth: CELL * BOARD_CELLS,
+    contentHeight: CELL * BOARD_CELLS,
+    getFitCells,
+    cellSize: CELL,
+    originOffset: ORIGIN,
+  });
+
+  /** «Показать ходы»: вписывает legal positions текущей ротации в viewport. */
+  const showLegalMoves = () => {
+    fitOverrideRef.current = flow.legalPlacements.length > 0
+      ? [...flow.legalPlacements]
+      : flow.phase === 'TILE_IN_HAND'
+        ? []
+        : [...placedCells];
+    camera.fitContent();
+    fitOverrideRef.current = null;
+  };
+
+  const endTurnAction = () => {
+    setFlow((current) => endTurn(current));
+    setMeepleMode(false);
+    setFeedbackTick((tick) => tick + 1);
+  };
+
+  const gameOver = flow.phase === 'GAME_OVER' || flow.game.status === 'finished';
+  const finalScores = flow.lastResolution.final;
+
+  return (
+    <main className="game-page">
+      <header className="game-header">
+        <div className="game-brand">
+          <strong>Каркассон</strong>
+          <span>{flow.riverPlaced < RIVER_CARD_COUNT ? `Река — ${flow.riverPlaced}/${RIVER_CARD_COUNT}` : `Ход ${flow.game.turnNumber}`}</span>
+        </div>
+        <div className="game-scores">
+          {flow.game.players.map((item, index) => (
+            <span className={index === flow.game.currentPlayerIndex ? 'is-current' : ''} key={item.id}>
+              <i className="score-dot" style={{ background: playerIdentity(index + 1).hex }} aria-hidden />
+              {' '}{item.name} <b>{flow.game.scores[item.id] ?? 0}</b> · {flow.game.meeples.filter((m) => m.playerId === item.id && !m.position).length} 👤
+            </span>
+          ))}
+        </div>
+        <button type="button" className="game-menu-button" aria-label="Меню игры" onClick={() => setMenuOpen(true)}>☰</button>
+      </header>
+
+      <p className="turn-message" role="status">{message}</p>
+      {hasFeedback && !gameOver && (
+        <ul className="resolution-feedback" role="status" aria-live="polite">
+          {feedbackLines.map((line, i) => <li key={i}>{line}</li>)}
+        </ul>
+      )}
+
+      <section className="board-viewport" ref={viewportRef} aria-label="Игровое поле">
+        <div
+          className="board-canvas"
+          style={{ transform: `translate(${camera.camera.offsetX}px, ${camera.camera.offsetY}px) scale(${camera.camera.scale})` }}
+          {...camera.handlers}
+        >
+          <div className="board" style={{ width: CELL * BOARD_CELLS, height: CELL * BOARD_CELLS }}>
+            {Object.values(flow.game.board).map((tile) => (
+              <div className="board-tile" key={`${tile.position.x},${tile.position.y}`} style={{ left: (tile.position.x + ORIGIN) * CELL, top: (tile.position.y + ORIGIN) * CELL }}>
+                <TileRenderer definition={getTileDefinition(tile.definitionId)} rotation={tile.rotation} size={CELL} />
+              </div>
+            ))}
+            {flow.legalPlacements.map((position) => (
+              <button
+                className="legal-cell"
+                type="button"
+                aria-label={`Поставить карту: ${position.x}, ${position.y}`}
+                key={`${position.x},${position.y}`}
+                style={{ left: (position.x + ORIGIN) * CELL, top: (position.y + ORIGIN) * CELL }}
+                onClick={() => {
+                  // Размещение только по tap: после pan/pinch клик игнорируется.
+                  if (!camera.wasTapAtEnd()) return;
+                  setFlow((current) => placeTurnTile(current, position));
+                }}
+              ><span>＋</span></button>
+            ))}
+            {meepleMode && flow.game.lastPlacedTile && legalMeeples.map((target) => {
+              const anchor = anchorForPlacement(target);
+              const tile = flow.game.lastPlacedTile!;
+              const selected = flow.selectedMeepleTarget && key(flow.selectedMeepleTarget) === key(target);
+              return <button
+                type="button"
+                className={`board-meeple-target${selected ? ' is-selected' : ''}`}
+                key={key(target)}
+                aria-label={`Поставить подданного: ${target.featureType}`}
+                style={{ left: (tile.position.x + ORIGIN) * CELL + (anchor.x * CELL) / 100, top: (tile.position.y + ORIGIN) * CELL + (anchor.y * CELL) / 100 }}
+                onClick={() => {
+                  if (!camera.wasTapAtEnd()) return;
+                  setFlow((current) => selectTurnMeeple(current, target));
+                }}
+              >{selected ? '👤' : ''}</button>;
+            })}
+          </div>
+        </div>
+
+        <div className="camera-controls" aria-label="Камера доски">
+          <button type="button" className="camera-button" aria-label="Приблизить" onClick={camera.zoomIn}>+</button>
+          <button type="button" className="camera-button" aria-label="Отдалить" onClick={camera.zoomOut}>−</button>
+          <button type="button" className="camera-button" aria-label="Вписать доску" onClick={() => camera.fitContent()}>⤢</button>
+          {flow.phase === 'TILE_IN_HAND' && (
+            <button type="button" className="camera-button camera-show-moves" onClick={showLegalMoves}>Показать ходы</button>
+          )}
+        </div>
+      </section>
+
+      {gameOver && finalScores && (
+        <section className="game-over-panel" role="status" aria-live="assertive">
+          <h2>Игра окончена</h2>
+          <ol className="final-scores">
+            {flow.game.players
+              .slice()
+              .sort((a, b) => (finalScores.scoreByPlayerId[b.id] ?? 0) - (finalScores.scoreByPlayerId[a.id] ?? 0))
+              .map((p) => (
+                <li key={p.id}>{p.name}: <b>{finalScores.scoreByPlayerId[p.id] ?? 0}</b></li>
+              ))}
+          </ol>
+          {flow.game.players.length === 1 ? (
+            <p>Итоговый результат: {finalScores.scoreByPlayerId[flow.game.players[0].id] ?? 0}</p>
+          ) : finalScores.tied ? (
+            <p>Ничья: {finalScores.leaderPlayerIds.map(nameById).join(', ')}</p>
+          ) : (
+            <p>Победитель: {finalScores.leaderPlayerIds.map(nameById).join(', ')}</p>
+          )}
+          {onNewGame && <button type="button" className="game-over-new" onClick={onNewGame}>Новая игра</button>}
+        </section>
+      )}
+
+      {menuOpen && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Меню игры">
+        <section className="game-menu-sheet">
+          <h2>Меню</h2>
+          <button type="button" onClick={() => setMenuOpen(false)}>Продолжить</button>
+          <button type="button" onClick={() => { setMenuOpen(false); setRulesOpen(true); }}>Правила</button>
+          {onNewGame && <button type="button" onClick={onNewGame}>Новая игра</button>}
+          {onExit && <button type="button" className="danger" onClick={onExit}>Выйти в меню</button>}
+        </section>
+      </div>}
+
+      {rulesOpen && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Правила">
+        <section className="game-menu-sheet">
+          <h2>Как играть</h2>
+          <p>Возьмите карту, поверните и поставьте её на подсвеченное место. Подданный необязателен. Очки начисляются только после завершения хода.</p>
+          <button type="button" onClick={() => setRulesOpen(false)}>Понятно</button>
+        </section>
+      </div>}
+
+      <section className="turn-controls" aria-label="Действия хода">
+        {heldId && <div className="held-tile"><TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={86} /><span>{flow.rotation}°</span></div>}
+        <button type="button" className="draw-action" disabled={flow.phase !== 'AWAITING_DRAW'} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
+        <button type="button" className="rotate-action" aria-label="Повернуть карту по часовой стрелке" disabled={flow.phase !== 'TILE_IN_HAND'} onClick={() => setFlow(rotateTurnTile)}>↻ <span>Повернуть</span></button>
+        <button
+          type="button"
+          aria-pressed={meepleMode}
+          disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) || available === 0 || legalMeeples.length === 0}
+          onClick={() => {
+            if (meepleMode) setFlow((current) => selectTurnMeeple(current, null));
+            setMeepleMode((value) => !value);
+          }}
+        >👤 <span>{meepleMode ? 'Отменить' : `Подданный (${available})`}</span></button>
+        <button
+          type="button"
+          className="end-turn"
+          disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase)}
+          onClick={endTurnAction}
+        ><b>✓</b><span>Закончить ход</span></button>
+      </section>
+    </main>
+  );
+}

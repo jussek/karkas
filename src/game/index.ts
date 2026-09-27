@@ -2,6 +2,7 @@ export * from './types';
 export * from './engine/geometry';
 export * from './engine/errors';
 export * from './engine/gameEngine';
+export * from './engine/turnFlow';
 export * from './rules/placement';
 export * from './rules/localFeatures';
 export {
@@ -35,3 +36,11 @@ export {
   createCatalogGame,
   type CreateCatalogGameOptions,
 } from './engine/createCatalogGame';
+export * from './session';
+export {
+  buildTurnResolution,
+  emptyTurnResolution,
+  type TurnResolution,
+  type TurnScoreEvent,
+  type TurnFinalScores,
+} from './engine/turnResolution';
