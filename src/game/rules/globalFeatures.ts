@@ -24,6 +24,8 @@ export interface ResolvedGlobalFeature {
   completed: boolean;
   openEdges: number;
   tileCount: number;
+  /** Total shields on every city segment that belongs to this feature. */
+  shieldCount: number;
   surroundingTilesFilled: number | null;
 }
 
@@ -103,6 +105,7 @@ function resolveSegmentTopology(
   const visited = new Map<string, SegmentNode>();
   const parts: FeaturePart[] = [];
   let openEdges = 0;
+  let shieldCount = 0;
 
   while (queue.length > 0) {
     const node = queue.shift()!;
@@ -113,6 +116,10 @@ function resolveSegmentTopology(
     const tile = ctx.board[posKey(node.position)];
     if (!tile) continue;
     const definition = ctx.getDefinition(tile.definitionId);
+    if (node.type === 'city') {
+      const segmentIndex = definition.topology.citySegments.indexOf(node.segmentId);
+      shieldCount += definition.topology.cityShields?.[segmentIndex] ?? 0;
+    }
     const edges = rotatedEdgesForSegment(
       definition,
       tile.rotation,
@@ -160,6 +167,7 @@ function resolveSegmentTopology(
     completed: openEdges === 0,
     openEdges,
     tileCount: tilePositions.size,
+    shieldCount,
     surroundingTilesFilled: null,
   };
 }
@@ -185,6 +193,7 @@ function resolveFeatureTopology(
       completed: surroundingTilesFilled === 8,
       openEdges: 8 - surroundingTilesFilled,
       tileCount: 1,
+      shieldCount: 0,
       surroundingTilesFilled,
     };
   }

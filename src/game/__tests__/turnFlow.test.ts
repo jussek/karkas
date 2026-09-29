@@ -81,6 +81,21 @@ describe('Stage 3G turn flow', () => {
     const candidate = state.riverDeck[0];
     expect(ROTATIONS.map((rotation) => legalPlacementsFor(state, candidate, rotation).length).some(Boolean)).toBe(true);
   });
+
+  it('runs final scoring when drawing exhausts every remaining tile', () => {
+    const initial = createTurnFlow({ gameId: 'g', players, seed: 72 });
+    const exhausted = drawTurnTile({
+      ...initial,
+      riverPlaced: RIVER_CARD_COUNT,
+      riverDeck: [],
+      landDeck: [],
+    });
+
+    expect(exhausted.phase).toBe('GAME_OVER');
+    expect(exhausted.game.status).toBe('finished');
+    expect(exhausted.lastResolution.gameOver).toBe(true);
+    expect(exhausted.lastResolution.final?.scoreByPlayerId).toEqual(exhausted.game.scores);
+  });
 });
 
 describe('legal placement highlights', () => {

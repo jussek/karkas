@@ -42,6 +42,9 @@ describe('card catalog adapter', () => {
       expect(tile.topology.citySegments).toEqual(
         card.topology.cities.map((_, index) => `city:${index}`),
       );
+      expect(tile.topology.cityShields).toEqual(
+        card.topology.cities.map((_, index) => card.topology.cityShields?.[index] ?? 0),
+      );
       expect(tile.topology.cityEdgeSegments).toEqual(expectedCityEdges);
       expect(tile.topology.hasMonastery).toBe(card.topology.monastery === true);
 

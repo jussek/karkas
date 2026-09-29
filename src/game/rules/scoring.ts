@@ -36,7 +36,7 @@ export function getCompletedFeaturePoints(feature: ResolvedGlobalFeature): numbe
     case 'road':
       return feature.tileCount;
     case 'city':
-      return feature.tileCount * 2;
+      return (feature.tileCount + feature.shieldCount) * 2;
     case 'monastery':
       return 9;
   }
