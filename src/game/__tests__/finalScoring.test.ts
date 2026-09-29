@@ -19,7 +19,7 @@ const place = (featureType: 'road' | 'city' | 'monastery', edge: EdgeIndex | nul
 const meeple = (id: string, playerId: string, x: number, y: number, placement: MeeplePlacement): Meeple => ({ id, playerId, position: { x, y }, placement });
 const context = (b: Board, meeples: Meeple[] = []): GlobalFeatureContext => ({ board: b, meeples, getDefinition });
 const loop = (kind: 'road-corner' | 'city-corner', ox = 0, oy = 0): Board => board(tile(kind, ox, oy, 90), tile(kind, ox + 1, oy, 180), tile(kind, ox + 1, oy + 1, 270), tile(kind, ox, oy + 1));
-const feature = (type: 'road' | 'city' | 'monastery', tileCount: number, neighbors: number | null, completed = false): ResolvedGlobalFeature => ({ id: `${type}|x`, type, parts: [], occupantPlayerIds: ['p1'], completed, openEdges: completed ? 0 : 1, tileCount, surroundingTilesFilled: neighbors });
+const feature = (type: 'road' | 'city' | 'monastery', tileCount: number, neighbors: number | null, completed = false): ResolvedGlobalFeature => ({ id: `${type}|x`, type, parts: [], occupantPlayerIds: ['p1'], completed, openEdges: completed ? 0 : 1, tileCount, shieldCount: 0, surroundingTilesFilled: neighbors });
 const roadM = (id: string, player: string, x = 0, y = 0, edge: EdgeIndex = 1) => meeple(id, player, x, y, place('road', edge));
 const cityM = (id: string, player: string, x = 0, y = 0, edge: EdgeIndex = 1) => meeple(id, player, x, y, place('city', edge));
 const monasteryBoard = (neighbors: number): Board => {
@@ -36,6 +36,9 @@ describe('pure final scoring', () => {
   it('FINAL_SCORE_03 scores an unfinished city once per tile, not twice', () => {
     const b = board(tile('city', 0, 0), tile('city', 1, 0), tile('city', 2, 0));
     expect(scoreFinalFeatures(context(b, [cityM('m', 'p1')])).scoreDeltaByPlayerId.p1).toBe(3);
+  });
+  it('scores each shield as one additional point in an unfinished city', () => {
+    expect(getFinalFeaturePoints({ ...feature('city', 3, null), shieldCount: 2 })).toBe(5);
   });
   it('FINAL_SCORE_04 scores a monastery with zero neighbors as one', () => expect(scoreFinalFeatures(context(monasteryBoard(0), [meeple('m', 'p1', 0, 0, place('monastery', null))])).scoreDeltaByPlayerId.p1).toBe(1));
   it('FINAL_SCORE_05 scores a monastery with three neighbors as four', () => expect(scoreFinalFeatures(context(monasteryBoard(3), [meeple('m', 'p1', 0, 0, place('monastery', null))])).scoreDeltaByPlayerId.p1).toBe(4));

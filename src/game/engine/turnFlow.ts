@@ -2,7 +2,7 @@ import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
 import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { seededShuffle } from '../deck/seededShuffle';
 import { edgeOffset, rotateEdge } from './geometry';
-import { applyAction, applyActionWithResolution, createGame } from './gameEngine';
+import { applyAction, applyActionWithResolution, completeTurnWithResult, createGame } from './gameEngine';
 import { buildTurnResolution, emptyTurnResolution, type TurnResolution } from './turnResolution';
 import { getLegalTilePlacements } from '../rules/placement';
 import type { MeeplePlacement, Rotation, TilePosition } from '../types/geometry';
@@ -140,7 +140,31 @@ export function drawTurnTile(state: TurnFlowState): TurnFlowState {
     else break;
     index += 1;
   }
-  if (rotation === null) return { ...state, phase: 'GAME_OVER', discardedTileIds: discarded, [deckKey]: [] };
+  if (rotation === null) {
+    const previousPlayerId = state.game.players[state.game.currentPlayerIndex]?.id ?? '';
+    const outcome = completeTurnWithResult(
+      { ...state.game, tileDeck: { remaining: [] } },
+      getTileDefinition,
+    );
+    const lastResolution = buildTurnResolution({
+      previousPlayerId,
+      nextPlayerId: previousPlayerId,
+      gameOver: true,
+      normal: outcome.normal,
+      final: outcome.final ?? null,
+      finalScores: outcome.state.scores,
+    });
+    return {
+      ...state,
+      game: outcome.state,
+      phase: 'GAME_OVER',
+      legalPlacements: [],
+      selectedMeepleTarget: null,
+      discardedTileIds: discarded,
+      lastResolution,
+      [deckKey]: [],
+    };
+  }
   const id = deck[index];
   const game = { ...state.game, tileDeck: { remaining: [id] }, gamePhase: 'drawTile' as const };
   const playerId = game.players[game.currentPlayerIndex]?.id ?? '';

@@ -27,7 +27,7 @@ export function getFinalFeaturePoints(feature: ResolvedGlobalFeature): number {
     }
     return 1 + feature.surroundingTilesFilled;
   }
-  return feature.tileCount;
+  return feature.tileCount + (feature.type === 'city' ? feature.shieldCount : 0);
 }
 
 function meepleIdsOnFeature(feature: ResolvedGlobalFeature, ctx: GlobalFeatureContext): string[] {

@@ -21,6 +21,7 @@ export function cardToTileDefinition(card: CardDefinition): TileDefinition {
     topology: {
       roadSegments,
       citySegments,
+      cityShields: citySegments.map((_, index) => card.topology.cityShields?.[index] ?? 0),
       hasMonastery: card.topology.monastery === true,
       roadEdgeSegments,
       cityEdgeSegments,

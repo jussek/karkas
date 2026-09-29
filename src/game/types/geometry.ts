@@ -51,6 +51,8 @@ export interface TileTopology {
   roadSegments: readonly string[];
   /** Уникальные id сегментов городов на плитке. */
   citySegments: readonly string[];
+  /** Shield count aligned with citySegments. Missing entries count as zero. */
+  cityShields?: readonly number[];
   /** Есть ли на плитке монастырь (в центре). */
   hasMonastery: boolean;
   /**

@@ -25,11 +25,6 @@ export function GameSetupPage({ onStart, makeGameId, makeSeed, onBack }: GameSet
   const [names, setNames] = useState<(string | undefined)[]>([]);
   const [title, setTitle] = useState('Моя партия');
   const [timer, setTimer] = useState('none');
-}
-
-export function GameSetupPage({ onStart, makeGameId, makeSeed }: GameSetupPageProps) {
-  const [count, setCount] = useState<number>(MIN_PLAYERS);
-  const [names, setNames] = useState<(string | undefined)[]>([]);
 
   const setName = (index: number, value: string) => {
     setNames((current) => {
@@ -59,11 +54,6 @@ export function GameSetupPage({ onStart, makeGameId, makeSeed }: GameSetupPagePr
         <label>Карта<select disabled><option>Классическая · река 19 карт</option></select></label>
         <p className="setup-note">Онлайн-лобби и боты пока недоступны. Эта партия работает локально на устройстве.</p>
       </section>
-
-        {onBack && <button type="button" className="setup-back" onClick={onBack}>← Меню</button>}
-        <h1>Каркасон</h1>
-        <p>Локальная партия · от 1 до 6 игроков</p>
-      </header>
 
       <section className="setup-card" aria-label="Количество игроков">
         <span className="setup-label">Игроков: <b>{count}</b></span>
@@ -124,7 +114,6 @@ export function GameSetupPage({ onStart, makeGameId, makeSeed }: GameSetupPagePr
       <div className="setup-actions">
         <button type="button" className="setup-start" onClick={start}>Создать игру</button>
         {onBack && <button type="button" className="setup-back" onClick={onBack}>Назад</button>}
-        <button type="button" className="setup-start" onClick={start}>Начать игру</button>
       </div>
     </main>
   );

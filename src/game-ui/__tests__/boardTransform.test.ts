@@ -86,7 +86,6 @@ describe('Stage 4A pure board camera helpers', () => {
     ];
     for (const corner of corners) {
       const screen = projectPoint(fitted, corner);
-      const screen = boardToScreenRoundTripInverse(fitted, corner);
       expect(screen.x).toBeGreaterThanOrEqual(-0.001);
       expect(screen.x).toBeLessThanOrEqual(viewport.width + 0.001);
       expect(screen.y).toBeGreaterThanOrEqual(-0.001);
@@ -137,7 +136,4 @@ function projectPoint(cam: Camera, content: Point): Point {
 }
 function boardToScreenRoundTrip(cam: Camera, screen: Point): Point {
   return projectPoint(cam, screenToBoard(cam, screen));
-}
-function boardToScreenRoundTripInverse(cam: Camera, screen: Point): Point {
-  return boardToScreenRoundTrip(cam, screen);
 }

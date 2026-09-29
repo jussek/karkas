@@ -60,7 +60,7 @@ const roadMeeple = (id: string, playerId: string, x = 0, y = 0, edge: EdgeIndex 
   meeple(id, playerId, x, y, placement('road', edge));
 const completed = (type: 'road' | 'city' | 'monastery', tileCount: number): ResolvedGlobalFeature => ({
   id: `${type}|test`, type, parts: [], occupantPlayerIds: [], completed: true,
-  openEdges: 0, tileCount, surroundingTilesFilled: type === 'monastery' ? 8 : null,
+  openEdges: 0, tileCount, shieldCount: 0, surroundingTilesFilled: type === 'monastery' ? 8 : null,
 });
 const fullMonasteryBoard = (): Board => board(
   tile('monastery', 0, 0),
@@ -78,6 +78,9 @@ describe('pure completed feature scoring', () => {
   });
   it('SCORING_03 scores a completed city at twice its tile count', () => {
     expect(getCompletedFeaturePoints(completed('city', 3))).toBe(6);
+  });
+  it('scores each shield as two additional points in a completed city', () => {
+    expect(getCompletedFeaturePoints({ ...completed('city', 3), shieldCount: 2 })).toBe(10);
   });
   it('SCORING_04 scores a completed monastery as exactly nine points', () => {
     expect(getCompletedFeaturePoints(completed('monastery', 1))).toBe(9);
