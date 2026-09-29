@@ -17,6 +17,10 @@ export interface GameSetupPageProps {
   makeGameId: () => string;
   /** Генератор seed (crypto в браузере; инжектируется для тестов). */
   makeSeed: () => number;
+  onBack?: () => void;
+}
+
+export function GameSetupPage({ onStart, makeGameId, makeSeed, onBack }: GameSetupPageProps) {
 }
 
 export function GameSetupPage({ onStart, makeGameId, makeSeed }: GameSetupPageProps) {
@@ -41,6 +45,7 @@ export function GameSetupPage({ onStart, makeGameId, makeSeed }: GameSetupPagePr
   return (
     <main className="setup-page">
       <header className="setup-header">
+        {onBack && <button type="button" className="setup-back" onClick={onBack}>← Меню</button>}
         <h1>Каркасон</h1>
         <p>Локальная партия · от 1 до 6 игроков</p>
       </header>

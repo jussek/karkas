@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { applyActionWithResolution, createGame } from '../engine/gameEngine';
+import { buildTurnResolution, emptyTurnResolution } from '../engine/turnResolution';
+import { getTestTile, TILE_FIELD_WITH_ROAD_END } from '../tiles/testTiles';
 import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
 import { applyAction, createGame } from '../engine/gameEngine';
 import { buildTurnResolution, emptyTurnResolution } from '../engine/turnResolution';
@@ -11,6 +14,30 @@ const players: Player[] = [
 
 describe('Stage 4A authoritative TurnResolution (single scoring pass)', () => {
   it('real End Turn through the engine produces a road event and returns its meeple', () => {
+    const initial = createGame({
+      gameId: 'res-road', players, deck: ['sentinel'], getDefinition: getTestTile,
+      startTile: { definitionId: TILE_FIELD_WITH_ROAD_END.id, position: { x: 0, y: 0 } },
+    });
+    const meeple = initial.meeples[0];
+    const ready = {
+      ...initial,
+      board: {
+        '0,0': { definitionId: TILE_FIELD_WITH_ROAD_END.id, rotation: 0 as const, position: { x: 0, y: 0 } },
+        '-1,0': { definitionId: TILE_FIELD_WITH_ROAD_END.id, rotation: 180 as const, position: { x: -1, y: 0 } },
+      },
+      gamePhase: 'scoreFeatures' as const,
+      lastPlacedTile: { definitionId: TILE_FIELD_WITH_ROAD_END.id, rotation: 180 as const, position: { x: -1, y: 0 }, playerId: 'p1' },
+      meeples: initial.meeples.map((item, index) => index === 0 ? {
+        ...item, position: { x: 0, y: 0 }, placement: { featureType: 'road' as const, edge: 3 as const },
+      } : item),
+    };
+    const completed = applyActionWithResolution(ready, { type: 'COMPLETE_TURN', playerId: 'p1' }, getTestTile);
+    expect(completed.ok).toBe(true);
+    if (!completed.ok || !completed.resolution) return;
+    expect(completed.resolution.normal.awards).toHaveLength(1);
+    expect(completed.resolution.normal.awards[0]).toMatchObject({ featureType: 'road', points: 2, winnerPlayerIds: ['p1'] });
+    expect(completed.resolution.normal.meepleIdsReturned).toEqual([meeple.id]);
+    expect(completed.state.meeples.find((item) => item.id === meeple.id)?.position).toBeNull();
     // Прямая N-S дорога поверх стартового T-C-CCCC: нижний конец дороги упирается
     // в город стартового → segment остаётся открытым. Замыкаем её вторым тайлом,
     // после чего COMPLETE_TURN обязан выдать РОВНО ОДНО road-событие и вернуть meeple.

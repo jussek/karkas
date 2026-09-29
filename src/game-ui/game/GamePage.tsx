@@ -66,6 +66,11 @@ export function formatResolution(
 
 export interface GamePageProps {
   config?: LocalGameConfig;
+  onExit?: () => void;
+  onNewGame?: () => void;
+}
+
+export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
 }
 
 export function GamePage({ config }: GamePageProps) {
@@ -74,6 +79,8 @@ export function GamePage({ config }: GamePageProps) {
   );
   const [meepleMode, setMeepleMode] = useState(false);
   const [feedbackTick, setFeedbackTick] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   /** Клетки для ближайшего вызова fitContent (для «Показать ходы»). */
   const fitOverrideRef = useRef<{ x: number; y: number }[] | null>(null);
@@ -150,6 +157,7 @@ export function GamePage({ config }: GamePageProps) {
   return (
     <main className="game-page">
       <header className="game-header">
+        <div className="game-brand">
         <div>
           <strong>Каркассон</strong>
           <span>{flow.riverPlaced < RIVER_CARD_COUNT ? `Река — ${flow.riverPlaced}/${RIVER_CARD_COUNT}` : `Ход ${flow.game.turnNumber}`}</span>
@@ -162,6 +170,7 @@ export function GamePage({ config }: GamePageProps) {
             </span>
           ))}
         </div>
+        <button type="button" className="game-menu-button" aria-label="Меню игры" onClick={() => setMenuOpen(true)}>☰</button>
       </header>
 
       <p className="turn-message" role="status">{message}</p>
@@ -244,6 +253,32 @@ export function GamePage({ config }: GamePageProps) {
           ) : (
             <p>Победитель: {finalScores.leaderPlayerIds.map(nameById).join(', ')}</p>
           )}
+          {onNewGame && <button type="button" className="game-over-new" onClick={onNewGame}>Новая игра</button>}
+        </section>
+      )}
+
+      {menuOpen && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Меню игры">
+        <section className="game-menu-sheet">
+          <h2>Меню</h2>
+          <button type="button" onClick={() => setMenuOpen(false)}>Продолжить</button>
+          <button type="button" onClick={() => { setMenuOpen(false); setRulesOpen(true); }}>Правила</button>
+          {onNewGame && <button type="button" onClick={onNewGame}>Новая игра</button>}
+          {onExit && <button type="button" className="danger" onClick={onExit}>Выйти в меню</button>}
+        </section>
+      </div>}
+
+      {rulesOpen && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Правила">
+        <section className="game-menu-sheet">
+          <h2>Как играть</h2>
+          <p>Возьмите карту, поверните и поставьте её на подсвеченное место. Подданный необязателен. Очки начисляются только после завершения хода.</p>
+          <button type="button" onClick={() => setRulesOpen(false)}>Понятно</button>
+        </section>
+      </div>}
+
+      <section className="turn-controls" aria-label="Действия хода">
+        {heldId && <div className="held-tile"><TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={86} /><span>{flow.rotation}°</span></div>}
+        <button type="button" className="draw-action" disabled={flow.phase !== 'AWAITING_DRAW'} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
+        <button type="button" className="rotate-action" aria-label="Повернуть карту по часовой стрелке" disabled={flow.phase !== 'TILE_IN_HAND'} onClick={() => setFlow(rotateTurnTile)}>↻ <span>Повернуть</span></button>
         </section>
       )}
 
@@ -265,6 +300,7 @@ export function GamePage({ config }: GamePageProps) {
           className="end-turn"
           disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase)}
           onClick={endTurnAction}
+        ><b>✓</b><span>Закончить ход</span></button>
         >Закончить ход</button>
       </section>
     </main>

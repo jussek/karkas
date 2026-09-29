@@ -1,5 +1,6 @@
 .setup-page { min-height: 100dvh; display: grid; align-content: start; gap: 14px; padding: max(16px, env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); background: #152219; color: #eef3ea; max-width: 480px; margin: auto; }
 .setup-header h1 { margin: 0; font-size: 1.7rem; }
+.setup-back { min-height: 48px; margin-bottom: 14px; padding: 0 16px; border: 1px solid #ffffff30; border-radius: 12px; color: #f3d890; background: #223529; font-weight: 700; }
 .setup-header p { margin: 4px 0 0; color: #cfd9c8; font-size: .9rem; }
 .setup-card { display: grid; gap: 10px; padding: 14px; border-radius: 16px; background: #223529; border: 1px solid #ffffff1f; }
 .setup-label { font-size: .95rem; color: #cfd9c8; }
