@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { applyActionWithResolution } from '../engine/gameEngine';
+import { buildTurnResolution, emptyTurnResolution } from '../engine/turnResolution';
+import { getTestTile, TILE_FIELD_WITH_ROAD_END } from '../tiles/testTiles';
+import type { GameState, Player } from '../types/state';
 import { applyActionWithResolution, createGame } from '../engine/gameEngine';
 import { buildTurnResolution, emptyTurnResolution } from '../engine/turnResolution';
 import { getTestTile, TILE_FIELD_WITH_ROAD_END } from '../tiles/testTiles';
@@ -14,6 +18,24 @@ const players: Player[] = [
 
 describe('Stage 4A authoritative TurnResolution (single scoring pass)', () => {
   it('real End Turn through the engine produces a road event and returns its meeple', () => {
+    const state: GameState = {
+      gameId: 'res-road', status: 'playing', players,
+      board: {
+        '0,0': { definitionId: TILE_FIELD_WITH_ROAD_END.id, rotation: 0, position: { x: 0, y: 0 } },
+        '-1,0': { definitionId: TILE_FIELD_WITH_ROAD_END.id, rotation: 180, position: { x: -1, y: 0 } },
+      },
+      tileDeck: { remaining: [TILE_FIELD_WITH_ROAD_END.id] }, currentPlayerIndex: 0,
+      turnNumber: 1, scores: { p1: 0, p2: 0 }, gamePhase: 'scoreFeatures',
+      drawnTileDefinitionId: null,
+      lastPlacedTile: { definitionId: TILE_FIELD_WITH_ROAD_END.id, rotation: 180, position: { x: -1, y: 0 }, playerId: 'p1' },
+      meeples: [{ id: 'p1-m0', playerId: 'p1', position: { x: 0, y: 0 }, placement: { featureType: 'road', edge: 3 } }],
+    };
+    const completed = applyActionWithResolution(state, { type: 'COMPLETE_TURN', playerId: 'p1' }, getTestTile);
+    if (!completed.ok || !completed.resolution) throw new Error('End Turn failed');
+    expect(completed.state.scores.p1).toBe(2);
+    expect(completed.resolution.normal.awards).toHaveLength(1);
+    expect(completed.resolution.normal.awards[0]).toMatchObject({ featureType: 'road', points: 2 });
+    expect(completed.resolution.normal.meepleIdsReturned).toEqual(['p1-m0']);
     const initial = createGame({
       gameId: 'res-road', players, deck: ['sentinel'], getDefinition: getTestTile,
       startTile: { definitionId: TILE_FIELD_WITH_ROAD_END.id, position: { x: 0, y: 0 } },

@@ -170,6 +170,11 @@ export function GamePage({ config }: GamePageProps) {
             </span>
           ))}
         </div>
+        <button type="button" className="game-menu-button" aria-label="Меню" onClick={() => setMenuOpen((value) => !value)}>☰</button>
+      </header>
+
+      {menuOpen && <aside className="game-menu" aria-label="Меню игры"><strong>Меню</strong><button type="button">Правила</button><button type="button" onClick={onNewGame}>Новая игра</button><button type="button" onClick={onExit}>Выйти в меню</button></aside>}
+
         <button type="button" className="game-menu-button" aria-label="Меню игры" onClick={() => setMenuOpen(true)}>☰</button>
       </header>
 
@@ -247,12 +252,14 @@ export function GamePage({ config }: GamePageProps) {
               ))}
           </ol>
           {flow.game.players.length === 1 ? (
+            <p>Ваш результат: <b>{finalScores.scoreByPlayerId[flow.game.players[0].id] ?? 0}</b> очков</p>
             <p>Итоговый результат: {finalScores.scoreByPlayerId[flow.game.players[0].id] ?? 0}</p>
           ) : finalScores.tied ? (
             <p>Ничья: {finalScores.leaderPlayerIds.map(nameById).join(', ')}</p>
           ) : (
             <p>Победитель: {finalScores.leaderPlayerIds.map(nameById).join(', ')}</p>
           )}
+          <div className="game-over-actions"><button type="button" onClick={onNewGame}>Новая игра</button><button type="button" onClick={onExit}>Главное меню</button></div>
           {onNewGame && <button type="button" className="game-over-new" onClick={onNewGame}>Новая игра</button>}
         </section>
       )}
@@ -283,6 +290,7 @@ export function GamePage({ config }: GamePageProps) {
       )}
 
       <section className="turn-controls" aria-label="Действия хода">
+        {heldId && <div className="held-tile"><TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={88} /><span>{flow.rotation}°</span></div>}
         {heldId && <div className="held-tile"><TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={76} /><span>{flow.rotation}°</span></div>}
         <button type="button" disabled={flow.phase !== 'AWAITING_DRAW'} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
         <button type="button" aria-label="Повернуть карту по часовой стрелке" disabled={flow.phase !== 'TILE_IN_HAND'} onClick={() => setFlow(rotateTurnTile)}>↻ <span>Повернуть</span></button>
@@ -300,6 +308,7 @@ export function GamePage({ config }: GamePageProps) {
           className="end-turn"
           disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase)}
           onClick={endTurnAction}
+        >✓ <span>Закончить ход</span></button>
         ><b>✓</b><span>Закончить ход</span></button>
         >Закончить ход</button>
       </section>

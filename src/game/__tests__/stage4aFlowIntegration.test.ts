@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
 import { getTileDefinition } from '../cards/catalogApi';
 import {
   createTurnFlow, drawTurnTile, endTurn, placeTurnTile, rotateTurnTile, selectTurnMeeple,
@@ -117,6 +118,7 @@ describe('Stage 4A full-flow integration through TurnFlow', () => {
     // Ход 1: p1 размещает тайл и ставит meeple на первую legal цель.
     let drawn = drawTurnTile(state);
     drawn = placeTurnTile(drawn, drawn.legalPlacements[0]);
+    const target = getLegalMeeplePlacements(drawn.game, getTileDefinition)[0] ?? null;
     const target = getLegalMeeplePlacements(drawn.game, getTileDefinition)[0];
     const withMeeple = target ? selectTurnMeeple(drawn, target) : drawn;
     const placed = drawn.game.lastPlacedTile!;
@@ -169,6 +171,29 @@ describe('Stage 4A full-flow integration through TurnFlow', () => {
   });
 
   it('walled monastery remains incomplete and receives supported final scoring once', () => {
+    const tileId = findWallMonastery();
+    const fillerId = 'card-001';
+    let state = createTurnFlow({ gameId: 'flow-mono', players: onePlayer, seed: 17 });
+    const occupied = [{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }];
+    const board = {
+      '0,0': { definitionId: tileId, rotation: 0 as const, position: { x: 0, y: 0 } },
+      ...Object.fromEntries(occupied.map((position) => [
+        `${position.x},${position.y}`,
+        { definitionId: fillerId, rotation: 0 as const, position },
+      ])),
+    };
+    state = {
+      ...state,
+      phase: 'TILE_PLACED', riverPlaced: 19, riverDeck: [], landDeck: [],
+      game: {
+        ...state.game, board, gamePhase: 'placeMeeple', scores: { 'player-1': 0 },
+        lastPlacedTile: { definitionId: fillerId, rotation: 0, position: occupied[0], playerId: 'player-1' },
+        meeples: state.game.meeples.map((meeple, index) => index === 0 ? {
+          ...meeple, position: { x: 0, y: 0 }, placement: { featureType: 'monastery' as const, edge: null },
+        } : meeple),
+      },
+    };
+    state = endTurn(state);
     const before = finalTurnState(onePlayer, true);
     const completed = applyActionWithResolution(before, { type: 'COMPLETE_TURN', playerId: 'player-1' }, getTestTile);
     if (!completed.ok || !completed.resolution?.final) throw new Error('final End Turn failed');
@@ -223,6 +248,20 @@ describe('Stage 4A full-flow integration through TurnFlow', () => {
 
   it('multiplayer game over reports tied leaders factually when scores allow', () => {
     let state = createTurnFlow({ gameId: 'flow-tie', players: twoPlayers, seed: 23 });
+    const fillerId = 'card-001';
+    state = {
+      ...state, phase: 'TILE_PLACED', riverPlaced: 19, riverDeck: [], landDeck: [],
+      game: {
+        ...state.game,
+        board: {
+          ...state.game.board,
+          '0,1': { definitionId: fillerId, rotation: 0, position: { x: 0, y: 1 } },
+        },
+        gamePhase: 'placeMeeple',
+        lastPlacedTile: { definitionId: fillerId, rotation: 0, position: { x: 0, y: 1 }, playerId: 'player-1' },
+      },
+    };
+    state = endTurn(state);
     let guard = 0;
     while (state.phase !== 'GAME_OVER' && guard < 400) {
       state = playOneTurn(state);
