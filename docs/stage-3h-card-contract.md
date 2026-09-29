@@ -71,6 +71,9 @@ After excluding card 106 and correcting the pond on card 096, the canonical audi
 `card-091` is the sole source, `card-133` is the sole end, and the other 17 cards are middle tiles. The previous catalog's river flags are not authoritative.
 After excluding card 105, the current image audit identified these 19 river-image candidates:
 
+`053, 054, 055, 067, 079, 088, 090, 091, 099, 100, 101, 102, 107, 108, 109, 110, 111, 121, 133`.
+
+This list is the Stage 3H image-audit set. The previous catalog's river flags are not authoritative. `card-105` remains a normal road/city tile; only `card-106` is excluded from runtime.
 `053, 054, 067, 079, 088, 090, 091, 099, 100, 101, 102, 106, 107, 108, 109, 110, 111, 121, 133`.
 
 This list is the Stage 3H image-audit set. The previous catalog's river flags are not authoritative. No three-way river behavior is required after card 105 is removed.

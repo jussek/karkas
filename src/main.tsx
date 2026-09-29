@@ -35,6 +35,27 @@ function App() {
   const prepare = (next: LocalGameConfig) => { setConfig(next); setScreen('lobby'); };
   if (screen === 'menu') return <MainMenu onCreateGame={() => setScreen('setup')} onQuickGame={() => setScreen('setup')} />;
   if (screen === 'setup') {
+  // Local menu → setup → game. No persistence/network (state only in memory).
+  const [screen, setScreen] = useState<"menu" | "setup" | "game">("menu");
+  const [config, setConfig] = useState<LocalGameConfig | null>(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  if (screen === "menu") {
+    return <>
+      <MainMenu onNewGame={() => setScreen("setup")} onRules={() => setRulesOpen(true)} />
+      {rulesOpen && <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+        <section className="rules-card">
+          <button type="button" className="rules-close" aria-label="Закрыть правила" onClick={() => setRulesOpen(false)}>×</button>
+          <h2 id="rules-title">Как играть</h2>
+          <ol><li>Возьмите карту и поверните её.</li><li>Поставьте на подсвеченную клетку.</li><li>При желании поставьте подданного.</li><li>Завершите ход — очки начислит игра.</li></ol>
+          <p>Поля, сады и река не являются целями для подданных.</p>
+        </section>
+      </div>}
+    </>;
+  }
+  if (screen === "setup" || !config) {
+  // Stage 4A: local setup → game. No persistence (state only in memory).
+  const [config, setConfig] = useState<LocalGameConfig | null>(null);
+  if (!config) {
     return (
       <GameSetupPage
         makeGameId={browserGameId}
@@ -47,6 +68,17 @@ function App() {
   if (screen === 'lobby' && config) return <LocalLobby config={config} onStart={() => setScreen('game')} onBack={() => setScreen('setup')} />;
   if (!config) return <MainMenu onCreateGame={() => setScreen('setup')} onQuickGame={() => setScreen('setup')} />;
   return <GamePage config={config} key={config.gameId} onExit={() => setScreen('menu')} onNewGame={() => setScreen('setup')} />;
+        onBack={() => setScreen("menu")}
+        onStart={(next) => { setConfig(next); setScreen("game"); }}
+      />
+    );
+  }
+  return <GamePage config={config} key={config.gameId} onExit={() => { setConfig(null); setScreen("menu"); }} onNewGame={() => { setConfig(null); setScreen("setup"); }} />;
+        onStart={setConfig}
+      />
+    );
+  }
+  return <GamePage config={config} key={config.gameId} />;
 }
 
 const root = document.getElementById("root");

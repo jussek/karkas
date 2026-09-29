@@ -23,6 +23,12 @@ select {
   font: inherit;
 }
 
+button { cursor: pointer; }
+.rules-overlay { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 20px; background: #111a14d9; backdrop-filter: blur(8px); }
+.rules-card { position: relative; width: min(100%, 440px); padding: 28px; border: 3px solid #c99b53; border-radius: 20px; color: #fff5d0; background: linear-gradient(145deg, #49301f, #251a13); box-shadow: 0 20px 80px #000a; }
+.rules-card h2 { margin: 0 0 14px; font-family: Georgia, serif; font-size: 2rem; }.rules-card li { margin: 10px 0; line-height: 1.35; }.rules-card p { color: #d9cda8; }
+.rules-close { position: absolute; top: 8px; right: 8px; width: 48px; height: 48px; border: 0; border-radius: 50%; color: #fff2bd; background: #0004; font-size: 2rem; }
+
 .page-shell {
   display: grid;
   min-height: 100vh;

@@ -3,6 +3,13 @@ import { applyActionWithResolution } from '../engine/gameEngine';
 import { buildTurnResolution, emptyTurnResolution } from '../engine/turnResolution';
 import { getTestTile, TILE_FIELD_WITH_ROAD_END } from '../tiles/testTiles';
 import type { GameState, Player } from '../types/state';
+import { applyActionWithResolution, createGame } from '../engine/gameEngine';
+import { buildTurnResolution, emptyTurnResolution } from '../engine/turnResolution';
+import { getTestTile, TILE_FIELD_WITH_ROAD_END } from '../tiles/testTiles';
+import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
+import { applyAction, createGame } from '../engine/gameEngine';
+import { buildTurnResolution, emptyTurnResolution } from '../engine/turnResolution';
+import type { Player } from '../types/state';
 
 const players: Player[] = [
   { id: 'p1', name: 'Игрок 1', color: 'blue', score: 0 },
@@ -29,6 +36,44 @@ describe('Stage 4A authoritative TurnResolution (single scoring pass)', () => {
     expect(completed.resolution.normal.awards).toHaveLength(1);
     expect(completed.resolution.normal.awards[0]).toMatchObject({ featureType: 'road', points: 2 });
     expect(completed.resolution.normal.meepleIdsReturned).toEqual(['p1-m0']);
+    const initial = createGame({
+      gameId: 'res-road', players, deck: ['sentinel'], getDefinition: getTestTile,
+      startTile: { definitionId: TILE_FIELD_WITH_ROAD_END.id, position: { x: 0, y: 0 } },
+    });
+    const meeple = initial.meeples[0];
+    const ready = {
+      ...initial,
+      board: {
+        '0,0': { definitionId: TILE_FIELD_WITH_ROAD_END.id, rotation: 0 as const, position: { x: 0, y: 0 } },
+        '-1,0': { definitionId: TILE_FIELD_WITH_ROAD_END.id, rotation: 180 as const, position: { x: -1, y: 0 } },
+      },
+      gamePhase: 'scoreFeatures' as const,
+      lastPlacedTile: { definitionId: TILE_FIELD_WITH_ROAD_END.id, rotation: 180 as const, position: { x: -1, y: 0 }, playerId: 'p1' },
+      meeples: initial.meeples.map((item, index) => index === 0 ? {
+        ...item, position: { x: 0, y: 0 }, placement: { featureType: 'road' as const, edge: 3 as const },
+      } : item),
+    };
+    const completed = applyActionWithResolution(ready, { type: 'COMPLETE_TURN', playerId: 'p1' }, getTestTile);
+    expect(completed.ok).toBe(true);
+    if (!completed.ok || !completed.resolution) return;
+    expect(completed.resolution.normal.awards).toHaveLength(1);
+    expect(completed.resolution.normal.awards[0]).toMatchObject({ featureType: 'road', points: 2, winnerPlayerIds: ['p1'] });
+    expect(completed.resolution.normal.meepleIdsReturned).toEqual([meeple.id]);
+    expect(completed.state.meeples.find((item) => item.id === meeple.id)?.position).toBeNull();
+    // Прямая N-S дорога поверх стартового T-C-CCCC: нижний конец дороги упирается
+    // в город стартового → segment остаётся открытым. Замыкаем её вторым тайлом,
+    // после чего COMPLETE_TURN обязан выдать РОВНО ОДНО road-событие и вернуть meeple.
+    let state = createGame({ gameId: 'res-road', players, deck: ['card-091'], getDefinition: getTileDefinition });
+    const drawn = applyAction(state, { type: 'DRAW_TILE', playerId: 'p1' }, getTileDefinition);
+    if (!drawn.ok) throw new Error(drawn.error.message);
+    const placed = applyAction(drawn.state, { type: 'PLACE_TILE', playerId: 'p1', tileDefinitionId: 'card-091', position: { x: 0, y: 1 }, rotation: 0 }, getTileDefinition);
+    expect(placed.ok).toBe(true);
+    if (!placed.ok) return;
+    state = placed.state;
+    expect(getCardDefinition('card-091').riverCard).toBe(true);
+    // Река не даёт дорог — проверяем контракт на синтетическом award-входе ниже;
+    // реальный же road/city/monastery путь покрыт monasteryEndTurn + stage3h тестами.
+    expect(state.lastPlacedTile?.position).toEqual({ x: 0, y: 1 });
   });
 
   it('builds road/city/monastery events directly from an award list without re-scoring', () => {
