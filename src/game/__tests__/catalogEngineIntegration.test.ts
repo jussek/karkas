@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARD_CATALOG } from '../cards/catalog';
+import { GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
 import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
 import { cardToTileDefinition } from '../cards/toTileDefinition';
 import { createCatalogDeck } from '../deck/catalogDeck';
@@ -8,14 +8,14 @@ import { createCatalogGame } from '../engine/createCatalogGame';
 import { MEEPLES_PER_PLAYER } from '../engine/gameEngine';
 import type { Player } from '../types/state';
 
-const verifiedStart = CARD_CATALOG.find((card) => card.reviewRequired !== true)!;
-const reviewCard = CARD_CATALOG.find((card) => card.reviewRequired === true);
+const verifiedStart = GAME_CARD_CATALOG.find((card) => card.reviewRequired !== true)!;
+const reviewCard = GAME_CARD_CATALOG.find((card) => card.reviewRequired === true);
 
 describe('card catalog adapter', () => {
-  it('converts all 144 cards exactly without mutation', () => {
-    expect(CARD_CATALOG).toHaveLength(144);
+  it('converts all 143 runtime cards exactly without mutation', () => {
+    expect(GAME_CARD_CATALOG).toHaveLength(143);
 
-    for (const card of CARD_CATALOG) {
+    for (const card of GAME_CARD_CATALOG) {
       const before = JSON.stringify(card);
       const tile = cardToTileDefinition(card);
       const expectedRoadEdges: (string | null)[] = [null, null, null, null];
@@ -56,7 +56,7 @@ describe('card catalog adapter', () => {
   });
 
   it('preserves every river side', () => {
-    for (const card of CARD_CATALOG) {
+    for (const card of GAME_CARD_CATALOG) {
       const tile = cardToTileDefinition(card);
       const cardSides = [card.edges.north, card.edges.east, card.edges.south, card.edges.west];
       cardSides.forEach((side, edge) => {
@@ -81,9 +81,9 @@ describe('catalog lookup', () => {
 
 describe('catalog deck', () => {
   it('builds the default verified deck in catalog order without mutation', () => {
-    const before = JSON.stringify(CARD_CATALOG);
+    const before = JSON.stringify(GAME_CARD_CATALOG);
     const deck = createCatalogDeck({ startCardId: verifiedStart.id });
-    const expected = CARD_CATALOG.filter(
+    const expected = GAME_CARD_CATALOG.filter(
       (card) => card.id !== verifiedStart.id && card.reviewRequired !== true,
     ).map((card) => card.id);
 
@@ -92,7 +92,7 @@ describe('catalog deck', () => {
     expect(deck).not.toContain(verifiedStart.id);
     expect(new Set(deck).size).toBe(deck.length);
     expect(deck.every((id) => getCardDefinition(id).reviewRequired !== true)).toBe(true);
-    expect(JSON.stringify(CARD_CATALOG)).toBe(before);
+    expect(JSON.stringify(GAME_CARD_CATALOG)).toBe(before);
   });
 
   it('includes every non-start card when review cards are enabled', () => {
@@ -100,12 +100,12 @@ describe('catalog deck', () => {
       startCardId: verifiedStart.id,
       includeReviewRequired: true,
     });
-    const expected = CARD_CATALOG.filter((card) => card.id !== verifiedStart.id).map(
+    const expected = GAME_CARD_CATALOG.filter((card) => card.id !== verifiedStart.id).map(
       (card) => card.id,
     );
 
     expect(deck).toEqual(expected);
-    expect(deck).toHaveLength(CARD_CATALOG.length - 1);
+    expect(deck).toHaveLength(GAME_CARD_CATALOG.length - 1);
     expect(new Set(deck).size).toBe(deck.length);
   });
 

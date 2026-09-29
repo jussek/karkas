@@ -1,29 +1,52 @@
-import { StrictMode } from "react";
+import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { TileGalleryPage } from "./game-ui/gallery/TileGalleryPage";
+import { GamePage } from "./game-ui/game/GamePage";
+import { GameSetupPage } from "./game-ui/setup/GameSetupPage";
+import { LocalLobby } from "./game-ui/setup/LocalLobby";
+import { MainMenu } from "./game-ui/menu/MainMenu";
+import type { LocalGameConfig } from "./game/session";
+
+function browserGameId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `local-${Date.now().toString(36)}`;
+}
+
+function browserSeed(): number {
+  const buffer = new Uint32Array(1);
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    crypto.getRandomValues(buffer);
+    return buffer[0];
+  }
+  return Date.now() >>> 0;
+}
 
 function App() {
-  // Stage 3E: minimal temporary route switch. Full routing arrives in Stage 4A.
+  // Stage 3E: gallery route. Full routing arrives later.
   if (typeof window !== "undefined" && window.location.pathname === "/tiles") {
     return <TileGalleryPage />;
   }
-  return (
-    <main className="page-shell">
-      <section className="hero" aria-labelledby="page-title">
-        <p className="eyebrow">Настольная стратегия</p>
-        <h1 id="page-title">Каркассон онлайн</h1>
-        <p className="lead">
-          Игровой движок готов. Скоро здесь можно будет строить города, прокладывать
-          дороги и собирать друзей за одной картой.
-        </p>
-        <div className="status" role="status">
-          <span className="status-dot" aria-hidden="true" />
-          Проект готов к следующему этапу
-        </div>
-      </section>
-    </main>
-  );
+  // Stage 4A: local setup → game. No persistence (state only in memory).
+  const [screen, setScreen] = useState<'menu' | 'setup' | 'lobby' | 'game'>('menu');
+  const [config, setConfig] = useState<LocalGameConfig | null>(null);
+  const prepare = (next: LocalGameConfig) => { setConfig(next); setScreen('lobby'); };
+  if (screen === 'menu') return <MainMenu onCreateGame={() => setScreen('setup')} onQuickGame={() => setScreen('setup')} />;
+  if (screen === 'setup') {
+    return (
+      <GameSetupPage
+        makeGameId={browserGameId}
+        makeSeed={browserSeed}
+        onStart={prepare}
+        onBack={() => setScreen('menu')}
+      />
+    );
+  }
+  if (screen === 'lobby' && config) return <LocalLobby config={config} onStart={() => setScreen('game')} onBack={() => setScreen('setup')} />;
+  if (!config) return <MainMenu onCreateGame={() => setScreen('setup')} onQuickGame={() => setScreen('setup')} />;
+  return <GamePage config={config} key={config.gameId} onExit={() => setScreen('menu')} onNewGame={() => setScreen('setup')} />;
 }
 
 const root = document.getElementById("root");

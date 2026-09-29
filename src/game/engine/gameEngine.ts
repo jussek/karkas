@@ -41,8 +41,9 @@ import {
   isPlacementOnValidFeature,
 } from '../rules/localFeatures';
 import { isGlobalFeatureOccupied } from '../rules/globalFeatures';
-import { scoreCompletedFeaturesForTurn } from '../rules/scoring';
-import { scoreFinalFeatures } from '../rules/finalScoring';
+import { getTestTile } from '../tiles/testTiles';
+import { scoreCompletedFeaturesForTurn, type TurnScoringResult } from '../rules/scoring';
+import { scoreFinalFeatures, type FinalScoringResult } from '../rules/finalScoring';
 
 /* ------------------------------------------------------------------ */
 /* Мееплы на игрока (базовая игра: 7 подданных)                       */
@@ -79,12 +80,29 @@ export interface CreateGameOptions {
   startTile?: { definitionId: string; position: TilePosition };
 }
 
+/** Stage 4A: поддерживается строго 1–6 игроков (1 — полноценный локальный режим). */
+export const MIN_PLAYERS = 1;
+export const MAX_PLAYERS = 6;
+
 export function createGame(options: CreateGameOptions): GameState {
-  if (options.players.length < 2) {
-    throw new Error('createGame: at least 2 players required');
+  if (options.players.length < MIN_PLAYERS) {
+    throw new Error(`createGame: at least ${MIN_PLAYERS} player required`);
+  }
+  if (options.players.length > MAX_PLAYERS) {
+    throw new Error(`createGame: at most ${MAX_PLAYERS} players supported`);
+  }
+  const seenIds = new Set<string>();
+  for (const p of options.players) {
+    if (seenIds.has(p.id)) {
+      throw new Error(`createGame: duplicate player id ${p.id}`);
+    }
+    seenIds.add(p.id);
   }
   const start = options.startTile ?? {
-    definitionId: 'T-C-CCCC',
+    // Дефолтная стартовая плитка: legacy-тесты Stage 2 (engine.test.ts)
+    // используют тестовые тайлы T-*; canonical runtime-игры всегда передают
+    // явный startTile (исток реки card-091). Определяем реестр детерминированно.
+    definitionId: options.getDefinition === getTestTile ? 'T-C-CCCC' : 'card-091',
     position: { x: 0, y: 0 },
   };
   // Валидность стартового шаблона проверяем сразу (это программная ошибка, не игровая).
@@ -343,11 +361,23 @@ function validateCompleteTurn(
  * Не мутирует входное состояние; при ошибке возвращает структурированный
  * результат, состояние не меняется.
  */
-export function applyAction(
+/**
+ * Результат applyActionWithResolution: то же состояние, что и applyAction,
+ * плюс authoritative-события ЕДИНОГО scoring pass для COMPLETE_TURN.
+ */
+export type CompleteTurnOutcomeResult = ActionResult & {
+  resolution?: CompleteTurnOutcome;
+};
+
+/**
+ * Единая точка входа с построением событий разрешения хода.
+ * Скоринг выполняется РОВНО ОДИН раз; события строятся из того же прохода.
+ */
+export function applyActionWithResolution(
   state: GameState,
   action: GameAction,
   getDefinition: (id: string) => TileDefinition,
-): ActionResult {
+): CompleteTurnOutcomeResult {
   const error = validateAction(state, action, getDefinition);
   if (error) return { ok: false, error };
 
@@ -360,9 +390,21 @@ export function applyAction(
       return { ok: true, state: applyPlaceMeeple(state, action) };
     case 'SKIP_MEEPLE':
       return { ok: true, state: advanceToScoringPhase(state) };
-    case 'COMPLETE_TURN':
-      return { ok: true, state: applyCompleteTurn(state, getDefinition) };
+    case 'COMPLETE_TURN': {
+      const outcome = completeTurnWithResult(state, getDefinition);
+      return { ok: true, state: outcome.state, resolution: outcome };
+    }
   }
+}
+
+export function applyAction(
+  state: GameState,
+  action: GameAction,
+  getDefinition: (id: string) => TileDefinition,
+): ActionResult {
+  const result = applyActionWithResolution(state, action, getDefinition);
+  if (!result.ok) return result;
+  return { ok: true, state: result.state };
 }
 
 function applyPlaceTile(state: GameState, action: PlaceTileAction): GameState {
@@ -419,10 +461,24 @@ function advanceToScoringPhase(state: GameState): GameState {
   return { ...state, gamePhase: 'scoreFeatures' };
 }
 
-function applyCompleteTurn(
+export interface CompleteTurnOutcome {
+  state: GameState;
+  /** Результат ЕДИНОГО authoritative scoring pass обычного хода. */
+  normal: TurnScoringResult;
+  /** Присутствует только на финальном (game over) проходе — ровно один раз. */
+  final?: FinalScoringResult;
+}
+
+/**
+ * Единственный authoritative проход завершения хода: подсчёт завершённых
+ * фич, возврат meeple, при пустой колоде — финальный подсчёт (ровно один раз).
+ * Возвращает и новое состояние, и сырые результаты скоринга, из которых
+ * buildTurnResolution строит события — повторного скоринга НЕТ.
+ */
+export function completeTurnWithResult(
   state: GameState,
   getDefinition: (id: string) => TileDefinition,
-): GameState {
+): CompleteTurnOutcome {
   const scoring = state.lastPlacedTile
     ? scoreCompletedFeaturesForTurn(
         { board: state.board, meeples: state.meeples, getDefinition },
@@ -451,31 +507,39 @@ function applyCompleteTurn(
     }
     const finalReturned = new Set(finalScoring.meepleIdsReturned);
     return {
-      ...state,
-      status: 'finished',
-      scores,
-      meeples: meeplesAfterNormalScoring.map((meeple) =>
-        finalReturned.has(meeple.id)
-          ? { ...meeple, position: null, placement: null }
-          : meeple,
-      ),
-      turnNumber: state.turnNumber + 1,
-      drawnTileDefinitionId: null,
-      lastPlacedTile: null,
-      gamePhase: 'turnComplete',
+      state: {
+        ...state,
+        status: 'finished',
+        scores,
+        meeples: meeplesAfterNormalScoring.map((meeple) =>
+          finalReturned.has(meeple.id)
+            ? { ...meeple, position: null, placement: null }
+            : meeple,
+        ),
+        turnNumber: state.turnNumber + 1,
+        drawnTileDefinitionId: null,
+        lastPlacedTile: null,
+        gamePhase: 'turnComplete',
+      },
+      normal: scoring,
+      final: finalScoring,
     };
   }
 
+  // 1 игрок: (index+1)%1 === 0 → тот же игрок остаётся активным автоматически.
   const nextIndex = (state.currentPlayerIndex + 1) % state.players.length;
   return {
-    ...state,
-    scores,
-    meeples: meeplesAfterNormalScoring,
-    currentPlayerIndex: nextIndex,
-    turnNumber: state.turnNumber + 1,
-    drawnTileDefinitionId: null,
-    lastPlacedTile: null,
-    gamePhase: 'drawTile',
+    state: {
+      ...state,
+      scores,
+      meeples: meeplesAfterNormalScoring,
+      currentPlayerIndex: nextIndex,
+      turnNumber: state.turnNumber + 1,
+      drawnTileDefinitionId: null,
+      lastPlacedTile: null,
+      gamePhase: 'drawTile',
+    },
+    normal: scoring,
   };
 }
 

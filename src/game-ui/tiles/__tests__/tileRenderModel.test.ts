@@ -16,7 +16,7 @@ import type {
   Rotation,
   TileDefinition,
 } from '../../../game/types/geometry';
-import { CARD_CATALOG } from '../../../game/cards/catalog';
+import { GAME_CARD_CATALOG } from '../../../game/cards/canonicalCatalog';
 import { cardToTileDefinition } from '../../../game/cards/toTileDefinition';
 import {
   createRotatedTileRenderModel,
@@ -243,26 +243,27 @@ describe('render model — rotation contract', () => {
 /* ------------------------------------------------------------------ */
 
 describe('render model — verified real river cards', () => {
-  it('card-129 exposes river edges [2] (source)', () => {
-    const def = cardToTileDefinition(CARD_CATALOG.find((c) => c.id === 'card-129')!);
+  it('card-091 exposes river edge [2] (source)', () => {
+    const def = cardToTileDefinition(GAME_CARD_CATALOG.find((c) => c.id === 'card-091')!);
     const m = createTileRenderModel(def);
     expect(m.rivers).toHaveLength(1);
     expect(groupKey(m.rivers[0].edges)).toBe('2');
-    expect(getRiverEdgesForCard('card-129')).toEqual([2]);
+    expect(getRiverEdgesForCard('card-091')).toEqual([2]);
   });
 
-  it('card-102 exposes river edges [3] (end)', () => {
-    const def = cardToTileDefinition(CARD_CATALOG.find((c) => c.id === 'card-102')!);
+  it('card-133 exposes river edge [2] (end)', () => {
+    const def = cardToTileDefinition(GAME_CARD_CATALOG.find((c) => c.id === 'card-133')!);
     const m = createTileRenderModel(def);
     expect(m.rivers).toHaveLength(1);
-    expect(groupKey(m.rivers[0].edges)).toBe('3');
+    expect(groupKey(m.rivers[0].edges)).toBe('2');
   });
 
-  it('card-105 exposes three-way river edges [0,1,3]', () => {
-    const def = cardToTileDefinition(CARD_CATALOG.find((c) => c.id === 'card-105')!);
+  it('card-105 is a normal road/city tile, not a river tile', () => {
+    const def = cardToTileDefinition(GAME_CARD_CATALOG.find((c) => c.id === 'card-105')!);
     const m = createTileRenderModel(def);
-    expect(m.rivers).toHaveLength(1);
-    expect(groupKey(m.rivers[0].edges)).toBe('0,1,3');
+    expect(m.rivers).toHaveLength(0);
+    expect(m.roads).toHaveLength(1);
+    expect(m.cities).toHaveLength(1);
   });
 
   it('non-river definitions have no rivers and safe explicit test path exists via geometry helpers', () => {
@@ -277,16 +278,16 @@ describe('render model — verified real river cards', () => {
 /* ------------------------------------------------------------------ */
 
 describe('render model — catalog-wide audit (all cards)', () => {
-  it('every catalog card renders without throwing; count is exactly 144', () => {
-    expect(CARD_CATALOG).toHaveLength(144);
-    for (const card of CARD_CATALOG) {
+  it('every runtime catalog card renders without throwing; count is exactly 143', () => {
+    expect(GAME_CARD_CATALOG).toHaveLength(143);
+    for (const card of GAME_CARD_CATALOG) {
       const def = cardToTileDefinition(card);
       expect(() => createTileRenderModel(def)).not.toThrow();
     }
   });
 
   it('road grouping equals TileDefinition road grouping for every card', () => {
-    for (const card of CARD_CATALOG) {
+    for (const card of GAME_CARD_CATALOG) {
       const def = cardToTileDefinition(card);
       const m = createTileRenderModel(def);
       expect(keysOf(m.roads), card.id).toEqual(card.topology.roads.map(groupKey));
@@ -294,7 +295,7 @@ describe('render model — catalog-wide audit (all cards)', () => {
   });
 
   it('city grouping equals TileDefinition city grouping for every card', () => {
-    for (const card of CARD_CATALOG) {
+    for (const card of GAME_CARD_CATALOG) {
       const def = cardToTileDefinition(card);
       const m = createTileRenderModel(def);
       expect(keysOf(m.cities), card.id).toEqual(card.topology.cities.map(groupKey));
@@ -302,7 +303,7 @@ describe('render model — catalog-wide audit (all cards)', () => {
   });
 
   it('monastery flag preserved exactly for every card', () => {
-    for (const card of CARD_CATALOG) {
+    for (const card of GAME_CARD_CATALOG) {
       const def = cardToTileDefinition(card);
       const m = createTileRenderModel(def);
       expect(m.monastery, card.id).toBe(card.topology.monastery === true);
@@ -311,7 +312,7 @@ describe('render model — catalog-wide audit (all cards)', () => {
 
   it('river render endpoints equal catalog topology.riverEdges for every river card', () => {
     let riverCards = 0;
-    for (const card of CARD_CATALOG) {
+    for (const card of GAME_CARD_CATALOG) {
       const declared = card.topology.riverEdges ?? [];
       if (declared.length === 0) continue;
       riverCards++;

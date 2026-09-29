@@ -22,8 +22,11 @@ import type { GameError } from '../engine/errors';
 export interface Player {
   id: string;
   name: string;
-  /** Цвет используется только для UI-идентификации. */
-  color: 'blue' | 'red' | 'green' | 'yellow' | 'black';
+  /**
+   * Стабильная строка CSS-цвета, используется ТОЛЬКО для UI-идентификации.
+   * Игровые правила никогда не зависят от цвета (Stage 4A: 1–6 игроков).
+   */
+  color: string;
   score: number;
 }
 
