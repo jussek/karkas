@@ -17,7 +17,8 @@ describe('Stage 4A authoritative TurnResolution (single scoring pass)', () => {
     let state = createGame({ gameId: 'res-road', players, deck: ['card-091'], getDefinition: getTileDefinition });
     const drawn = applyAction(state, { type: 'DRAW_TILE', playerId: 'p1' }, getTileDefinition);
     if (!drawn.ok) throw new Error(drawn.error.message);
-    const placed = applyAction(drawn.state, { type: 'PLACE_TILE', playerId: 'p1', tileDefinitionId: 'card-091', position: { x: 0, y: 1 }, rotation: 0 }, getTileDefinition);
+    // Fixture rotation selected through authoritative placement legality.
+    const placed = applyAction(drawn.state, { type: 'PLACE_TILE', playerId: 'p1', tileDefinitionId: 'card-091', position: { x: 0, y: 1 }, rotation: 180 }, getTileDefinition);
     expect(placed.ok).toBe(true);
     if (!placed.ok) return;
     state = placed.state;

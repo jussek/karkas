@@ -326,7 +326,11 @@ function drawRiverTile(state: TurnFlowState): TurnFlowState {
     );
   }
   const pickedId = picked.cardId;
-  const rotation = playableRotation(state, pickedId);
+  const stateAfterDraw: TurnFlowState = {
+    ...state,
+    riverDeck: picked.riverDeck,
+  };
+  const rotation = playableRotation(stateAfterDraw, pickedId);
   if (rotation === null) {
     // pickRiverDraw гарантирует solvability; отсутствие river-safe placement
     // означает нарушение инварианта — диагностируем явно, не маскируем.
@@ -334,17 +338,16 @@ function drawRiverTile(state: TurnFlowState): TurnFlowState {
       `River invariant failure: no solvable placement for ${pickedId}; seed=${state.seed} riverPlaced=${state.riverPlaced} remaining=[${state.riverDeck.join(',')}]`,
     );
   }
-  const game = { ...state.game, tileDeck: { remaining: [pickedId] }, gamePhase: 'drawTile' as const };
+  const game = { ...stateAfterDraw.game, tileDeck: { remaining: [pickedId] }, gamePhase: 'drawTile' as const };
   const playerId = game.players[game.currentPlayerIndex]?.id ?? '';
   const result = applyAction(game, { type: 'DRAW_TILE', playerId }, getTileDefinition);
   if (!result.ok) return state;
   return {
-    ...state,
+    ...stateAfterDraw,
     game: result.state,
     phase: 'TILE_IN_HAND',
     rotation,
-    legalPlacements: legalPlacementsFor(state, pickedId, rotation),
-    riverDeck: picked.riverDeck,
+    legalPlacements: legalPlacementsFor(stateAfterDraw, pickedId, rotation),
   };
 }
 

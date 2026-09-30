@@ -14,9 +14,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
-import { getTileDefinition } from '../cards/catalogApi';
+import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
 import {
   assertRiverSolvableFrom,
+  boardSignature,
   planRiver,
   requiredEdgeForFrontier,
 } from '../deck/riverPlanner';
@@ -113,6 +114,24 @@ describe('river edge convention (requiredEdge)', () => {
   it('posKey uses the "x,y" format (guards against manual ":" board keys)', () => {
     expect(posKey({ x: 0, y: 0 })).toBe('0,0');
     expect(posKey({ x: -2, y: 3 })).toBe('-2,3');
+  });
+
+  it('board signatures distinguish identical tiles at different coordinates', () => {
+    const first: Board = {
+      [posKey({ x: 1, y: 2 })]: {
+        definitionId: SOURCE_ID,
+        rotation: 90,
+        position: { x: 1, y: 2 },
+      },
+    };
+    const second: Board = {
+      [posKey({ x: 2, y: 1 })]: {
+        definitionId: SOURCE_ID,
+        rotation: 90,
+        position: { x: 2, y: 1 },
+      },
+    };
+    expect(boardSignature(first)).not.toBe(boardSignature(second));
   });
 });
 
@@ -238,16 +257,39 @@ describe('alternative player placements remain solvable', () => {
 });
 
 describe('land transition after river', () => {
-  it('draw after the 19th river tile comes from the land deck', () => {
-    const result = autoplayRiver(3);
-    expect(result.blocked).toBe(false);
-    expect(result.riverOrder.length).toBe(18);
-    // Continue one more turn manually: create fresh flow and fast-forward is
-    // expensive; instead verify deck composition invariant directly.
-    const state = createTurnFlow({ gameId: 'g', players: players(1), seed: 3 });
-    expect(state.riverDeck.length).toBe(18);
-    expect(state.riverDeck[17]).toBe(END_ID);
-    expect(state.landDeck.every((id) => !RUNTIME_CARD_CATALOG.filter((c) => c.riverCard).some((rc) => rc.id === id))).toBe(true);
+  it('draws only the 18 remaining river cards before the first land card', () => {
+    let state = createTurnFlow({ gameId: 'g', players: players(1), seed: 3 });
+    const source = state.game.board[posKey({ x: 0, y: 0 })];
+    const riverDraws: string[] = [];
+    expect(source.definitionId).toBe(SOURCE_ID);
+    expect(getCardDefinition(source.definitionId).riverCard).toBe(true);
+
+    while (state.riverPlaced < RIVER_CARD_COUNT) {
+      const discardsBefore = state.discardedTileIds.length;
+      state = drawTurnTile(state);
+      const drawnId = state.game.drawnTileDefinitionId!;
+      riverDraws.push(drawnId);
+      expect(getCardDefinition(drawnId).riverCard).toBe(true);
+      expect(state.discardedTileIds).toHaveLength(discardsBefore);
+
+      for (let turns = 0; state.legalPlacements.length === 0 && turns < 4; turns += 1) {
+        state = rotateTurnTile(state);
+      }
+      expect(state.legalPlacements.length).toBeGreaterThan(0);
+      state = placeTurnTile(state, state.legalPlacements[0]);
+      state = endTurn(state);
+    }
+
+    expect(state.riverPlaced).toBe(19);
+    expect(riverDraws).toHaveLength(18);
+    expect(new Set([SOURCE_ID, ...riverDraws])).toHaveLength(19);
+    expect(riverDraws[riverDraws.length - 1]).toBe(END_ID);
+    expect(state.discardedTileIds).toEqual([]);
+
+    state = drawTurnTile(state);
+    const firstLandId = state.game.drawnTileDefinitionId!;
+    expect(getCardDefinition(firstLandId).riverCard).not.toBe(true);
+    expect(riverDraws).not.toContain(firstLandId);
     void legalPlacementsFor;
-  });
+  }, 30_000);
 });

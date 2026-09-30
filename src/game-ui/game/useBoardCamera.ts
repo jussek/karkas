@@ -25,11 +25,74 @@ import type { Camera, Point, ViewportSize } from '../board/boardTransform';
 export const MIN_CAMERA_SCALE = 0.3;
 export const MAX_CAMERA_SCALE = 2.5;
 
-interface ActivePointer {
+export interface ActivePointer {
   x: number;
   y: number;
   startX: number;
   startY: number;
+}
+
+export interface ElementRectOrigin {
+  left: number;
+  top: number;
+}
+
+export function clientPointToLocal(point: Point, rect: ElementRectOrigin): Point {
+  return { x: point.x - rect.left, y: point.y - rect.top };
+}
+
+/** Mutable state for one pointer gesture, kept outside React for deterministic tests. */
+export class CameraGestureSession {
+  readonly pointers = new Map<number, ActivePointer>();
+  private startedAsSingle = false;
+  private hadMultiPointer = false;
+  private cancelled = false;
+  private moved = false;
+
+  pointerDown(pointerId: number, point: Point): void {
+    if (this.pointers.size === 0) {
+      this.startedAsSingle = true;
+      this.hadMultiPointer = false;
+      this.cancelled = false;
+      this.moved = false;
+    }
+    this.pointers.set(pointerId, { x: point.x, y: point.y, startX: point.x, startY: point.y });
+    if (this.pointers.size > 1) this.hadMultiPointer = true;
+  }
+
+  pointerMove(pointerId: number, point: Point): void {
+    const active = this.pointers.get(pointerId);
+    if (!active) return;
+    active.x = point.x;
+    active.y = point.y;
+    if (!isTapGesture({ x: active.startX, y: active.startY }, point)) this.moved = true;
+  }
+
+  twoPointerState(rect: ElementRectOrigin) {
+    const [a, b] = [...this.pointers.values()];
+    if (!a || !b) return null;
+    const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    return {
+      distance: Math.hypot(a.x - b.x, a.y - b.y),
+      focus: clientPointToLocal(midpoint, rect),
+    };
+  }
+
+  pointerEnd(pointerId: number, point: Point, wasCancelled: boolean): boolean | null {
+    this.pointerMove(pointerId, point);
+    const active = this.pointers.get(pointerId);
+    if (wasCancelled) this.cancelled = true;
+    this.pointers.delete(pointerId);
+    if (this.pointers.size > 0) return null;
+    return Boolean(
+      active &&
+      this.startedAsSingle &&
+      !this.hadMultiPointer &&
+      !this.cancelled &&
+      !this.moved &&
+      !wasCancelled,
+    );
+  }
 }
 
 export interface UseBoardCameraOptions {
@@ -71,10 +134,9 @@ function viewportOf(ref: RefObject<HTMLDivElement | null>): ViewportSize {
 export function useBoardCamera(options: UseBoardCameraOptions): BoardCamera {
   const { viewportRef, contentWidth, contentHeight, getFitCells, cellSize, originOffset } = options;
   const [camera, setCamera] = useState<Camera>({ offsetX: 0, offsetY: 0, scale: 1 });
-  const pointers = useRef(new Map<number, ActivePointer>());
+  const gesture = useRef(new CameraGestureSession());
   const lastPan = useRef<Point>({ x: 0, y: 0 });
   const lastPinchDistance = useRef<number | null>(null);
-  const movedRef = useRef(false);
   const panningRef = useRef(false);
   const lastTapRef = useRef(true);
 
@@ -111,41 +173,26 @@ export function useBoardCamera(options: UseBoardCameraOptions): BoardCamera {
     ));
   }, [contentHeight, contentWidth, cellSize, getFitCells, originOffset, readViewport]);
 
-  const twoFingerState = useCallback(() => {
-    const list = [...pointers.current.values()];
-    if (list.length < 2) return null;
-    const [a, b] = list;
-    const distance = Math.hypot(a.x - b.x, a.y - b.y);
-    const focus: Point = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-    return { distance, focus, mid: focus };
-  }, []);
-
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    pointers.current.set(event.pointerId, {
-      x: event.clientX, y: event.clientY,
-      startX: event.clientX, startY: event.clientY,
-    });
-    if (pointers.current.size === 1) {
+    gesture.current.pointerDown(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (gesture.current.pointers.size === 1) {
       lastPan.current = { x: event.clientX, y: event.clientY };
-      movedRef.current = false;
       panningRef.current = false;
-    } else if (pointers.current.size === 2) {
-      const state = twoFingerState();
+    } else if (gesture.current.pointers.size === 2) {
+      const state = gesture.current.twoPointerState(event.currentTarget.getBoundingClientRect());
       lastPinchDistance.current = state?.distance ?? null;
-      movedRef.current = true;
       panningRef.current = true;
     }
-  }, [twoFingerState]);
+  }, []);
 
   const onPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    const active = pointers.current.get(event.pointerId);
+    const active = gesture.current.pointers.get(event.pointerId);
     if (!active) return;
-    active.x = event.clientX;
-    active.y = event.clientY;
+    gesture.current.pointerMove(event.pointerId, { x: event.clientX, y: event.clientY });
 
-    if (pointers.current.size >= 2) {
-      const state = twoFingerState();
+    if (gesture.current.pointers.size >= 2) {
+      const state = gesture.current.twoPointerState(event.currentTarget.getBoundingClientRect());
       if (!state || lastPinchDistance.current === null || state.distance === 0) return;
       const factor = state.distance / lastPinchDistance.current;
       lastPinchDistance.current = state.distance;
@@ -162,25 +209,29 @@ export function useBoardCamera(options: UseBoardCameraOptions): BoardCamera {
       event.clientY - active.startY,
     );
     if (totalMove > TAP_MOVE_THRESHOLD_PX) {
-      movedRef.current = true;
       panningRef.current = true;
     }
     if (panningRef.current && (Math.abs(dx) > 0 || Math.abs(dy) > 0)) {
       lastPan.current = { x: event.clientX, y: event.clientY };
       setCamera((current) => panCamera(current, { x: dx, y: dy }));
     }
-  }, [twoFingerState]);
+  }, []);
 
-  const finishPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    const active = pointers.current.get(event.pointerId);
-    pointers.current.delete(event.pointerId);
-    if (pointers.current.size < 2) lastPinchDistance.current = null;
-    if (pointers.current.size === 0) {
-      const end = active ?? { x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY };
-      lastTapRef.current = isTapGesture({ x: end.startX, y: end.startY }, { x: end.x, y: end.y });
+  const finishPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>, cancelled: boolean) => {
+    const tap = gesture.current.pointerEnd(
+      event.pointerId,
+      { x: event.clientX, y: event.clientY },
+      cancelled,
+    );
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    }
+    if (gesture.current.pointers.size < 2) lastPinchDistance.current = null;
+    if (gesture.current.pointers.size === 0) {
+      lastTapRef.current = tap ?? false;
       panningRef.current = false;
-    } else if (pointers.current.size === 1) {
-      const remaining = [...pointers.current.values()][0];
+    } else if (gesture.current.pointers.size === 1) {
+      const remaining = [...gesture.current.pointers.values()][0];
       lastPan.current = { x: remaining.x, y: remaining.y };
     }
   }, []);
@@ -200,10 +251,10 @@ export function useBoardCamera(options: UseBoardCameraOptions): BoardCamera {
     handlers: {
       onPointerDown,
       onPointerMove,
-      onPointerUp: finishPointer,
-      onPointerCancel: finishPointer,
+      onPointerUp: (event) => finishPointer(event, false),
+      onPointerCancel: (event) => finishPointer(event, true),
     },
-    gestureActive: pointers.current.size > 0,
+    gestureActive: gesture.current.pointers.size > 0,
     didPan: panningRef.current,
     wasTapAtEnd: () => lastTapRef.current,
     toContentPoint,
