@@ -3,9 +3,12 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import { getTileDefinition } from '../../game/cards/catalogApi';
 import {
   RIVER_CARD_COUNT,
+  canEndTurn,
   drawTurnTile,
   endTurn,
+  hasAnyLegalTilePlacement,
   placeTurnTile,
+  replaceUnplayableTurnTile,
   rotateTurnTile,
   selectTurnMeeple,
 } from '../../game/engine/turnFlow';
@@ -118,12 +121,15 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
   );
   const hasFeedback = feedbackTick > 0 && feedbackLines.length > 0;
 
+  const unplayableTile = flow.phase === 'TILE_IN_HAND' && !hasAnyLegalTilePlacement(flow);
   const message = flow.phase === 'GAME_OVER'
     ? 'Игра окончена'
     : flow.phase === 'AWAITING_DRAW'
       ? 'Возьмите карту'
       : flow.phase === 'TILE_IN_HAND'
-        ? 'Поверните карту или выберите подсвеченное место'
+        ? unplayableTile
+          ? 'Эту карту нельзя поставить. Возьмите другую.'
+          : 'Поверните карту или выберите подсвеченное место'
         : 'Карта установлена. Можно поставить подданного или закончить ход';
 
   /* --- camera ------------------------------------------------------ */
@@ -175,6 +181,9 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
 
   const startTileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (flow.phase !== 'TILE_IN_HAND') return;
+    // Неразмещаемая карта не участвует в drag/drop: placement невозможен.
+    if (event.target instanceof HTMLElement && event.target.closest('.replace-action')) return;
+    if (!hasAnyLegalTilePlacement(flow)) return;
     event.stopPropagation();
     event.currentTarget.setPointerCapture?.(event.pointerId);
     setPlacementFeedback(null);
@@ -380,12 +389,17 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
 
       <section className="turn-controls" aria-label="Действия хода">
         {heldId && <div
-          className={`held-tile${tileDrag ? ' is-dragging' : ''}`}
+          className={`held-tile${tileDrag ? ' is-dragging' : ''}${unplayableTile ? ' is-unplayable' : ''}`}
           onPointerDown={startTileDrag}
           onPointerMove={moveTileDrag}
           onPointerUp={(event) => finishTileDrag(event, false)}
           onPointerCancel={(event) => finishTileDrag(event, true)}
-        ><TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={86} /><span>{flow.rotation}°</span></div>}
+        >{unplayableTile && <button
+          type="button"
+          className="replace-action"
+          aria-label="Заменить неразмещаемую карту"
+          onClick={() => setFlow((current) => replaceUnplayableTurnTile(current))}
+        >↺ <span>Заменить</span></button>}<TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={86} /><span>{flow.rotation}°</span></div>}
         <button type="button" className="draw-action" disabled={flow.phase !== 'AWAITING_DRAW'} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
         <button type="button" className="rotate-action" aria-label="Повернуть карту по часовой стрелке" disabled={flow.phase !== 'TILE_IN_HAND'} onClick={() => setFlow(rotateTurnTile)}>↻ <span>Повернуть</span></button>
         <button
@@ -400,7 +414,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
         <button
           type="button"
           className="end-turn"
-          disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase)}
+          disabled={!canEndTurn(flow)}
           onClick={endTurnAction}
         ><b>✓</b><span>Закончить ход</span></button>
       </section>
