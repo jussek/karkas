@@ -17,6 +17,7 @@ import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { getTileDefinition } from '../cards/catalogApi';
 import {
   assertRiverSolvableFrom,
+  boardSignature,
   planRiver,
   requiredEdgeForFrontier,
 } from '../deck/riverPlanner';
@@ -113,6 +114,24 @@ describe('river edge convention (requiredEdge)', () => {
   it('posKey uses the "x,y" format (guards against manual ":" board keys)', () => {
     expect(posKey({ x: 0, y: 0 })).toBe('0,0');
     expect(posKey({ x: -2, y: 3 })).toBe('-2,3');
+  });
+
+  it('board signatures distinguish identical tiles at different coordinates', () => {
+    const first: Board = {
+      [posKey({ x: 1, y: 2 })]: {
+        definitionId: SOURCE_ID,
+        rotation: 90,
+        position: { x: 1, y: 2 },
+      },
+    };
+    const second: Board = {
+      [posKey({ x: 2, y: 1 })]: {
+        definitionId: SOURCE_ID,
+        rotation: 90,
+        position: { x: 2, y: 1 },
+      },
+    };
+    expect(boardSignature(first)).not.toBe(boardSignature(second));
   });
 });
 

@@ -128,14 +128,18 @@ export function fitBounds(
   // вычитания остаётся меньше нуля, реального места нет — scale уходит в
   // minScale, но assert'ы corner-in-viewport тогда не гарантируются
   // (это явно оговорённый clamp-случай).
-  const availableWidth = Math.max(1, viewport.width - 2 * padding);
-  const availableHeight = Math.max(1, viewport.height - 2 * padding);
+  const availableWidth = Math.max(0, viewport.width - 2 * padding);
+  const availableHeight = Math.max(0, viewport.height - 2 * padding);
   // bounds задаются через cellRect: minX/minY включительно, maxX/maxY ИСКЛЮЧИТЕЛЬНО.
   // Поэтому размер содержимого = maxX - minX (без +1): ровно ширина прямоугольника.
-  const contentWidth = Math.max(1e-6, bounds.maxX - bounds.minX);
-  const contentHeight = Math.max(1e-6, bounds.maxY - bounds.minY);
-  const rawScale = Math.min(availableWidth / contentWidth, availableHeight / contentHeight);
-  const scale = clampValue(rawScale, minScale, maxScale);
+  const contentWidth = bounds.maxX - bounds.minX;
+  const contentHeight = bounds.maxY - bounds.minY;
+  // A zero-size axis does not constrain fitting. A point therefore produces
+  // Infinity on both axes and is clamped to maxScale without NaN arithmetic.
+  const widthScale = contentWidth === 0 ? Infinity : availableWidth / contentWidth;
+  const heightScale = contentHeight === 0 ? Infinity : availableHeight / contentHeight;
+  const rawScale = Math.min(widthScale, heightScale);
+  const scale = clampScale(rawScale, minScale, maxScale);
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;
   return {

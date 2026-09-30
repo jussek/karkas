@@ -109,10 +109,10 @@ interface Candidate {
  * Полностью описывает occupied geometry, поэтому одинаковый signature
  * гарантирует одинаковую задачу solvability.
  */
-function boardSignature(board: Board): string {
+export function boardSignature(board: Board): string {
   return Object.values(board)
+    .sort((a, b) => a.position.x - b.position.x || a.position.y - b.position.y)
     .map((tile) => `${tile.position.x},${tile.position.y}:${tile.definitionId}:${tile.rotation}`)
-    .sort()
     .join(';');
 }
 
