@@ -121,7 +121,9 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
   );
   const hasFeedback = feedbackTick > 0 && feedbackLines.length > 0;
 
-  const unplayableTile = flow.phase === 'TILE_IN_HAND' && !hasAnyLegalTilePlacement(flow);
+  const unplayableTile = flow.phase === 'TILE_IN_HAND'
+    && heldId !== null
+    && !hasAnyLegalTilePlacement(flow, heldId);
   const message = flow.phase === 'GAME_OVER'
     ? 'Игра окончена'
     : flow.phase === 'AWAITING_DRAW'
@@ -183,7 +185,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
     if (flow.phase !== 'TILE_IN_HAND') return;
     // Неразмещаемая карта не участвует в drag/drop: placement невозможен.
     if (event.target instanceof HTMLElement && event.target.closest('.replace-action')) return;
-    if (!hasAnyLegalTilePlacement(flow)) return;
+    if (unplayableTile) return;
     event.stopPropagation();
     event.currentTarget.setPointerCapture?.(event.pointerId);
     setPlacementFeedback(null);
@@ -398,7 +400,11 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
           type="button"
           className="replace-action"
           aria-label="Заменить неразмещаемую карту"
-          onClick={() => setFlow((current) => replaceUnplayableTurnTile(current))}
+          onClick={() => {
+            setPlacementFeedback(null);
+            setTileDrag(null);
+            setFlow((current) => replaceUnplayableTurnTile(current));
+          }}
         >↺ <span>Заменить</span></button>}<TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={86} /><span>{flow.rotation}°</span></div>}
         <button type="button" className="draw-action" disabled={flow.phase !== 'AWAITING_DRAW'} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
         <button type="button" className="rotate-action" aria-label="Повернуть карту по часовой стрелке" disabled={flow.phase !== 'TILE_IN_HAND'} onClick={() => setFlow(rotateTurnTile)}>↻ <span>Повернуть</span></button>

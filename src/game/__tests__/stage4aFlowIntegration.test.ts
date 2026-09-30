@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
 import {
-  createTurnFlow, drawTurnTile, endTurn, placeTurnTile, rotateTurnTile, selectTurnMeeple,
+  confirmTurnTilePlacement, createTurnFlow, drawTurnTile, endTurn, placeTurnTile,
+  rotatePositionedTurnTile, selectTurnMeeple,
 } from '../engine/turnFlow';
 import type { EdgeIndex } from '../types/geometry';
 import type { Player } from '../types/state';
@@ -15,7 +16,9 @@ const twoPlayers: Player[] = [
 function playOneTurn(state: ReturnType<typeof createTurnFlow>): ReturnType<typeof createTurnFlow> {
   let next = drawTurnTile(state);
   if (next.phase !== 'TILE_IN_HAND') throw new Error(`expected TILE_IN_HAND, got ${next.phase}`);
-  next = placeTurnTile(next, next.legalPlacements[0]);
+  const positioned = placeTurnTile(next, next.legalPlacements[0]);
+  if (positioned.phase !== 'TILE_POSITIONED') throw new Error(`expected TILE_POSITIONED, got ${positioned.phase}`);
+  next = confirmTurnTilePlacement(positioned);
   if (next.phase !== 'TILE_PLACED') throw new Error(`expected TILE_PLACED, got ${next.phase}`);
   return endTurn(next);
 }
@@ -55,10 +58,14 @@ describe('Stage 4A full-flow integration through TurnFlow', () => {
     // selectedMeepleTarget принимает только engine-legal цели; если цель нелегальна,
     // selectTurnMeeple всё равно переходит в MEEPLE_SELECTION — очки при этом НЕ начисляются.
     void withMeeple;
-    const rotated = rotateTurnTile(state);
+    // Перебор ориентации на TILE_POSITIONED не запускает scoring и не трогает board.
+    const rotated = rotatePositionedTurnTile(state);
+    expect(rotated.phase).toBe('TILE_POSITIONED');
     expect(rotated.game.scores['player-1']).toBe(0);
     expect(state.game.scores['player-1']).toBe(0);
-    const finished = endTurn(state);
+    const confirmed = confirmTurnTilePlacement(rotated);
+    expect(confirmed.game.scores['player-1']).toBe(0);
+    const finished = endTurn(confirmed);
     expect(finished.game.scores['player-1']).toBeGreaterThanOrEqual(0);
     expect(finished.lastResolution.previousPlayerId).toBe('player-1');
     expect(finished.lastResolution.nextPlayerId).toBe('player-1'); // 1p mode

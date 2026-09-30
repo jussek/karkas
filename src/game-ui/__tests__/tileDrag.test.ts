@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { getCardDefinition } from '../../game/cards/catalogApi';
 import {
+  confirmTurnTilePlacement,
   createTurnFlow,
   drawTurnTile,
-  legalPlacementsFor,
+  getLegalTilePlacementOptions,
   placeTurnTile,
-  rotateTurnTile,
+  rotatePositionedTurnTile,
 } from '../../game/engine/turnFlow';
 import type { Player } from '../../game/types/state';
 import { boardToScreen } from '../board/boardTransform';
@@ -34,15 +35,31 @@ function clientPointFor(
 }
 
 describe('authoritative tile drag targeting', () => {
-  it('rotation 0 and rotation 90 use engine-recalculated legal sets', () => {
-    let flow = drawnFlow();
+  it('legal highlights cover the union of all rotations; positioned set is per-cell', () => {
+    const flow = drawnFlow();
     const cardId = flow.game.drawnTileDefinitionId!;
-    while (flow.rotation !== 0) flow = rotateTurnTile(flow);
-    expect(flow.legalPlacements).toEqual(legalPlacementsFor(flow, cardId, 0));
-
-    flow = rotateTurnTile(flow);
-    expect(flow.rotation).toBe(90);
-    expect(flow.legalPlacements).toEqual(legalPlacementsFor(flow, cardId, 90));
+    // Hand-tile всегда ожидает с rotation 0: подсветка = union по всем rotation.
+    expect(flow.rotation).toBe(0);
+    const options = getLegalTilePlacementOptions(flow, cardId);
+    const unionCells = options.map((option) => option.position);
+    expect(flow.legalPlacements).toEqual(expect.arrayContaining(unionCells));
+    expect(flow.legalPlacements.length).toBe(unionCells.length);
+    for (const option of options) {
+      expect(option.rotations.length).toBeGreaterThan(0);
+    }
+    // После drop на клетку — authoritative per-cell legal rotation'ы.
+    const first = options[0];
+    const positioned = placeTurnTile(flow, first.position);
+    expect(positioned.phase).toBe('TILE_POSITIONED');
+    expect(positioned.positionedAt).toEqual(first.position);
+    expect(positioned.positionedRotations).toEqual(first.rotations);
+    expect(positioned.rotation).toBe(first.rotations[0]);
+    // Цикл ориентации идёт ТОЛЬКО по legal rotation этой клетки.
+    if (first.rotations.length >= 2) {
+      const rotated = rotatePositionedTurnTile(positioned);
+      expect(first.rotations).toContain(rotated.rotation);
+      expect(rotated.rotation).toBe(first.rotations[1]);
+    }
   });
 
   it('turns a legal drop into an authoritative placement request', () => {
@@ -53,9 +70,14 @@ describe('authoritative tile drag targeting', () => {
       cellSize, originOffset, legalPlacements: flow.legalPlacements, board: flow.game.board,
     });
     const placement = placementForTileDrop(target, false);
-    const placed = placement ? placeTurnTile(flow, placement) : flow;
+    const positioned = placement ? placeTurnTile(flow, placement) : flow;
     expect(target).toEqual({ position, valid: true, reason: null });
+    expect(positioned.phase).toBe('TILE_POSITIONED');
+    // До подтверждения authoritative board НЕ мутируется.
+    expect(positioned.game.board[`${position.x},${position.y}`]).toBeUndefined();
+    const placed = confirmTurnTilePlacement(positioned);
     expect(placed.phase).toBe('TILE_PLACED');
+    expect(placed.game.board[`${position.x},${position.y}`]).toBeDefined();
   });
 
   it('rejects illegal and occupied coordinates without changing tile or rotation', () => {
