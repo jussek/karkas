@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import { getTileDefinition } from '../../game/cards/catalogApi';
 import {
   RIVER_CARD_COUNT,
@@ -17,12 +18,25 @@ import type { LocalGameConfig } from '../../game/session';
 import { TileRenderer } from '../tiles/TileRenderer';
 import { anchorForPlacement } from '../tiles/tileSemanticManifest';
 import { createLocalGame } from './localGameBootstrap';
+import {
+  placementForTileDrop,
+  resolveTileDrop,
+  tileDragOwnsPointer,
+  type TileDropTarget,
+} from './tileDrag';
 import { useBoardCamera } from './useBoardCamera';
 import './gamePage.css';
 
 const CELL = 92;
 const ORIGIN = 8;
 const BOARD_CELLS = 17;
+
+interface ActiveTileDrag {
+  pointerId: number;
+  clientX: number;
+  clientY: number;
+  target: TileDropTarget;
+}
 
 function key(target: MeeplePlacement) {
   return `${target.featureType}:${target.edge ?? 'center'}`;
@@ -78,6 +92,8 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
   const [feedbackTick, setFeedbackTick] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [tileDrag, setTileDrag] = useState<ActiveTileDrag | null>(null);
+  const [placementFeedback, setPlacementFeedback] = useState<string | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   /** Клетки для ближайшего вызова fitContent (для «Показать ходы»). */
   const fitOverrideRef = useRef<{ x: number; y: number }[] | null>(null);
@@ -131,6 +147,72 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
     originOffset: ORIGIN,
   });
 
+  const dropTargetAt = useCallback((clientX: number, clientY: number) => {
+    const viewport = viewportRef.current;
+    if (!viewport) return { position: null, valid: false, reason: 'outside-board' } as const;
+    const rect = viewport.getBoundingClientRect();
+    return resolveTileDrop({
+      clientPoint: { x: clientX, y: clientY },
+      viewport: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+      camera: camera.camera,
+      cellSize: CELL,
+      originOffset: ORIGIN,
+      legalPlacements: flow.legalPlacements,
+      board: flow.game.board,
+    });
+  }, [camera.camera, flow.game.board, flow.legalPlacements]);
+
+  const placeAt = useCallback((position: { x: number; y: number }) => {
+    const next = placeTurnTile(flow, position);
+    if (next === flow) {
+      setPlacementFeedback('Сюда карту поставить нельзя');
+      return false;
+    }
+    setFlow(next);
+    setPlacementFeedback(null);
+    return true;
+  }, [flow]);
+
+  const startTileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (flow.phase !== 'TILE_IN_HAND') return;
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    setPlacementFeedback(null);
+    setTileDrag({
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      target: dropTargetAt(event.clientX, event.clientY),
+    });
+  };
+
+  const moveTileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!tileDrag || !tileDragOwnsPointer(tileDrag.pointerId, event.pointerId)) return;
+    event.stopPropagation();
+    setTileDrag({
+      ...tileDrag,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      target: dropTargetAt(event.clientX, event.clientY),
+    });
+  };
+
+  const finishTileDrag = (event: ReactPointerEvent<HTMLDivElement>, cancelled: boolean) => {
+    if (!tileDrag || !tileDragOwnsPointer(tileDrag.pointerId, event.pointerId)) return;
+    event.stopPropagation();
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    }
+    const target = dropTargetAt(event.clientX, event.clientY);
+    const placement = placementForTileDrop(target, cancelled);
+    setTileDrag(null);
+    if (!placement) {
+      setPlacementFeedback(cancelled ? 'Перетаскивание отменено' : 'Сюда карту поставить нельзя');
+      return;
+    }
+    placeAt(placement);
+  };
+
   /** «Показать ходы»: вписывает legal positions текущей ротации в viewport. */
   const showLegalMoves = () => {
     fitOverrideRef.current = flow.legalPlacements.length > 0
@@ -170,6 +252,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
       </header>
 
       <p className="turn-message" role="status">{message}</p>
+      {placementFeedback && <p className="placement-feedback" role="status">{placementFeedback}</p>}
       {hasFeedback && !gameOver && (
         <ul className="resolution-feedback" role="status" aria-live="polite">
           {feedbackLines.map((line, i) => <li key={i}>{line}</li>)}
@@ -198,10 +281,21 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
                 onClick={() => {
                   // Размещение только по tap: после pan/pinch клик игнорируется.
                   if (!camera.wasTapAtEnd()) return;
-                  setFlow((current) => placeTurnTile(current, position));
+                  placeAt(position);
                 }}
               ><span>＋</span></button>
             ))}
+            {heldId && tileDrag?.target.valid && tileDrag.target.position && (
+              <div
+                className="tile-drag-preview is-valid"
+                style={{
+                  left: (tileDrag.target.position.x + ORIGIN) * CELL,
+                  top: (tileDrag.target.position.y + ORIGIN) * CELL,
+                }}
+              >
+                <TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={CELL} />
+              </div>
+            )}
             {meepleMode && flow.game.lastPlacedTile && legalMeeples.map((target) => {
               const anchor = anchorForPlacement(target);
               const tile = flow.game.lastPlacedTile!;
@@ -230,6 +324,16 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
           )}
         </div>
       </section>
+
+      {heldId && tileDrag && !tileDrag.target.valid && (
+        <div
+          className="tile-drag-ghost is-invalid"
+          style={{ left: tileDrag.clientX - CELL / 2, top: tileDrag.clientY - CELL / 2 }}
+          aria-hidden
+        >
+          <TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={CELL} />
+        </div>
+      )}
 
       {gameOver && finalScores && (
         <section className="game-over-panel" role="status" aria-live="assertive">
@@ -275,7 +379,13 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
       </div>}
 
       <section className="turn-controls" aria-label="Действия хода">
-        {heldId && <div className="held-tile"><TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={86} /><span>{flow.rotation}°</span></div>}
+        {heldId && <div
+          className={`held-tile${tileDrag ? ' is-dragging' : ''}`}
+          onPointerDown={startTileDrag}
+          onPointerMove={moveTileDrag}
+          onPointerUp={(event) => finishTileDrag(event, false)}
+          onPointerCancel={(event) => finishTileDrag(event, true)}
+        ><TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={86} /><span>{flow.rotation}°</span></div>}
         <button type="button" className="draw-action" disabled={flow.phase !== 'AWAITING_DRAW'} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
         <button type="button" className="rotate-action" aria-label="Повернуть карту по часовой стрелке" disabled={flow.phase !== 'TILE_IN_HAND'} onClick={() => setFlow(rotateTurnTile)}>↻ <span>Повернуть</span></button>
         <button
