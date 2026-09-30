@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { getTileDefinition } from '../cards/catalogApi';
 import {
-  createTurnFlow, drawTurnTile, endTurn, getRiverCards, legalPlacementsFor,
-  placeTurnTile, rotateTurnTile, ROTATIONS, RIVER_CARD_COUNT, TURN_PHASES,
+  confirmTurnTilePlacement, createTurnFlow, drawTurnTile, endTurn, getLegalTilePlacementOptions,
+  getRiverCards, legalPlacementsFor, placeTurnTile, rotatePositionedTurnTile, ROTATIONS,
+  RIVER_CARD_COUNT, TURN_PHASES,
 } from '../engine/turnFlow';
 import { getLegalTilePlacements } from '../rules/placement';
 import type { Player } from '../types/state';
@@ -14,7 +15,7 @@ const players: Player[] = [
 
 describe('Stage 3G turn flow', () => {
   it('exposes only phases used by the current state machine', () => {
-    expect(TURN_PHASES).toEqual(['AWAITING_DRAW', 'TILE_IN_HAND', 'TILE_PLACED', 'MEEPLE_SELECTION', 'GAME_OVER']);
+    expect(TURN_PHASES).toEqual(['AWAITING_DRAW', 'TILE_IN_HAND', 'TILE_POSITIONED', 'TILE_PLACED', 'MEEPLE_SELECTION', 'GAME_OVER']);
   });
 
   it('starts with the source placed and requires an explicit draw', () => {
@@ -42,21 +43,41 @@ describe('Stage 3G turn flow', () => {
     expect(drawTurnTile(drawn)).toBe(drawn);
   });
 
-  it('rotates clockwise without changing the tile and recomputes highlights', () => {
+  it('hand tile waits at rotation 0; positioned rotation cycles only within legal set', () => {
     const drawn = drawTurnTile(createTurnFlow({ gameId: 'g', players, seed: 32 }));
-    const id = drawn.game.drawnTileDefinitionId;
-    const rotated = [drawn];
-    for (let index = 0; index < 4; index += 1) rotated.push(rotateTurnTile(rotated[rotated.length - 1]));
-    expect(rotated.map((state) => state.rotation)).toEqual([drawn.rotation, (drawn.rotation + 90) % 360, (drawn.rotation + 180) % 360, (drawn.rotation + 270) % 360, drawn.rotation]);
-    expect(rotated.every((state) => state.game.drawnTileDefinitionId === id)).toBe(true);
-    expect(rotated[1].legalPlacements).toEqual(legalPlacementsFor(rotated[1], id!, rotated[1].rotation));
+    const id = drawn.game.drawnTileDefinitionId!;
+    // Hand-tile больше не выбирает rotation до размещения: подсветка = union.
+    expect(drawn.rotation).toBe(0);
+    const options = getLegalTilePlacementOptions(drawn, id);
+    const cell = options.find((option) => option.rotations.length >= 2) ?? options[0];
+    const positioned = placeTurnTile(drawn, cell.position);
+    expect(positioned.phase).toBe('TILE_POSITIONED');
+    expect(positioned.game.drawnTileDefinitionId).toBe(id);
+    // Цикл ориентации замкнут и детерминирован: только legal rotation клетки.
+    let current = positioned;
+    const seen = [current.rotation];
+    for (let index = 0; index < cell.rotations.length; index += 1) {
+      current = rotatePositionedTurnTile(current);
+      expect(cell.rotations).toContain(current.rotation);
+      seen.push(current.rotation);
+    }
+    expect(seen[seen.length - 1]).toBe(seen[0]); // полный цикл вернулся к первой
+    if (cell.rotations.length >= 2) {
+      expect(new Set(seen).size).toBe(cell.rotations.length);
+    }
+    // Вне TILE_POSITIONED rotate — строгий no-op.
+    expect(rotatePositionedTurnTile(drawn)).toBe(drawn);
   });
 
   it('only places on an engine-provided highlight and scores only at end turn', () => {
     const drawn = drawTurnTile(createTurnFlow({ gameId: 'g', players, seed: 42 }));
     const rejected = placeTurnTile(drawn, { x: 100, y: 100 });
     expect(rejected).toBe(drawn);
-    const placed = placeTurnTile(drawn, drawn.legalPlacements[0]);
+    const positioned = placeTurnTile(drawn, drawn.legalPlacements[0]);
+    expect(positioned.phase).toBe('TILE_POSITIONED');
+    // До подтверждения board НЕ мутирован и очки не начисляются.
+    expect(positioned.game.scores).toEqual(drawn.game.scores);
+    const placed = confirmTurnTilePlacement(positioned);
     expect(placed.phase).toBe('TILE_PLACED');
     expect(placed.game.scores).toEqual(drawn.game.scores);
     const ended = endTurn(placed);
@@ -68,7 +89,7 @@ describe('Stage 3G turn flow', () => {
 
   it('never injects a fake card id while completing a turn', () => {
     const drawn = drawTurnTile(createTurnFlow({ gameId: 'g', players, seed: 62 }));
-    const placed = placeTurnTile(drawn, drawn.legalPlacements[0]);
+    const placed = confirmTurnTilePlacement(placeTurnTile(drawn, drawn.legalPlacements[0]));
     const ended = endTurn(placed);
     const serialized = JSON.stringify(ended.game);
     expect(serialized).not.toContain('sentinel');

@@ -244,36 +244,6 @@ function openRiverPlacement(state: TurnFlowState, definitionId: string, rotation
 }
 
 /**
- * Совместимость с планом реки: выбранный pickRiverDraw card обязан иметь
- * river-safe placement хотя бы при одном rotation. Если фактическая доска
- * divergировала от плана (например, игрок поставил land-тайл на frontier
- * во время river-фазы), plan-based порядок может быть нерешаем — в этом
- * случае перепланируем remaining middle+end от ФАКТИЧЕСКОЙ доски (тот же
- * seed, без discard). Обычная edge-legality и solvability при этом НЕ
- * ослабляются: replan — тот же authoritative planner.
- */
-function ensurePlanCompatibleDraw(state: TurnFlowState, cardId: string): TurnFlowState {
-  if (!isRiverTurn(state)) return state;
-  const playable = ROTATIONS.some(
-    (rotation) => riverSafePositions(state, cardId, rotation).length > 0,
-  );
-  if (playable) return state;
-  const order = replanRemainingRiver(state.seed, state.game.board);
-  if (order.length === 0 || !state.riverDeck.includes(cardId)) return state;
-  const index = order.indexOf(cardId);
-  if (index < 0) return state;
-  // Перестраиваем deck так, чтобы card стала первой; все карты сохраняются.
-  const reordered = [cardId, ...order.filter((id) => id !== cardId)];
-  const riverDeck = [...state.riverDeck];
-  riverDeck.sort((a, b) => {
-    const ia = reordered.indexOf(a);
-    const ib = reordered.indexOf(b);
-    return (ia < 0 ? Number.MAX_SAFE_INTEGER : ia) - (ib < 0 ? Number.MAX_SAFE_INTEGER : ib);
-  });
-  return { ...state, riverDeck };
-}
-
-/**
  * Гипотетическая доска после размещения (definitionId, rotation, position).
  */
 function hypotheticalBoard(board: Board, definitionId: string, rotation: Rotation, position: TilePosition): Board {
@@ -372,10 +342,16 @@ export function getLegalTilePlacementOptions(
       }
     }
   }
-  return [...rotationsByCell.entries()].map(([key, rotations]) => {
-    const [x, y] = key.split(',').map(Number);
-    return { position: { x, y }, rotations: rotations.sort((a, b) => a - b) };
-  });
+  return [...rotationsByCell.entries()]
+    .sort(([a], [b]) => {
+      const [ax, ay] = a.split(',').map(Number);
+      const [bx, by] = b.split(',').map(Number);
+      return ax - bx || ay - by;
+    })
+    .map(([key, rotations]) => {
+      const [x, y] = key.split(',').map(Number);
+      return { position: { x, y }, rotations: rotations.sort((i, j) => i - j) };
+    });
 }
 
 /** Клетки, где существует >=1 legal rotation (объединение по всем rotation'ам). */
@@ -383,134 +359,132 @@ function anyRotationLegalPlacements(state: TurnFlowState, definitionId: string):
   return getLegalTilePlacementOptions(state, definitionId).map((option) => option.position);
 }
 
-/** Плоский authoritative список legal вариантов {position, rotation}. */
-export function getLegalTilePlacementOptionList(
-  state: TurnFlowState,
-  definitionId: string = state.game.drawnTileDefinitionId ?? '',
-): Array<{ position: TilePosition; rotation: Rotation }> {
-  const options: Array<{ position: TilePosition; rotation: Rotation }> = [];
-  for (const option of getLegalTilePlacementOptions(state, definitionId)) {
-    for (const rotation of option.rotations) {
-      options.push({ position: option.position, rotation });
-    }
-  }
-  return options;
-}
-
-/** Существует ли хотя бы один legal placement хотя бы для одной rotation. */
+/**
+ * Pure boolean query: существует ли хотя бы один legal placement хотя бы
+ * для одной rotation. НЕ бросает исключений — безопасно для render-time
+ * вызовов из UI. River invariant («river tile никогда не unplayable»)
+ * проверяется в river draw lifecycle (drawRiverTile), где отсутствие
+ * safe placement действительно является engine invariant failure.
+ */
 export function hasAnyLegalTilePlacement(
   state: TurnFlowState,
   definitionId: string = state.game.drawnTileDefinitionId ?? '',
 ): boolean {
   if (!definitionId) return false;
-  if (isRiverTurn(state)) {
-    // River-карты не могут быть "unplayable": река solver-guaranteed.
-    // Zero authoritative placements для river tile — нарушение инварианта.
-    const any = ROTATIONS.some((rotation) => legalPlacementsFor(state, definitionId, rotation).length > 0);
-    if (!any) {
-      throw new Error('Invariant violation: river tile has zero authoritative placements');
-    }
-    return true;
-  }
-  return ROTATIONS.some((rotation) => legalPlacementsFor(state, definitionId, rotation).length > 0);
+  return getLegalTilePlacementOptions(state, definitionId).length > 0;
+}
+
+/**
+ * Совместимость с планом реки: выбранная pickRiverDraw карта обязана иметь
+ * river-safe placement хотя бы при одном rotation. Если фактическая доска
+ * diverгировала от плана, plan-based порядок может быть нерешаем — в этом
+ * случае перепланируем remaining middle+end от ФАКТИЧЕСКОЙ доски (тот же
+ * seed, без discard). Обычная edge-legality и solvability при этом НЕ
+ * ослабляются: replan — тот же authoritative planner.
+ */
+function ensurePlanCompatibleDraw(state: TurnFlowState, cardId: string): TurnFlowState {
+  if (!isRiverTurn(state)) return state;
+  const playable = ROTATIONS.some(
+    (rotation) => riverSafePositions(state, cardId, rotation).length > 0,
+  );
+  if (playable) return state;
+  const order = replanRemainingRiver(state.seed, state.game.board);
+  if (order.length === 0 || !state.riverDeck.includes(cardId)) return state;
+  const index = order.indexOf(cardId);
+  if (index < 0) return state;
+  // Перестраиваем deck так, чтобы card стала первой; все карты сохраняются.
+  const reordered = [cardId, ...order.filter((id) => id !== cardId)];
+  const riverDeck = [...state.riverDeck];
+  riverDeck.sort((a, b) => {
+    const ia = reordered.indexOf(a);
+    const ib = reordered.indexOf(b);
+    return (ia < 0 ? Number.MAX_SAFE_INTEGER : ia) - (ib < 0 ? Number.MAX_SAFE_INTEGER : ib);
+  });
+  return { ...state, riverDeck };
 }
 
 /**
  * Pure predicate: End Turn доступен только после успешного authoritative
- * placement (TILE_PLACED / MEEPLE_SELECTION / END_TILE_BONUS). UI не
- * дублирует phase-логику.
+ * placement (TILE_PLACED / MEEPLE_SELECTION). UI не дублирует phase-логику.
  */
 export function canEndTurn(state: TurnFlowState): boolean {
   return state.phase === 'TILE_PLACED'
-    || state.phase === 'MEEPLE_SELECTION'
-    || state.phase === 'END_TILE_BONUS';
+    || state.phase === 'MEEPLE_SELECTION';
 }
 
 /**
- * Замена неразмещаемой наземной карты: текущая карта уходит в discard
- * ровно один раз, берётся следующая playable карта, фаза остаётся
- * TILE_IN_HAND. Работает ТОЛЬКО: phase=TILE_IN_HAND И
- * hasAnyLegalTilePlacement=false И текущая карта НЕ river. Во всех
- * остальных случаях — strict no-op (включая повторный вызов на устаревшем
- * state: проверка идёт по definitionId из переданного state, а current tile
- * того же id там уже нет). Никаких очков, meeple, смены игрока/turnNumber.
+ * Замена неразмещаемой наземной карты ОДИН РАЗ на один пользовательский
+ * клик: текущая карта уходит в discardedTileIds ровно один раз, берётся
+ * РОВНО ОДНА следующая land-карта (без автоматического skip последующих
+ * unplayable — если новая карта тоже неразмещаемая, она остаётся в руке
+ * и требует нового клика «Заменить»). Фаза остаётся TILE_IN_HAND.
+ *
+ * STRICT no-op если:
+ * 1. phase !== TILE_IN_HAND;
+ * 2. drawnTileDefinitionId == null;
+ * 3. текущая карта — river (river-карты никогда не заменяются/discarded);
+ * 4. у карты есть хотя бы один legal placement;
+ * 5. defensive idempotency: current id уже в discardedTileIds.
+ *
+ * Никаких очков, meeple, смены игрока или turnNumber при замене.
  */
 export function replaceUnplayableTurnTile(state: TurnFlowState): TurnFlowState {
   if (state.phase !== 'TILE_IN_HAND') return state;
-  if (isRiverTurn(state)) return state; // river-карты никогда не заменяются
   const definitionId = state.game.drawnTileDefinitionId;
   if (definitionId === null) return state;
+  if (getCardDefinition(definitionId).riverCard) return state;
+  if (isRiverTurn(state)) return state;
   if (hasAnyLegalTilePlacement(state, definitionId)) return state;
-
-  let landDeck = [...state.landDeck];
-  let discardedCount = 0;
-  const discardedTileIds = [...state.discardedTileIds];
-  while (true) {
-    discardedTileIds.push(definitionId);
-    discardedCount += 1;
-    const index = landDeck.indexOf(definitionId);
-    landDeck = index >= 0 ? [...landDeck.slice(0, index), ...landDeck.slice(index + 1)] : landDeck;
-    let rotation: Rotation | null = null;
-    let nextIndex = 0;
-    while (nextIndex < landDeck.length && rotation === null) {
-      rotation = playableRotation(state, landDeck[nextIndex]);
-      if (rotation === null) {
-        discardedTileIds.push(landDeck[nextIndex]);
-        discardedCount += 1;
-      } else break;
-      nextIndex += 1;
-    }
-    if (rotation === null) {
-      const exhausted: TurnFlowState = {
-        ...state,
-        discardedTileIds,
-        discardedCount,
-        landDeck: [],
-      };
-      // Ложный GAME_OVER запрещён, если deck ещё непуст (blocked-состояние).
-      if (isTerminalDeckExhaustion(exhausted.riverPlaced, exhausted.riverDeck, exhausted.landDeck)) {
-        return finalizeGame(exhausted);
-      }
-      return { ...exhausted, game: { ...exhausted.game, drawnTileDefinitionId: null } };
-    }
-    const nextId = landDeck[nextIndex];
-    const game = { ...state.game, tileDeck: { remaining: [nextId] }, gamePhase: 'drawTile' as const };
-    const playerId = game.players[game.currentPlayerIndex]?.id ?? '';
-    const result = applyAction(game, { type: 'DRAW_TILE', playerId }, getTileDefinition);
-    if (!result.ok) return state;
-    return {
+  if (state.discardedTileIds.includes(definitionId)) return state;
+  // Нормализация: held-карта не должна оставаться в очереди будущих карт.
+  const futureDeck = removeFromOnce(state.landDeck, definitionId) ?? state.landDeck;
+  // РОВНО одна следующая карта — без auto-scan/auto-discard chain.
+  const nextId = futureDeck[0];
+  if (nextId === undefined) {
+    // Land deck реально исчерпан — единый authoritative terminal path.
+    const exhausted: TurnFlowState = {
       ...state,
-      game: { ...result.state, drawnTileDefinitionId: nextId },
-      phase: 'TILE_IN_HAND',
-      rotation: 0,
-      legalPlacements: anyRotationLegalPlacements(state, nextId),
-      positionedAt: null,
-      positionedRotations: [],
-      discardedTileIds,
-      discardedCount,
-      landDeck: landDeck.slice(nextIndex + 1),
-      lastResolution: null,
+      game: { ...state.game, drawnTileDefinitionId: null },
+      discardedTileIds: [...state.discardedTileIds, definitionId],
+      landDeck: [],
     };
+    if (isTerminalDeckExhaustion(exhausted.riverPlaced, exhausted.riverDeck, exhausted.landDeck)) {
+      return finalizeGame(exhausted);
+    }
+    return exhausted;
   }
+  const game = { ...state.game, tileDeck: { remaining: [nextId] }, gamePhase: 'drawTile' as const };
+  const playerId = game.players[game.currentPlayerIndex]?.id ?? '';
+  const result = applyAction(game, { type: 'DRAW_TILE', playerId }, getTileDefinition);
+  if (!result.ok) return state;
+  // Единый authoritative draw-lifecycle (тот же, что drawRiverTile/drawLandTile).
+  return {
+    ...afterDrawFlowFields(state, result.state, nextId),
+    discardedTileIds: [...state.discardedTileIds, definitionId],
+    landDeck: futureDeck.slice(1),
+  };
 }
 
 /**
- * Strict rejection guard (TEST seam): placement через legacy engine path
- * запрещён, если у карты нет ни одного authoritative legal варианта по всем
- * rotation. Illegal drop не должен оставлять карту в "awaiting meeple".
- * Нормальный UI-path placeTurnTile и так возвращает strict no-op.
+ * Общие post-draw поля TILE_IN_HAND. Единственная точка, где flow-состояние
+ * синхронизируется с результатом authoritative DRAW_TILE (используется
+ * drawRiverTile, drawLandTile и replaceUnplayableTurnTile).
  */
-export function assertTilePlacementAllowed(
+function afterDrawFlowFields(
   state: TurnFlowState,
-  definitionId: string,
-  position: TilePosition,
-  rotation: Rotation,
-): void {
-  const options = getLegalTilePlacementOptions(state, definitionId);
-  const cell = options.find((option) => option.position.x === position.x && option.position.y === position.y);
-  if (!cell || !cell.rotations.includes(rotation)) {
-    throw new Error(`Illegal placement rejected: ${definitionId}@${rotation}@${position.x},${position.y}`);
-  }
+  game: GameState,
+  drawnId: string,
+): TurnFlowState {
+  return {
+    ...state,
+    game: { ...game, drawnTileDefinitionId: drawnId },
+    phase: 'TILE_IN_HAND',
+    rotation: 0,
+    legalPlacements: anyRotationLegalPlacements(state, drawnId),
+    positionedAt: null,
+    positionedRotations: [],
+    selectedMeepleTarget: null,
+  };
 }
 
 function playableRotation(state: TurnFlowState, id: string): Rotation | null {
@@ -583,10 +557,10 @@ function drawRiverTile(state: TurnFlowState): TurnFlowState {
     );
   }
   const pickedId = picked.cardId;
-  const stateAfterDraw: TurnFlowState = {
-    ...state,
-    riverDeck: picked.riverDeck,
-  };
+  const stateAfterDraw = ensurePlanCompatibleDraw(
+    { ...state, riverDeck: picked.riverDeck },
+    pickedId,
+  );
   const rotation = playableRotation(stateAfterDraw, pickedId);
   if (rotation === null) {
     // pickRiverDraw гарантирует solvability; отсутствие river-safe placement
@@ -599,15 +573,8 @@ function drawRiverTile(state: TurnFlowState): TurnFlowState {
   const playerId = game.players[game.currentPlayerIndex]?.id ?? '';
   const result = applyAction(game, { type: 'DRAW_TILE', playerId }, getTileDefinition);
   if (!result.ok) return state;
-  return {
-    ...stateAfterDraw,
-    game: result.state,
-    phase: 'TILE_IN_HAND',
-    rotation: 0,
-    legalPlacements: anyRotationLegalPlacements(stateAfterDraw, pickedId),
-    positionedAt: null,
-    positionedRotations: [],
-  };
+  // Единый authoritative draw-lifecycle (общие post-draw поля flow-состояния).
+  return afterDrawFlowFields(stateAfterDraw, result.state, pickedId);
 }
 
 function drawLandTile(state: TurnFlowState): TurnFlowState {
@@ -639,14 +606,9 @@ function drawLandTile(state: TurnFlowState): TurnFlowState {
   const playerId = game.players[game.currentPlayerIndex]?.id ?? '';
   const result = applyAction(game, { type: 'DRAW_TILE', playerId }, getTileDefinition);
   if (!result.ok) return state;
+  // Единый authoritative draw-lifecycle (общие post-draw поля flow-состояния).
   return {
-    ...state,
-    game: result.state,
-    phase: 'TILE_IN_HAND',
-    rotation: 0,
-    legalPlacements: anyRotationLegalPlacements(state, id),
-    positionedAt: null,
-    positionedRotations: [],
+    ...afterDrawFlowFields(state, result.state, id),
     discardedTileIds: discarded,
     landDeck: deck.slice(index + 1),
   };
