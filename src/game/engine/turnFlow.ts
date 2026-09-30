@@ -5,7 +5,8 @@ import { edgeOffset, rotateEdge } from './geometry';
 import { applyAction, applyActionWithResolution, createGame } from './gameEngine';
 import { buildTurnResolution, emptyTurnResolution, type TurnResolution } from './turnResolution';
 import { getLegalTilePlacements } from '../rules/placement';
-import type { MeeplePlacement, Rotation, TilePosition } from '../types/geometry';
+import { getLegalMeeplePlacements } from '../rules/localFeatures';
+import { placementKey, type MeeplePlacement, type Rotation, type TilePosition } from '../types/geometry';
 import type { GameState, Player } from '../types/state';
 import { posKey } from '../types/state';
 
@@ -127,6 +128,48 @@ function playableRotation(state: TurnFlowState, id: string): Rotation | null {
   return ROTATIONS.find((rotation) => legalPlacementsFor(state, id, rotation).length > 0) ?? null;
 }
 
+/**
+ * Авторитетное терминальное условие: оба real deck исчерпаны.
+ * "В этом проходе не нашли legal placement" НЕ равно "игра окончена".
+ */
+function isTerminalDeckExhaustion(riverPlaced: number, riverDeck: string[], landDeck: string[]): boolean {
+  return riverPlaced >= RIVER_CARD_COUNT && riverDeck.length === 0 && landDeck.length === 0;
+}
+
+/**
+ * Единый authoritative finalization path. Гарантирует:
+ * phase=GAME_OVER, game.status=finished, lastResolution.gameOver=true,
+ * lastResolution.final существует, final scoring применён ровно один раз
+ * (COMPLETE_TURN при пустых decks выполняет финальный подсчёт).
+ */
+function finalizeGame(state: TurnFlowState): TurnFlowState {
+  const playerId = state.game.players[state.game.currentPlayerIndex]?.id ?? '';
+  const input = { ...state.game, tileDeck: { remaining: [] }, drawnTileDefinitionId: null };
+  const completed = applyActionWithResolution(input, { type: 'COMPLETE_TURN', playerId }, getTileDefinition);
+  if (!completed.ok || !completed.resolution) {
+    // Defensive fallback: никогда не оставлять незафинализированный GAME_OVER.
+    return { ...state, phase: 'GAME_OVER' };
+  }
+  const nextPlayerId = completed.resolution.state.players[completed.resolution.state.currentPlayerIndex]?.id ?? playerId;
+  const lastResolution = buildTurnResolution({
+    previousPlayerId: playerId,
+    nextPlayerId,
+    gameOver: true,
+    normal: completed.resolution.normal,
+    final: completed.resolution.final ?? null,
+    finalScores: completed.state.scores,
+  });
+  return {
+    ...state,
+    game: completed.state,
+    phase: 'GAME_OVER',
+    selectedMeepleTarget: null,
+    legalPlacements: [],
+    rotation: 0,
+    lastResolution,
+  };
+}
+
 export function drawTurnTile(state: TurnFlowState): TurnFlowState {
   if (state.phase !== 'AWAITING_DRAW') return state;
   const deckKey = isRiverTurn(state) ? 'riverDeck' : 'landDeck';
@@ -140,7 +183,19 @@ export function drawTurnTile(state: TurnFlowState): TurnFlowState {
     else break;
     index += 1;
   }
-  if (rotation === null) return { ...state, phase: 'GAME_OVER', discardedTileIds: discarded, [deckKey]: [] };
+  if (rotation === null) {
+    const exhausted: TurnFlowState = {
+      ...state,
+      discardedTileIds: discarded,
+      [deckKey]: [],
+    } as TurnFlowState;
+    // Ложный GAME_OVER запрещён: если river ещё не достроена или другой deck
+    // непуст — это blocked (non-terminal) состояние, а не конец игры.
+    if (isTerminalDeckExhaustion(exhausted.riverPlaced, exhausted.riverDeck, exhausted.landDeck)) {
+      return finalizeGame(exhausted);
+    }
+    return { ...exhausted, phase: 'AWAITING_DRAW' };
+  }
   const id = deck[index];
   const game = { ...state.game, tileDeck: { remaining: [id] }, gamePhase: 'drawTile' as const };
   const playerId = game.players[game.currentPlayerIndex]?.id ?? '';
@@ -176,7 +231,16 @@ export function placeTurnTile(state: TurnFlowState, position: TilePosition): Tur
 
 export function selectTurnMeeple(state: TurnFlowState, target: MeeplePlacement | null): TurnFlowState {
   if (state.phase !== 'TILE_PLACED' && state.phase !== 'MEEPLE_SELECTION') return state;
-  return { ...state, phase: target ? 'MEEPLE_SELECTION' : 'TILE_PLACED', selectedMeepleTarget: target };
+  // Отмена выбора: возвращаемся в TILE_PLACED.
+  if (target === null) return { ...state, phase: 'TILE_PLACED', selectedMeepleTarget: null };
+  // Authoritative проверка: цель берётся из того же источника, что и UI/engine.
+  const legal = getLegalMeeplePlacements(state.game, getTileDefinition);
+  const key = placementKey(target);
+  if (!legal.some((placement) => placementKey(placement) === key)) {
+    // Нелегальная цель — strict no-op: flow не зависает в MEEPLE_SELECTION.
+    return state;
+  }
+  return { ...state, phase: 'MEEPLE_SELECTION', selectedMeepleTarget: target };
 }
 
 export function endTurn(state: TurnFlowState): TurnFlowState {
@@ -184,9 +248,19 @@ export function endTurn(state: TurnFlowState): TurnFlowState {
   const previousPlayerId = state.game.players[state.game.currentPlayerIndex]?.id ?? '';
   const last = state.game.lastPlacedTile;
   if (!last) return state;
-  const decision = state.selectedMeepleTarget
-    ? applyAction(state.game, { type: 'PLACE_MEEPLE', playerId: previousPlayerId, position: last.position, ...state.selectedMeepleTarget }, getTileDefinition)
-    : applyAction(state.game, { type: 'SKIP_MEEPLE', playerId: previousPlayerId }, getTileDefinition);
+  let decisionState = state;
+  if (state.selectedMeepleTarget) {
+    // Defensive re-validation: stale/corrupted selection must not hang the flow
+    // in MEEPLE_SELECTION forever via a silent PLACE_MEEPLE rejection.
+    const legal = getLegalMeeplePlacements(state.game, getTileDefinition);
+    const key = placementKey(state.selectedMeepleTarget);
+    if (!legal.some((placement) => placementKey(placement) === key)) {
+      decisionState = { ...state, selectedMeepleTarget: null, phase: 'TILE_PLACED' };
+    }
+  }
+  const decision = decisionState.selectedMeepleTarget
+    ? applyAction(decisionState.game, { type: 'PLACE_MEEPLE', playerId: previousPlayerId, position: last.position, ...decisionState.selectedMeepleTarget }, getTileDefinition)
+    : applyAction(decisionState.game, { type: 'SKIP_MEEPLE', playerId: previousPlayerId }, getTileDefinition);
   if (!decision.ok) return state;
 
   // COMPLETE_TURN решает между обычным переходом и финальным подсчётом по
