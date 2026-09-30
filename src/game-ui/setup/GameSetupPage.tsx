@@ -11,7 +11,7 @@ import type { LocalGameConfig } from '../../game/session';
 import './gameSetup.css';
 
 export interface GameSetupPageProps {
-  /** Вызывается после нажатия «Начать игру» с готовой конфигурацией партии. */
+  /** Вызывается после нажатия «Создать игру» с готовой конфигурацией партии. */
   onStart: (config: LocalGameConfig) => void;
   /** Генератор sessionId/gameId (browser-only bootstrap из UI-слоя). */
   makeGameId: () => string;
@@ -21,13 +21,6 @@ export interface GameSetupPageProps {
 }
 
 export function GameSetupPage({ onStart, makeGameId, makeSeed, onBack }: GameSetupPageProps) {
-  const [count, setCount] = useState<number>(MIN_PLAYERS);
-  const [names, setNames] = useState<(string | undefined)[]>([]);
-  const [title, setTitle] = useState('Моя партия');
-  const [timer, setTimer] = useState('none');
-}
-
-export function GameSetupPage({ onStart, makeGameId, makeSeed }: GameSetupPageProps) {
   const [count, setCount] = useState<number>(MIN_PLAYERS);
   const [names, setNames] = useState<(string | undefined)[]>([]);
 
@@ -49,19 +42,9 @@ export function GameSetupPage({ onStart, makeGameId, makeSeed }: GameSetupPagePr
   return (
     <main className="setup-page">
       <header className="setup-header">
-        <p className="setup-kicker">Каркассон</p><h1>Создать игру</h1>
-        <p>Локальная партия · от 1 до 6 игроков</p>
-      </header>
-
-      <section className="setup-card setup-options">
-        <label>Название игры<input value={title} maxLength={32} onChange={(event) => setTitle(event.target.value)} /></label>
-        <label>Таймер<select value={timer} onChange={(event) => setTimer(event.target.value)}><option value="none">Без таймера</option><option value="15">15 секунд</option><option value="30">30 секунд</option><option value="60">60 секунд</option></select></label>
-        <label>Карта<select disabled><option>Классическая · река 19 карт</option></select></label>
-        <p className="setup-note">Онлайн-лобби и боты пока недоступны. Эта партия работает локально на устройстве.</p>
-      </section>
-
         {onBack && <button type="button" className="setup-back" onClick={onBack}>← Меню</button>}
-        <h1>Каркасон</h1>
+        <p className="setup-kicker">Каркассон</p>
+        <h1>Создать игру</h1>
         <p>Локальная партия · от 1 до 6 игроков</p>
       </header>
 
@@ -121,10 +104,11 @@ export function GameSetupPage({ onStart, makeGameId, makeSeed }: GameSetupPagePr
         ))}
       </section>
 
+      <p className="setup-note">Онлайн-лобби и боты пока недоступны. Эта партия работает локально на устройстве.</p>
+
       <div className="setup-actions">
         <button type="button" className="setup-start" onClick={start}>Создать игру</button>
         {onBack && <button type="button" className="setup-back" onClick={onBack}>Назад</button>}
-        <button type="button" className="setup-start" onClick={start}>Начать игру</button>
       </div>
     </main>
   );
