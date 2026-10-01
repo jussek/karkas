@@ -72,7 +72,7 @@ export function buildPlayers(options: BuildPlayersOptions): Player[] {
 /** Опции локальной партии (Stage 4C). Только browser/local-match настройки. */
 export interface LocalMatchOptions {
   /** 0 = таймер выключен; иначе длительность хода в секундах. */
-  turnTimerSeconds: 0 | 60 | 90 | 120;
+  turnTimerSeconds: 0 | 15 | 30 | 60;
 }
 
 export const DEFAULT_MATCH_OPTIONS: LocalMatchOptions = { turnTimerSeconds: 0 };

@@ -4,6 +4,7 @@ import './mainMenu.css';
 export interface MainMenuProps {
   onCreateGame: () => void;
   onQuickGame: () => void;
+  onFindGame?: () => void;
   /** Opens the rules modal (rendered by the application root). */
   onRules?: () => void;
   /** Stage 4B: сохранённая незавершённая партия существует. */
@@ -19,6 +20,7 @@ export interface MainMenuProps {
 export function MainMenu({
   onCreateGame,
   onQuickGame,
+  onFindGame,
   onRules,
   hasSavedGame = false,
   onContinueGame,
@@ -56,7 +58,7 @@ export function MainMenu({
       {hasSavedGame && onContinueGame && (
         <button type="button" className="wood-button wood-button--blue" onClick={onContinueGame}>Продолжить игру</button>
       )}
-      <button type="button" className="wood-button wood-button--blue" disabled title="Сетевой режим появится позже">Найти игру <small>Скоро</small></button>
+      <button type="button" className="wood-button wood-button--blue" onClick={onFindGame}>Найти игру</button>
       <button type="button" className="wood-button wood-button--green" onClick={onCreateGame}>Создать игру</button>
       <button type="button" className="wood-button" onClick={onQuickGame}>Быстрая локальная игра</button>
       <div className="main-menu__minor">
