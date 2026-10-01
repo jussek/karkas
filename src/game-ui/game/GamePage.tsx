@@ -1,15 +1,15 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import type { PointerEvent as ReactPointerEvent } from 'react';
 import { getTileDefinition } from '../../game/cards/catalogApi';
 import {
   RIVER_CARD_COUNT,
   canEndTurn,
+  confirmTurnTilePlacement,
   drawTurnTile,
   endTurn,
   hasAnyLegalTilePlacement,
   placeTurnTile,
   replaceUnplayableTurnTile,
-  rotateTurnTile,
+  rotatePositionedTurnTile,
   selectTurnMeeple,
 } from '../../game/engine/turnFlow';
 import type { TurnFlowState } from '../../game/engine/turnFlow';
@@ -19,27 +19,15 @@ import type { MeeplePlacement } from '../../game/types/geometry';
 import { playerIdentity } from '../../game/session';
 import type { LocalGameConfig } from '../../game/session';
 import { TileRenderer } from '../tiles/TileRenderer';
+import { MeepleIcon } from '../tiles/MeepleIcon';
 import { anchorForPlacement } from '../tiles/tileSemanticManifest';
 import { createLocalGame } from './localGameBootstrap';
-import {
-  placementForTileDrop,
-  resolveTileDrop,
-  tileDragOwnsPointer,
-  type TileDropTarget,
-} from './tileDrag';
 import { useBoardCamera } from './useBoardCamera';
 import './gamePage.css';
 
 const CELL = 92;
 const ORIGIN = 8;
 const BOARD_CELLS = 17;
-
-interface ActiveTileDrag {
-  pointerId: number;
-  clientX: number;
-  clientY: number;
-  target: TileDropTarget;
-}
 
 function key(target: MeeplePlacement) {
   return `${target.featureType}:${target.edge ?? 'center'}`;
@@ -95,7 +83,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
   const [feedbackTick, setFeedbackTick] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
-  const [tileDrag, setTileDrag] = useState<ActiveTileDrag | null>(null);
+  const [meepleDialogOpen, setMeepleDialogOpen] = useState(false);
   const [placementFeedback, setPlacementFeedback] = useState<string | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   /** Клетки для ближайшего вызова fitContent (для «Показать ходы»). */
@@ -131,7 +119,9 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
       : flow.phase === 'TILE_IN_HAND'
         ? unplayableTile
           ? 'Эту карту нельзя поставить. Возьмите другую.'
-          : 'Поверните карту или выберите подсвеченное место'
+          : 'Выберите подсвеченное место'
+        : flow.phase === 'TILE_POSITIONED'
+          ? 'Выберите поворот и подтвердите размещение'
         : 'Карта установлена. Можно поставить подданного или закончить ход';
 
   /* --- camera ------------------------------------------------------ */
@@ -155,21 +145,6 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
     originOffset: ORIGIN,
   });
 
-  const dropTargetAt = useCallback((clientX: number, clientY: number) => {
-    const viewport = viewportRef.current;
-    if (!viewport) return { position: null, valid: false, reason: 'outside-board' } as const;
-    const rect = viewport.getBoundingClientRect();
-    return resolveTileDrop({
-      clientPoint: { x: clientX, y: clientY },
-      viewport: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
-      camera: camera.camera,
-      cellSize: CELL,
-      originOffset: ORIGIN,
-      legalPlacements: flow.legalPlacements,
-      board: flow.game.board,
-    });
-  }, [camera.camera, flow.game.board, flow.legalPlacements]);
-
   const placeAt = useCallback((position: { x: number; y: number }) => {
     const next = placeTurnTile(flow, position);
     if (next === flow) {
@@ -180,49 +155,6 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
     setPlacementFeedback(null);
     return true;
   }, [flow]);
-
-  const startTileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (flow.phase !== 'TILE_IN_HAND') return;
-    // Неразмещаемая карта не участвует в drag/drop: placement невозможен.
-    if (event.target instanceof HTMLElement && event.target.closest('.replace-action')) return;
-    if (unplayableTile) return;
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    setPlacementFeedback(null);
-    setTileDrag({
-      pointerId: event.pointerId,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      target: dropTargetAt(event.clientX, event.clientY),
-    });
-  };
-
-  const moveTileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!tileDrag || !tileDragOwnsPointer(tileDrag.pointerId, event.pointerId)) return;
-    event.stopPropagation();
-    setTileDrag({
-      ...tileDrag,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      target: dropTargetAt(event.clientX, event.clientY),
-    });
-  };
-
-  const finishTileDrag = (event: ReactPointerEvent<HTMLDivElement>, cancelled: boolean) => {
-    if (!tileDrag || !tileDragOwnsPointer(tileDrag.pointerId, event.pointerId)) return;
-    event.stopPropagation();
-    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
-      event.currentTarget.releasePointerCapture?.(event.pointerId);
-    }
-    const target = dropTargetAt(event.clientX, event.clientY);
-    const placement = placementForTileDrop(target, cancelled);
-    setTileDrag(null);
-    if (!placement) {
-      setPlacementFeedback(cancelled ? 'Перетаскивание отменено' : 'Сюда карту поставить нельзя');
-      return;
-    }
-    placeAt(placement);
-  };
 
   /** «Показать ходы»: вписывает legal positions текущей ротации в viewport. */
   const showLegalMoves = () => {
@@ -238,6 +170,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
   const endTurnAction = () => {
     setFlow((current) => endTurn(current));
     setMeepleMode(false);
+    setMeepleDialogOpen(false);
     setFeedbackTick((tick) => tick + 1);
   };
 
@@ -282,6 +215,21 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
                 <TileRenderer definition={getTileDefinition(tile.definitionId)} rotation={tile.rotation} size={CELL} />
               </div>
             ))}
+            {flow.game.meeples.filter((meeple) => meeple.position && meeple.placement).map((meeple) => {
+              const position = meeple.position!;
+              const anchor = anchorForPlacement(meeple.placement!);
+              const owner = flow.game.players.find((item) => item.id === meeple.playerId);
+              return <svg
+                key={meeple.id}
+                className="board-meeple"
+                viewBox="0 0 100 100"
+                aria-label={`Человечек игрока ${owner?.name ?? meeple.playerId}`}
+                style={{
+                  left: (position.x + ORIGIN) * CELL + (anchor.x * CELL) / 100,
+                  top: (position.y + ORIGIN) * CELL + (anchor.y * CELL) / 100,
+                }}
+              ><MeepleIcon fill={owner?.color ?? '#b8332b'} size={30} /></svg>;
+            })}
             {flow.legalPlacements.map((position) => (
               <button
                 className="legal-cell"
@@ -296,33 +244,37 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
                 }}
               ><span>＋</span></button>
             ))}
-            {heldId && tileDrag?.target.valid && tileDrag.target.position && (
+            {heldId && flow.phase === 'TILE_POSITIONED' && flow.positionedAt && (
               <div
-                className="tile-drag-preview is-valid"
+                className="positioned-tile-preview"
                 style={{
-                  left: (tileDrag.target.position.x + ORIGIN) * CELL,
-                  top: (tileDrag.target.position.y + ORIGIN) * CELL,
+                  left: (flow.positionedAt.x + ORIGIN) * CELL,
+                  top: (flow.positionedAt.y + ORIGIN) * CELL,
                 }}
               >
                 <TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={CELL} />
+                {flow.positionedRotations.length > 1 && <button
+                  type="button"
+                  className="preview-rotate"
+                  aria-label="Выбрать следующий разрешённый поворот"
+                  onClick={() => setFlow(rotatePositionedTurnTile)}
+                >↻</button>}
               </div>
             )}
-            {meepleMode && flow.game.lastPlacedTile && legalMeeples.map((target) => {
-              const anchor = anchorForPlacement(target);
-              const tile = flow.game.lastPlacedTile!;
-              const selected = flow.selectedMeepleTarget && key(flow.selectedMeepleTarget) === key(target);
-              return <button
-                type="button"
-                className={`board-meeple-target${selected ? ' is-selected' : ''}`}
-                key={key(target)}
-                aria-label={`Поставить подданного: ${target.featureType}`}
-                style={{ left: (tile.position.x + ORIGIN) * CELL + (anchor.x * CELL) / 100, top: (tile.position.y + ORIGIN) * CELL + (anchor.y * CELL) / 100 }}
-                onClick={() => {
-                  if (!camera.wasTapAtEnd()) return;
-                  setFlow((current) => selectTurnMeeple(current, target));
-                }}
-              >{selected ? '👤' : ''}</button>;
-            })}
+            {flow.game.lastPlacedTile && ['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) && <button
+              type="button"
+              className={`new-tile-meeple-target${meepleMode ? ' is-active' : ''}`}
+              aria-label="Только что установленная карта"
+              style={{ left: (flow.game.lastPlacedTile.position.x + ORIGIN) * CELL, top: (flow.game.lastPlacedTile.position.y + ORIGIN) * CELL }}
+              onClick={() => {
+                if (!camera.wasTapAtEnd() || !meepleMode) return;
+                if (legalMeeples.length === 0) {
+                  setPlacementFeedback('На этой карте нет доступных мест для человечка');
+                  return;
+                }
+                setMeepleDialogOpen(true);
+              }}
+            />}
           </div>
         </div>
 
@@ -335,16 +287,6 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
           )}
         </div>
       </section>
-
-      {heldId && tileDrag && !tileDrag.target.valid && (
-        <div
-          className="tile-drag-ghost is-invalid"
-          style={{ left: tileDrag.clientX - CELL / 2, top: tileDrag.clientY - CELL / 2 }}
-          aria-hidden
-        >
-          <TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={CELL} />
-        </div>
-      )}
 
       {gameOver && finalScores && (
         <section className="game-over-panel" role="status" aria-live="assertive">
@@ -389,31 +331,48 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
         </section>
       </div>}
 
+      {meepleDialogOpen && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Выбор места человечка">
+        <section className="game-menu-sheet meeple-dialog">
+          <h2>{legalMeeples.length === 1
+            ? `Поставить человечка ${legalMeeples[0].featureType === 'road' ? 'на дорогу' : legalMeeples[0].featureType === 'city' ? 'в город' : 'на монастырь'}?`
+            : 'Куда поставить человечка?'}</h2>
+          {legalMeeples.map((target) => {
+            const sameType = legalMeeples.filter((item) => item.featureType === target.featureType);
+            const number = sameType.length > 1 ? ` ${sameType.indexOf(target) + 1}` : '';
+            const label = target.featureType === 'road' ? 'Дорога' : target.featureType === 'city' ? 'Город' : 'Монастырь';
+            return <button type="button" key={key(target)} onClick={() => {
+              setFlow((current) => selectTurnMeeple(current, target));
+              setMeepleDialogOpen(false);
+              setPlacementFeedback(null);
+            }}>{legalMeeples.length === 1 ? 'Подтвердить' : `${label}${number}`}</button>;
+          })}
+          <button type="button" onClick={() => setMeepleDialogOpen(false)}>Отмена</button>
+        </section>
+      </div>}
+
       <section className="turn-controls" aria-label="Действия хода">
         {heldId && <div
-          className={`held-tile${tileDrag ? ' is-dragging' : ''}${unplayableTile ? ' is-unplayable' : ''}`}
-          onPointerDown={startTileDrag}
-          onPointerMove={moveTileDrag}
-          onPointerUp={(event) => finishTileDrag(event, false)}
-          onPointerCancel={(event) => finishTileDrag(event, true)}
+          className={`held-tile${unplayableTile ? ' is-unplayable' : ''}`}
         >{unplayableTile && <button
           type="button"
           className="replace-action"
           aria-label="Заменить неразмещаемую карту"
           onClick={() => {
             setPlacementFeedback(null);
-            setTileDrag(null);
             setFlow((current) => replaceUnplayableTurnTile(current));
           }}
         >↺ <span>Заменить</span></button>}<TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={86} /><span>{flow.rotation}°</span></div>}
         <button type="button" className="draw-action" disabled={flow.phase !== 'AWAITING_DRAW'} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
-        <button type="button" className="rotate-action" aria-label="Повернуть карту по часовой стрелке" disabled={flow.phase !== 'TILE_IN_HAND'} onClick={() => setFlow(rotateTurnTile)}>↻ <span>Повернуть</span></button>
+        <button type="button" className="confirm-placement" aria-label="Подтвердить размещение карты" disabled={flow.phase !== 'TILE_POSITIONED'} onClick={() => setFlow(confirmTurnTilePlacement)}>✓ <span>Поставить</span></button>
         <button
           type="button"
           aria-pressed={meepleMode}
-          disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) || available === 0 || legalMeeples.length === 0}
+          disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) || available === 0}
           onClick={() => {
-            if (meepleMode) setFlow((current) => selectTurnMeeple(current, null));
+            if (meepleMode) {
+              setFlow((current) => selectTurnMeeple(current, null));
+              setMeepleDialogOpen(false);
+            }
             setMeepleMode((value) => !value);
           }}
         >👤 <span>{meepleMode ? 'Отменить' : `Подданный (${available})`}</span></button>

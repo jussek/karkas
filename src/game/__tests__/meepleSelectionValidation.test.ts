@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getTileDefinition } from '../cards/catalogApi';
 import {
-  createTurnFlow, drawTurnTile, endTurn, placeTurnTile, selectTurnMeeple,
+  confirmTurnTilePlacement, createTurnFlow, drawTurnTile, endTurn, placeTurnTile, selectTurnMeeple,
 } from '../engine/turnFlow';
 import { getLegalMeeplePlacements } from '../rules/localFeatures';
 import { placementKey } from '../types/geometry';
@@ -14,7 +14,7 @@ function placedState(gameId: string, seed: number) {
   let state = createTurnFlow({ gameId, players: onePlayer, seed });
   state = drawTurnTile(state);
   expect(state.phase).toBe('TILE_IN_HAND');
-  state = placeTurnTile(state, state.legalPlacements[0]);
+  state = confirmTurnTilePlacement(placeTurnTile(state, state.legalPlacements[0]));
   expect(state.phase).toBe('TILE_PLACED');
   const legal = getLegalMeeplePlacements(state.game, getTileDefinition);
   return { state, legal };
@@ -24,7 +24,7 @@ describe('Stage 4A: selectTurnMeeple validates against authoritative legal targe
   it('rejects an invalid target as strict no-op; phase never hangs in MEEPLE_SELECTION', () => {
     const { state } = placedState('meeple-invalid', 3);
     // Заведомо нелегальная цель: monastery на стартовой river tile недостижима
-    // (card-091 — река без монастыря).
+    // (текущая river-карта не имеет монастыря).
     const next = selectTurnMeeple(state, { featureType: 'monastery', edge: null });
     expect(next).toBe(state); // strict no-op: тот же объект
     expect(next.phase).toBe('TILE_PLACED');
@@ -40,20 +40,23 @@ describe('Stage 4A: selectTurnMeeple validates against authoritative legal targe
       return;
     }
     const target = legal[0];
+    const beforePlaced = state.game.meeples.filter((meeple) => meeple.position !== null).length;
     const next = selectTurnMeeple(state, target);
     expect(next.phase).toBe('MEEPLE_SELECTION');
     expect(next.selectedMeepleTarget).not.toBeNull();
     expect(placementKey(next.selectedMeepleTarget!)).toBe(placementKey(target));
+    expect(next.game.meeples.filter((meeple) => meeple.position !== null)).toHaveLength(beforePlaced + 1);
+    expect(next.game.gamePhase).not.toBe('placeMeeple');
   });
 
-  it('null cancels a legal selection and returns to TILE_PLACED', () => {
+  it('cannot cancel or place a second meeple after authoritative placement', () => {
     const { state, legal } = placedState('meeple-cancel', 12);
     if (legal.length === 0) return;
     const selected = selectTurnMeeple(state, legal[0]);
     expect(selected.phase).toBe('MEEPLE_SELECTION');
     const cancelled = selectTurnMeeple(selected, null);
-    expect(cancelled.phase).toBe('TILE_PLACED');
-    expect(cancelled.selectedMeepleTarget).toBeNull();
+    expect(cancelled).toBe(selected);
+    expect(selectTurnMeeple(selected, legal[0])).toBe(selected);
   });
 
   it('occupied global feature target is rejected (second identical target unavailable)', () => {
@@ -88,9 +91,13 @@ describe('Stage 4A: selectTurnMeeple validates against authoritative legal targe
     const { state, legal } = placedState('meeple-endturn', 12);
     if (legal.length === 0) return;
     const selected = selectTurnMeeple(state, legal[0]);
+    const placedMeepleIds = selected.game.meeples.filter((meeple) => meeple.position).map((meeple) => meeple.id);
     const finished = endTurn(selected);
     expect(finished.phase).toBe('AWAITING_DRAW');
     expect(finished.lastResolution.previousPlayerId).toBe('player-1');
+    const stillPlaced = finished.game.meeples.filter((meeple) => meeple.position).map((meeple) => meeple.id);
+    expect(new Set(stillPlaced).size).toBe(stillPlaced.length);
+    for (const id of stillPlaced) expect(placedMeepleIds).toContain(id);
   });
 
   it('stale corrupted selection cannot stall the flow: endTurn re-validates and completes', () => {

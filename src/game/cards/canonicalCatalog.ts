@@ -10,8 +10,8 @@ import type { CardDefinition } from './types';
  * Crossroads split roads into independent road features, as they terminate a road.
  * Blue coat-of-arms shields are scoring shields; expansion/edition badges are ignored.
  * The legacy catalog is an import/source layer only. Runtime consumers use
- * GAME_CARD_CATALOG, which excludes only the user-removed card 106.
- * Card 106 is intentionally removed from the game by product decision; card 105 remains.
+ * GAME_CARD_CATALOG applies the runtime contract: card 133 is the river
+ * source, card 106 is the river end, and obsolete card 091 is excluded.
  */
 const AUDITED_001_050: readonly CardDefinition[] = [
   { id:'card-001', asset:'1 (1).jpg', edges:{north:'city',east:'city',south:'field',west:'field'}, topology:{roads:[],cities:[[0,1]],cityShields:[0]}, shields:0 },
@@ -75,21 +75,28 @@ const AUDITED_BY_ID = new Map<string, CardDefinition>([
 /**
  * Authoritative Stage 3H runtime catalog.
  *
- * Overrides below record the final product audit: 091/133 are the sole river
- * terminals and 096 is a land tile with decorative pond artwork. Gardens and
+ * Overrides below record the product contract: 133 is the river source, 106
+ * is its final tile, and 096 is a land tile with decorative pond artwork. Gardens and
  * edition badges intentionally have no semantic representation.
  */
 export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
-  .filter((card) => card.id !== 'card-106')
+  .filter((card) => card.id !== 'card-091')
   .map((legacy) => AUDITED_BY_ID.get(legacy.id) ?? legacy)
   .map((card): CardDefinition => {
-    if (card.id === 'card-091') return {
+    if (card.id === 'card-133') return {
       ...card,
       edges: { north: 'field', east: 'field', south: 'river', west: 'field' },
       topology: { roads: [], cities: [], riverEdges: [2] },
       shields: 0,
       riverCard: true,
       riverKind: 'start',
+    };
+    if (card.id === 'card-106') return {
+      ...card,
+      edges: { ...card.edges, west: 'field' },
+      topology: { ...card.topology, riverEdges: [1] },
+      riverCard: true,
+      riverKind: 'end',
     };
     if (card.id === 'card-096') return {
       ...card,

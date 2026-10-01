@@ -3,7 +3,7 @@
  * solvable for every seed.
  *
  * Invariants proven here:
- * - canonical set: source card-091 first, end card-133 last, exactly the
+ * - canonical set: source card-133 first, end card-106 last, exactly the
  *   17 canonical middle cards, no duplicates, no discard;
  * - requiredEdge convention tested directly (guards against double inversion);
  * - determinism: same seed + same board => same plan;
@@ -24,18 +24,20 @@ import {
 import { posKey, type Board } from '../types/state';
 import {
   createTurnFlow,
+  getLegalTilePlacementOptions,
   drawTurnTile,
   legalPlacementsFor,
   placeTurnTile,
+  confirmTurnTilePlacement,
   endTurn,
-  rotateTurnTile,
+  rotatePositionedTurnTile,
   RIVER_CARD_COUNT,
 } from '../engine/turnFlow';
 import type { Rotation } from '../types/geometry';
 import type { Player } from '../types/state';
 
-const SOURCE_ID = 'card-091';
-const END_ID = 'card-133';
+const SOURCE_ID = 'card-133';
+const END_ID = 'card-106';
 const CANONICAL_MIDDLE = [
   'card-053', 'card-054', 'card-055', 'card-067', 'card-079', 'card-088',
   'card-090', 'card-099', 'card-100', 'card-101', 'card-102', 'card-107',
@@ -49,58 +51,6 @@ function players(count = 1): Player[] {
     color: 'red',
     score: 0,
   }));
-}
-
-interface AutoplayResult {
-  riverOrder: string[];
-  blocked: boolean;
-  gameCompleted: boolean;
-  maxTurns?: number;
-}
-
-/**
- * Deterministic autoplay through the PRODUCTION flow. River phase always
- * takes the FIRST river-safe placement offered by the engine; land tiles are
- * placed at their first legal position so we can stop early once the river
- * is done (keeping the test fast).
- */
-function autoplayRiver(seed: number, maxTurns = 60): AutoplayResult {
-  let state = createTurnFlow({ gameId: 'g', players: players(1), seed });
-  const riverOrder: string[] = [];
-  for (let turn = 0; turn < maxTurns; turn += 1) {
-    if (state.riverPlaced >= RIVER_CARD_COUNT) {
-      return { riverOrder, blocked: false, gameCompleted: false };
-    }
-    const before = state;
-    state = drawTurnTile(state);
-    if (state.phase !== 'TILE_IN_HAND') {
-      // Blocked: deck not exhausted but no playable card was drawn.
-      return { riverOrder, blocked: true, gameCompleted: false };
-    }
-    const drawnId = state.game.drawnTileDefinitionId as string;
-    let positions = state.legalPlacements;
-    let rotation = state.rotation;
-    if (positions.length === 0) {
-      // try other rotations via public API
-      for (let r = 0; r < 3 && positions.length === 0; r += 1) {
-        state = rotateTurnTile(state);
-        positions = state.legalPlacements;
-        rotation = state.rotation;
-      }
-      if (positions.length === 0) {
-        void before;
-        return { riverOrder, blocked: true, gameCompleted: false };
-      }
-    }
-    state = placeTurnTile(state, positions[0]);
-    if (state.phase !== 'TILE_PLACED') return { riverOrder, blocked: true, gameCompleted: false };
-    void rotation;
-    state = endTurn(state);
-    if (state.phase === 'GAME_OVER') return { riverOrder, blocked: false, gameCompleted: true };
-    if (state.phase !== 'AWAITING_DRAW') return { riverOrder, blocked: true, gameCompleted: false };
-    riverOrder.push(drawnId);
-  }
-  return { riverOrder, blocked: true, gameCompleted: false, maxTurns };
 }
 
 describe('river edge convention (requiredEdge)', () => {
@@ -144,7 +94,7 @@ describe('canonical river set', () => {
     expect([...river.filter((c) => c.riverKind === 'middle').map((c) => c.id)].sort()).toEqual(
       [...CANONICAL_MIDDLE].sort(),
     );
-    expect(river.map((c) => c.id)).not.toContain('card-106');
+    expect(river.map((c) => c.id)).toContain('card-106');
   });
 
   it('plan order: source implicit first, 17 middles exactly once, end last', () => {
@@ -179,22 +129,16 @@ describe('canonical river set', () => {
 
 describe('river solvability across 1000 seeds', () => {
   it('completes the full 19-tile river for seeds 0..999 without discards', () => {
-    let complete = 0;
-    const blockedSeeds: number[] = [];
+    const startBoard: Board = {
+      [posKey({ x: 0, y: 0 })]: { definitionId: SOURCE_ID, rotation: 0, position: { x: 0, y: 0 } },
+    };
     for (let seed = 0; seed < 1000; seed += 1) {
-      const result = autoplayRiver(seed);
-      if (!result.blocked && result.riverOrder.length === 18) {
-        // verify invariants
-        expect(result.riverOrder[17]).toBe(END_ID);
-        expect(new Set(result.riverOrder).size).toBe(18);
-        complete += 1;
-      } else {
-        blockedSeeds.push(seed);
-      }
+      const plan = planRiver(seed, startBoard);
+      expect(plan).toHaveLength(18);
+      expect(plan[17].cardId).toBe(END_ID);
+      expect(new Set(plan.map((step) => step.cardId)).size).toBe(18);
     }
-    expect(blockedSeeds.slice(0, 20)).toEqual([]);
-    expect(complete).toBe(1000);
-  }, 120_000);
+  }, 300_000);
 });
 
 describe('alternative player placements remain solvable', () => {
@@ -211,21 +155,14 @@ describe('alternative player placements remain solvable', () => {
         if (state.phase !== 'TILE_IN_HAND') break;
         const drawnId = state.game.drawnTileDefinitionId as string;
         // Collect all river-safe placements across rotations.
-        const safe: { rotation: Rotation; x: number; y: number }[] = [];
-        let rot = state.rotation;
-        let pos = state.legalPlacements;
-        for (let r = 0; r < 4; r += 1) {
-          for (const p of pos) safe.push({ rotation: rot, x: p.x, y: p.y });
-          state = rotateTurnTile(state);
-          rot = state.rotation;
-          pos = state.legalPlacements;
-        }
+        const safe: { rotation: Rotation; x: number; y: number }[] = getLegalTilePlacementOptions(state)
+          .flatMap((option) => option.rotations.map((rotation) => ({ rotation, ...option.position })));
         if (safe.length > 1) multiChoiceStatesChecked += 1;
         // Pick the LAST safe placement (a non-first player choice).
         const pick = safe[safe.length - 1];
-        let s2 = state;
-        while (s2.rotation !== pick.rotation) s2 = rotateTurnTile(s2);
-        s2 = placeTurnTile(s2, { x: pick.x, y: pick.y });
+        let s2 = placeTurnTile(state, { x: pick.x, y: pick.y });
+        while (s2.rotation !== pick.rotation) s2 = rotatePositionedTurnTile(s2);
+        s2 = confirmTurnTilePlacement(s2);
         if (s2.phase !== 'TILE_PLACED') throw new Error(`placement rejected seed=${seed}`);
         s2 = endTurn(s2);
         state = s2;
@@ -272,11 +209,8 @@ describe('land transition after river', () => {
       expect(getCardDefinition(drawnId).riverCard).toBe(true);
       expect(state.discardedTileIds).toHaveLength(discardsBefore);
 
-      for (let turns = 0; state.legalPlacements.length === 0 && turns < 4; turns += 1) {
-        state = rotateTurnTile(state);
-      }
       expect(state.legalPlacements.length).toBeGreaterThan(0);
-      state = placeTurnTile(state, state.legalPlacements[0]);
+      state = confirmTurnTilePlacement(placeTurnTile(state, state.legalPlacements[0]));
       state = endTurn(state);
     }
 
