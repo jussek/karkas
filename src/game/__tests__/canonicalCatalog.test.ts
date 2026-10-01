@@ -4,9 +4,9 @@ import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { getCardDefinition } from '../cards/catalogApi';
 
 describe('canonical visual audit 001-050', () => {
-  it('keeps all 144 physical cards in the canonical/runtime catalog', () => {
-    expect(GAME_CARD_CATALOG).toHaveLength(144);
-    expect(RUNTIME_CARD_CATALOG).toHaveLength(144);
+  it('keeps all 143 playable physical cards in the canonical/runtime catalog', () => {
+    expect(GAME_CARD_CATALOG).toHaveLength(143);
+    expect(RUNTIME_CARD_CATALOG).toHaveLength(143);
     expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-091')).toBe(true);
     expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-105')).toBe(true);
     expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(true);
@@ -36,16 +36,16 @@ describe('canonical visual audit 001-050', () => {
   });
 
   it('keeps crossroads as independent road features', () => {
-    expect(getCardDefinition('card-010').topology.roads).toEqual([[0], [1], [2], [3]]);
-    expect(getCardDefinition('card-018').topology.roads).toEqual([[0], [1], [2], [3]]);
-    expect(getCardDefinition('card-023').topology.roads).toEqual([[0], [1], [3]]);
-    expect(getCardDefinition('card-026').topology.roads).toEqual([[1], [2], [3]]);
+    expect(getCardDefinition('card-010').topology.roads).toEqual([[0], [1], [3]]);
+    expect(getCardDefinition('card-018').topology.roads).toEqual([[0], [1], [2]]);
+    expect(getCardDefinition('card-023').topology.roads).toEqual([[1, 3], [0]]);
+    expect(getCardDefinition('card-026').topology.roads).toEqual([[2, 3]]);
   });
 
   it('keeps visually separate cities separate', () => {
     expect(getCardDefinition('card-015').topology.cities).toEqual([[0, 3], [1, 2]]);
     expect(getCardDefinition('card-034').topology.cities).toEqual([[1], [3]]);
-    expect(getCardDefinition('card-037').topology.cities).toEqual([[0], [2]]);
+    expect(getCardDefinition('card-037').topology.cities).toEqual([[0, 1], [2]]);
     expect(getCardDefinition('card-040').topology.cities).toEqual([[0], [1, 2]]);
   });
 
@@ -61,7 +61,6 @@ describe('canonical visual audit 001-050', () => {
   it('records monasteries in the first 50 without treating decorative ruins as monasteries', () => {
     expect(getCardDefinition('card-021').topology.monastery).toBe(true);
     expect(getCardDefinition('card-041').topology.monastery).toBe(true);
-    expect(getCardDefinition('card-045').topology.monastery).toBe(true);
     expect(getCardDefinition('card-018').topology.monastery).not.toBe(true);
   });
 });

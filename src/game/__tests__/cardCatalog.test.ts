@@ -14,22 +14,24 @@ const VALID_EDGE_TYPES: EdgeType[] = ['field', 'road', 'city', 'river'];
 
 describe('card catalog completeness', () => {
   it('contains exactly 144 card definitions', () => {
-    expect(CARD_CATALOG).toHaveLength(144);
+    expect(CARD_CATALOG).toHaveLength(143);
   });
 
   it('ids are unique and follow card-001..card-144 without gaps', () => {
     const ids = CARD_CATALOG.map((c) => c.id);
-    expect(new Set(ids).size).toBe(144);
+    expect(new Set(ids).size).toBe(143);
     for (let i = 1; i <= 144; i++) {
+      if (i === 109) continue;
       expect(ids).toContain(`card-${String(i).padStart(3, '0')}`);
     }
   });
 
   it('assets are unique and match "1 (N).jpg" strictly in order 1..144', () => {
     const assets = CARD_CATALOG.map((c) => c.asset);
-    expect(new Set(assets).size).toBe(144);
-    CARD_CATALOG.forEach((c, idx) => {
-      expect(c.asset).toBe(`1 (${idx + 1}).jpg`);
+    expect(new Set(assets).size).toBe(143);
+    CARD_CATALOG.forEach((c) => {
+      const number = Number(c.id.slice(5));
+      expect(c.asset).toBe(`1 (${number}).jpg`);
     });
   });
 
@@ -242,7 +244,7 @@ describe('Stage 2.5 final river edge verification', () => {
     }
   });
 
-  it('STRICT INVARIANT: edge === "river" iff its EdgeIndex is in topology.riverEdges (all 144 cards)', () => {
+  it('STRICT INVARIANT: edge === "river" iff its EdgeIndex is in topology.riverEdges (all 143 cards)', () => {
     const sides = ['north','east','south','west'] as const;
     for (const c of CARD_CATALOG) {
       const riverIdx = new Set(c.topology.riverEdges ?? []);
@@ -289,9 +291,10 @@ describe('Stage 2.5 exact defect fix (card-141 / card-114)', () => {
   const byId = new Map(CARD_CATALOG.map((c) => [c.id, c]));
 
   it('catalog total is exactly 144 with unique ids', () => {
-    expect(CARD_CATALOG.length).toBe(144);
-    expect(new Set(CARD_CATALOG.map((c) => c.id)).size).toBe(144);
+    expect(CARD_CATALOG.length).toBe(143);
+    expect(new Set(CARD_CATALOG.map((c) => c.id)).size).toBe(143);
     for (let i = 1; i <= 144; i++) {
+      if (i === 109) continue;
       expect(byId.has(`card-${String(i).padStart(3, '0')}`)).toBe(true);
     }
   });

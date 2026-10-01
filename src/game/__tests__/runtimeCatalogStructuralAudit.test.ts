@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import type { CardDefinition } from '../cards/types';
-import type { EdgeType } from '../types/geometry';
+import type { EdgeIndex, EdgeType, Rotation, TileDefinition } from '../types/geometry';
+import { cardToTileDefinition } from '../cards/toTileDefinition';
+import { getTileEdges, rotateEdge } from '../engine/geometry';
+import { isLegalTilePlacement } from '../rules/placement';
+import type { Board } from '../types/state';
 
 const SIDES = ['north', 'east', 'south', 'west'] as const;
 const VALID_EDGES: readonly EdgeType[] = ['field', 'road', 'city', 'river'];
@@ -20,11 +24,12 @@ function occurrences(values: readonly number[], edge: number): number {
 }
 
 describe('whole runtime catalog structural audit', () => {
-  it('contains all 144 physical ids/assets exactly once', () => {
-    expect(RUNTIME_CARD_CATALOG).toHaveLength(144);
-    expect(new Set(RUNTIME_CARD_CATALOG.map((card) => card.id)).size).toBe(144);
-    expect(new Set(RUNTIME_CARD_CATALOG.map((card) => card.asset)).size).toBe(144);
+  it('contains all 143 playable physical ids/assets exactly once', () => {
+    expect(RUNTIME_CARD_CATALOG).toHaveLength(143);
+    expect(new Set(RUNTIME_CARD_CATALOG.map((card) => card.id)).size).toBe(143);
+    expect(new Set(RUNTIME_CARD_CATALOG.map((card) => card.asset)).size).toBe(143);
     for (let number = 1; number <= 144; number += 1) {
+      if (number === 109) continue;
       const id = `card-${String(number).padStart(3, '0')}`;
       const card = RUNTIME_CARD_CATALOG.find((item) => item.id === id);
       expect(card, `missing ${id}`).toBeDefined();
@@ -55,11 +60,11 @@ describe('whole runtime catalog structural audit', () => {
     }
   });
 
-  it('has coherent river metadata: 1 source, 18 middle, 1 final', () => {
+  it('has coherent river metadata: 1 source, 17 middle, 1 final', () => {
     const riverCards = RUNTIME_CARD_CATALOG.filter((card) => card.riverCard === true);
-    expect(riverCards).toHaveLength(20);
+    expect(riverCards).toHaveLength(19);
     expect(riverCards.filter((card) => card.riverKind === 'start')).toHaveLength(1);
-    expect(riverCards.filter((card) => card.riverKind === 'middle')).toHaveLength(18);
+    expect(riverCards.filter((card) => card.riverKind === 'middle')).toHaveLength(17);
     expect(riverCards.filter((card) => card.riverKind === 'end')).toHaveLength(1);
     expect(riverCards.find((card) => card.riverKind === 'start')?.id).toBe('card-133');
     expect(riverCards.find((card) => card.riverKind === 'end')?.id).toBe('card-106');
@@ -71,6 +76,33 @@ describe('whole runtime catalog structural audit', () => {
       } else {
         expect(card.riverKind, `${card.id} non-river kind`).toBeUndefined();
         expect(card.topology.riverEdges ?? [], `${card.id} non-river edges`).toEqual([]);
+      }
+    }
+  });
+
+
+  it('exhaustively validates 143 cards x rotations x edges x terrain probes in the real placement engine', () => {
+    const rotations: readonly Rotation[] = [0, 90, 180, 270];
+    const terrains: readonly EdgeType[] = ['field', 'road', 'city', 'river'];
+    const offsets = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}] as const;
+    for (const card of RUNTIME_CARD_CATALOG) {
+      const tile = cardToTileDefinition(card);
+      for (const rotation of rotations) {
+        const edges = getTileEdges(tile, rotation);
+        for (const sourceEdge of [0,1,2,3] as const) {
+          const edge = rotateEdge(sourceEdge, rotation);
+          expect(edges[edge]).toBe(terrainAt(card, sourceEdge));
+          for (const terrain of terrains) {
+            const sides: EdgeType[]=['field','field','field','field'];
+            const neighbor: TileDefinition = { id:'probe', sides, topology:{roadSegments:[],citySegments:[],hasMonastery:false,roadEdgeSegments:[null,null,null,null],cityEdgeSegments:[null,null,null,null]} };
+            sides[((edge+2)%4) as EdgeIndex]=terrain;
+            const position=offsets[edge];
+            const board: Board = {[`${position.x},${position.y}`]:{definitionId:'probe',rotation:0,position}};
+            const result=isLegalTilePlacement({board,getDefinition:()=>neighbor},tile,rotation,{x:0,y:0});
+            expect(result.legal, `${card.id}/${rotation}/${edge}/${terrain}`).toBe(terrain===edges[edge]);
+            if (!result.legal) expect(result.error).toBe('EDGE_MISMATCH');
+          }
+        }
       }
     }
   });
@@ -96,11 +128,6 @@ describe('whole runtime catalog structural audit', () => {
       edges: { north: 'field', east: 'field', south: 'field', west: 'river' },
       topology: { roads: [], cities: [], riverEdges: [3] },
       riverKind: 'end',
-    });
-    expect(byId.get('card-109')).toMatchObject({
-      edges: { north: 'river', east: 'river', south: 'field', west: 'river' },
-      topology: { roads: [], cities: [], riverEdges: [0, 1, 3] },
-      riverKind: 'middle',
     });
     expect(byId.get('card-133')).toMatchObject({
       edges: { north: 'field', east: 'field', south: 'river', west: 'field' },

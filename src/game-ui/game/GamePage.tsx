@@ -42,8 +42,7 @@ import type { MatchTimerState } from './matchTimer';
 import './gamePage.css';
 
 const CELL = 92;
-const ORIGIN = 8;
-const BOARD_CELLS = 17;
+const BOARD_PADDING = 2;
 
 function key(target: MeeplePlacement) {
   return `${target.featureType}:${target.edge ?? 'center'}`;
@@ -120,6 +119,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
   /** Клетки для ближайшего вызова fitContent (для «Показать ходы»). */
   const fitOverrideRef = useRef<{ x: number; y: number }[] | null>(null);
 
+  const gameOver = flow.phase === 'GAME_OVER' || flow.game.status === 'finished';
   const heldId = flow.game.drawnTileDefinitionId;
   const legalMeeples = useMemo(
     () => (flow.phase === 'TILE_PLACED' || flow.phase === 'MEEPLE_SELECTION')
@@ -161,6 +161,23 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
     () => Object.values(flow.game.board).map((tile) => tile.position),
     [flow.game.board],
   );
+  const boardProjection = useMemo(() => {
+    const positions = [...placedCells, ...flow.legalPlacements];
+    if (flow.positionedAt) positions.push(flow.positionedAt);
+    if (positions.length === 0) positions.push({ x: 0, y: 0 });
+    const minX = Math.min(...positions.map((position) => position.x)) - BOARD_PADDING;
+    const minY = Math.min(...positions.map((position) => position.y)) - BOARD_PADDING;
+    const maxX = Math.max(...positions.map((position) => position.x)) + BOARD_PADDING;
+    const maxY = Math.max(...positions.map((position) => position.y)) + BOARD_PADDING;
+    return {
+      minX, minY,
+      originX: -minX,
+      originY: -minY,
+      width: (maxX - minX + 1) * CELL,
+      height: (maxY - minY + 1) * CELL,
+    };
+  }, [placedCells, flow.legalPlacements, flow.positionedAt]);
+
   const getFitCells = useCallback(() => {
     if (fitOverrideRef.current) return fitOverrideRef.current;
     const cells = [...placedCells];
@@ -170,11 +187,11 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
 
   const camera = useBoardCamera({
     viewportRef,
-    contentWidth: CELL * BOARD_CELLS,
-    contentHeight: CELL * BOARD_CELLS,
+    contentWidth: boardProjection.width,
+    contentHeight: boardProjection.height,
     getFitCells,
     cellSize: CELL,
-    originOffset: ORIGIN,
+    originOffset: { x: boardProjection.originX, y: boardProjection.originY },
   });
 
   const initialCameraFitDone = useRef(false);
@@ -277,7 +294,6 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
     setFeedbackTick((tick) => tick + 1);
   };
 
-  const gameOver = flow.phase === 'GAME_OVER' || flow.game.status === 'finished';
   const finalScores = flow.lastResolution.final;
   const riverActive = flow.riverPlaced < RIVER_CARD_COUNT;
   const remainingTiles = riverActive ? getRemainingRiverTiles(flow) : getRemainingLandTiles(flow);
@@ -325,9 +341,9 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
           style={{ transform: `translate(${camera.camera.offsetX}px, ${camera.camera.offsetY}px) scale(${camera.camera.scale})` }}
           {...camera.handlers}
         >
-          <div className="board" style={{ width: CELL * BOARD_CELLS, height: CELL * BOARD_CELLS }}>
+          <div className="board" style={{ width: boardProjection.width, height: boardProjection.height }}>
             {Object.values(flow.game.board).map((tile) => (
-              <div className="board-tile" key={`${tile.position.x},${tile.position.y}`} style={{ left: (tile.position.x + ORIGIN) * CELL, top: (tile.position.y + ORIGIN) * CELL }}>
+              <div className="board-tile" key={`${tile.position.x},${tile.position.y}`} style={{ left: (tile.position.x + boardProjection.originX) * CELL, top: (tile.position.y + boardProjection.originY) * CELL }}>
                 <TileRenderer definition={getTileDefinition(tile.definitionId)} rotation={tile.rotation} size={CELL} />
               </div>
             ))}
@@ -341,8 +357,8 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
                 viewBox="0 0 100 100"
                 aria-label={`Человечек игрока ${owner?.name ?? meeple.playerId}`}
                 style={{
-                  left: (position.x + ORIGIN) * CELL + (anchor.x * CELL) / 100,
-                  top: (position.y + ORIGIN) * CELL + (anchor.y * CELL) / 100,
+                  left: (position.x + boardProjection.originX) * CELL + (anchor.x * CELL) / 100,
+                  top: (position.y + boardProjection.originY) * CELL + (anchor.y * CELL) / 100,
                 }}
               ><MeepleIcon fill={owner?.color ?? '#b8332b'} size={30} /></svg>;
             })}
@@ -353,7 +369,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
                 disabled={paused}
                 aria-label={`Поставить карту: ${position.x}, ${position.y}`}
                 key={`${position.x},${position.y}`}
-                style={{ left: (position.x + ORIGIN) * CELL, top: (position.y + ORIGIN) * CELL }}
+                style={{ left: (position.x + boardProjection.originX) * CELL, top: (position.y + boardProjection.originY) * CELL }}
                 onClick={() => placeAt(position)}
               ><span>＋</span></button>
             ))}
@@ -361,8 +377,8 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
               <div
                 className="positioned-tile-preview"
                 style={{
-                  left: (flow.positionedAt.x + ORIGIN) * CELL,
-                  top: (flow.positionedAt.y + ORIGIN) * CELL,
+                  left: (flow.positionedAt.x + boardProjection.originX) * CELL,
+                  top: (flow.positionedAt.y + boardProjection.originY) * CELL,
                 }}
               >
                 <TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={CELL} />
@@ -380,7 +396,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
               disabled={paused}
               className={`new-tile-meeple-target${meepleMode ? ' is-active' : ''}`}
               aria-label="Только что установленная карта"
-              style={{ left: (flow.game.lastPlacedTile.position.x + ORIGIN) * CELL, top: (flow.game.lastPlacedTile.position.y + ORIGIN) * CELL }}
+              style={{ left: (flow.game.lastPlacedTile.position.x + boardProjection.originX) * CELL, top: (flow.game.lastPlacedTile.position.y + boardProjection.originY) * CELL }}
               onClick={() => {
                 // Явный клик по цели — не подавляется жестами камеры.
                 if (!meepleMode) return;

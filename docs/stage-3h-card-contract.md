@@ -4,11 +4,11 @@ This document records the runtime card and river contract after re-auditing the 
 
 ## Physical set
 
-- Physical/runtime set: **144 image-backed tiles**, `card-001` through `card-144`.
+- Physical/runtime set: **143 image-backed tiles**, IDs 001 through 144 except the intentionally removed 109.
 - `card-105` is a normal road/city tile and is retained.
-- `card-106` is retained and is the forced final river tile. Its real JPG is bundled as `src/game/cards/1 (106).jpg`.
+- `card-106` is retained and is the forced final river tile. Its authoritative JPG is bundled as `src/a/1 (106).jpg`.
 - `card-091` is retained and is a middle river tile.
-- The river set contains **20 tiles** total: one pre-placed source, 18 middle tiles, and one forced final tile.
+- The river set contains **19 tiles** total: one pre-placed source, 17 middle tiles, and one forced final tile.
 - The normal land deck contains **124 tiles** and begins only after `card-106` has been played.
 - Runtime counts are derived from the canonical catalog rather than repeated as magic constants.
 
@@ -26,7 +26,7 @@ The JPG artwork contains visible city shields and the catalog may preserve their
 
 The visually audited runtime river cards are:
 
-`053, 054, 055, 067, 079, 088, 090, 091, 099, 100, 101, 102, 106, 107, 108, 109, 110, 111, 121, 133`.
+`053, 054, 055, 067, 079, 088, 090, 091, 099, 100, 101, 102, 106, 107, 108, 110, 111, 121, 133`.
 
 Roles and high-risk corrections:
 
@@ -34,19 +34,17 @@ Roles and high-risk corrections:
 - `card-106` — **forced final river tile**; N/E/S field, W river; `riverEdges:[3]`.
 - `card-091` — middle river tile; E+S river; `riverEdges:[1,2]`.
 - `card-079` — N+S river, E road, W city; road `[[1]]`, city `[[3]]`, river `[0,2]`.
-- `card-109` — three-edge river fork; N+E+W river, S field; `riverEdges:[0,1,3]`.
 - `card-096` — normal land tile; the internal blue pond does **not** reach a border and is not river topology; road N↔S, field E/W.
 
 ### River draw order
 
 1. `card-133` is already on the board.
-2. All 18 middle river cards are consumed exactly once. A seeded shuffle defines deterministic random priority; the solver may choose the next usable priority card when a higher-priority choice would make completion impossible. River cards are never discarded.
+2. All 17 middle river cards are consumed exactly once. A seeded shuffle defines deterministic random priority; the solver may choose the next usable priority card when a higher-priority choice would make completion impossible. River cards are never discarded.
 3. `card-106` is reserved and is always the final river draw.
 4. Only after the final river turn does the seeded land deck begin.
 
-`card-109` means the river can have multiple open frontiers. The planner therefore operates on **all** exposed river frontiers, grouped by empty target cell, and normal authoritative edge matching still applies to every occupied neighbour.
 
-Because the verified set contains one degree-3 fork (`109`) plus a degree-1 source (`133`) and only one degree-1 forced final tile (`106`), the physical river graph has odd total boundary degree. Requiring the final tile to reduce the number of open river edges to zero would therefore be mathematically incompatible with this audited set. The product invariant is sequencing and legal connectivity: `133 -> every middle once -> 106 -> land`.
+After every middle tile there is exactly one open continuation. The forced final tile closes it, leaving zero open river frontiers and zero open river edges.
 
 ## Edge/topology contract
 
@@ -65,15 +63,15 @@ Placement legality remains authoritative in the pure engine: target cell must be
 
 ## Assets
 
-Every runtime card must resolve to its real project JPG through the standard tile asset manifest. Synthetic card artwork fallbacks are not part of the canonical contract. In particular `card-106` now resolves to `1 (106).jpg` like every other card.
+Every runtime card must resolve directly from the authoritative `src/a` JPG set through the standard tile asset manifest; legacy JPGs under `src/game/cards` are never imported at runtime. Synthetic card artwork fallbacks are not part of the canonical contract. In particular `card-106` now resolves to `1 (106).jpg` like every other card.
 
 ## Acceptance gates
 
 A card/river change is acceptable only when:
 
-- runtime catalog contains exactly 144 unique IDs/assets;
+- runtime catalog contains exactly 143 unique IDs/assets;
 - structural topology validation passes for every runtime tile;
-- the high-risk cards `079, 091, 096, 106, 109, 133` match the audited sides above;
+- the high-risk cards `079, 091, 096, 106, 133` match the audited sides above;
 - source `133` starts pre-placed and `106` is always the last river draw;
 - every river tile is used exactly once and none is discarded;
 - land draw starts only after the river sequence completes;

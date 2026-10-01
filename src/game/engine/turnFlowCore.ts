@@ -3,6 +3,7 @@ import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { seededShuffle } from '../deck/seededShuffle';
 import {
   assertRiverSolvableFrom,
+  countOpenRiverEdges,
   findSolvableRiverContinuation,
   frontiersOf,
   planRiver,
@@ -177,8 +178,7 @@ function hypotheticalBoard(
 }
 
 /**
- * Legal river placements on any current frontier. card-109 can create two
- * frontiers; later cards may continue either branch or legally meet branches.
+ * Legal river placements on the single current frontier.
  */
 function riverSafePositions(
   state: TurnFlowState,
@@ -201,10 +201,10 @@ function riverSafePositions(
   });
 
   if (definitionId === riverEndId()) {
-    // 106 is sequencing-final. The verified physical set contains a 3-way
-    // fork (109) but only this one forced final tile, so requiring zero open
-    // river edges would make the real catalog mathematically impossible.
-    return state.riverDeck.filter((id) => id !== riverEndId()).length === 0 ? legal : [];
+    if (state.riverDeck.some((id) => id !== riverEndId())) return [];
+    return legal.filter((position) => countOpenRiverEdges(
+      hypotheticalBoard(state.game.board, definitionId, rotation, position),
+    ) === 0);
   }
 
   const remainingMiddle = state.riverDeck.filter(
@@ -257,7 +257,7 @@ export function getLegalTilePlacementOptions(
       const [x, y] = key.split(',').map(Number);
       return { position: { x, y }, rotations: rotations.sort((a, b) => a - b) };
     })
-    .sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
+    .sort((a, b) => a.position.x - b.position.x || a.position.y - b.position.y);
 }
 
 function anyRotationLegalPlacements(state: TurnFlowState, definitionId: string): TilePosition[] {

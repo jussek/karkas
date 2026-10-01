@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildGalleryEntries } from '../../game-ui/gallery/galleryModel';
-import { TILE_ASSETS } from '../../game-ui/tiles/tileAssets';
+import { RUNTIME_ASSET_SOURCE, TILE_ASSETS, tileAssetForCard } from '../../game-ui/tiles/tileAssets';
 import { TILE_SEMANTIC_MANIFEST } from '../../game-ui/tiles/tileSemanticManifest';
 import { GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
 import { getCardDefinition } from '../cards/catalogApi';
@@ -51,15 +51,14 @@ describe('Stage 3H final runtime consistency', () => {
     expect(TILE_ASSETS.some((asset) => asset.filename === '1 (106).jpg')).toBe(true);
   });
 
-  it('has local artwork for every runtime card and a source fallback for card-106', () => {
-    const cardsDirectory = new URL('../cards/', import.meta.url).pathname;
+  it('has local artwork for every runtime card with authoritative card-106', () => {
+    const cardsDirectory = new URL('../../a/', import.meta.url).pathname;
+    expect(RUNTIME_ASSET_SOURCE).toBe('src/a');
     for (const card of GAME_CARD_CATALOG) {
-      if (card.id === 'card-106') {
-        expect(TILE_ASSETS.find((asset) => asset.cardId === card.id)?.url).toMatch(/^data:image\/svg\+xml,/);
-        continue;
-      }
       expect(existsSync(join(cardsDirectory, card.asset)), card.id).toBe(true);
     }
     expect(existsSync(join(cardsDirectory, '1 (105).jpg'))).toBe(true);
+    expect(existsSync(join(cardsDirectory, '1 (109).jpg'))).toBe(false);
+    expect(() => tileAssetForCard('card-109')).toThrow('Unknown tile artwork');
   });
 });

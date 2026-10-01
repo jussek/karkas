@@ -108,7 +108,7 @@ export interface UseBoardCameraOptions {
   contentHeight: number;
   getFitCells: () => readonly Point[];
   cellSize: number;
-  originOffset: number;
+  originOffset: Point;
 }
 
 export interface BoardCameraHandlers {
@@ -163,8 +163,8 @@ export function useBoardCamera(options: UseBoardCameraOptions): BoardCamera {
     let maxX = -Infinity;
     let maxY = -Infinity;
     for (const cell of cells) {
-      const left = (cell.x + originOffset) * cellSize;
-      const top = (cell.y + originOffset) * cellSize;
+      const left = (cell.x + originOffset.x) * cellSize;
+      const top = (cell.y + originOffset.y) * cellSize;
       minX = Math.min(minX, left);
       minY = Math.min(minY, top);
       maxX = Math.max(maxX, left + cellSize);

@@ -45,7 +45,7 @@ export interface CardDefinition {
   /** Unique ID, e.g. "card-001" */
   id: string;
 
-  /** Exact filename in src/game/cards/, e.g. "1 (1).jpg" — never renamed */
+  /** Exact filename in authoritative src/a/, e.g. "1 (1).jpg" — never renamed */
   asset: string;
 
   /** Edge terrain types in canonical orientation */
