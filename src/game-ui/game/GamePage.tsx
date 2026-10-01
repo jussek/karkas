@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { getCardDefinition, getTileDefinition } from '../../game/cards/catalogApi';
+import { getTileDefinition } from '../../game/cards/catalogApi';
 import {
   RIVER_CARD_COUNT,
   canEndTurn,
@@ -337,11 +338,19 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
         <section className="game-menu-sheet meeple-dialog">
           <h2>{meepleDialogTitle(legalMeeples)}</h2>
           {legalMeeples.map((target) => {
+          <h2>{legalMeeples.length === 1
+            ? `Поставить человечка ${legalMeeples[0].featureType === 'road' ? 'на дорогу' : legalMeeples[0].featureType === 'city' ? 'в город' : 'на монастырь'}?`
+            : 'Куда поставить человечка?'}</h2>
+          {legalMeeples.map((target) => {
+            const sameType = legalMeeples.filter((item) => item.featureType === target.featureType);
+            const number = sameType.length > 1 ? ` ${sameType.indexOf(target) + 1}` : '';
+            const label = target.featureType === 'road' ? 'Дорога' : target.featureType === 'city' ? 'Город' : 'Монастырь';
             return <button type="button" key={key(target)} onClick={() => {
               setFlow((current) => selectTurnMeeple(current, target));
               setMeepleDialogOpen(false);
               setPlacementFeedback(null);
             }}>{legalMeeples.length === 1 ? 'Подтвердить' : meepleTargetLabel(legalMeeples, target)}</button>;
+            }}>{legalMeeples.length === 1 ? 'Подтвердить' : `${label}${number}`}</button>;
           })}
           <button type="button" onClick={() => setMeepleDialogOpen(false)}>Отмена</button>
         </section>
