@@ -1,17 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { AUDITED_CARD_IDS_001_050 } from '../cards/canonicalCatalog';
-import { GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
+import { AUDITED_CARD_IDS_001_050, GAME_CARD_CATALOG } from '../cards/canonicalCatalog';
 import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { getCardDefinition } from '../cards/catalogApi';
 
-describe('Stage 3H canonical visual audit 001-050', () => {
-  it('contains the 143 playable cards and restores river end card-106', () => {
-    expect(GAME_CARD_CATALOG).toHaveLength(143);
+describe('canonical visual audit 001-050', () => {
+  it('keeps all 144 physical cards in the canonical/runtime catalog', () => {
+    expect(GAME_CARD_CATALOG).toHaveLength(144);
+    expect(RUNTIME_CARD_CATALOG).toHaveLength(144);
+    expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-091')).toBe(true);
     expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-105')).toBe(true);
     expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(true);
-    expect(RUNTIME_CARD_CATALOG).toHaveLength(143);
-    expect(RUNTIME_CARD_CATALOG.some((card) => card.id === 'card-105')).toBe(true);
-    expect(RUNTIME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(true);
     expect(getCardDefinition('card-105').asset).toBe('1 (105).jpg');
     expect(getCardDefinition('card-106').riverKind).toBe('end');
   });
@@ -51,7 +49,7 @@ describe('Stage 3H canonical visual audit 001-050', () => {
     expect(getCardDefinition('card-040').topology.cities).toEqual([[0], [1, 2]]);
   });
 
-  it('records only blue city shields, aligned to city features', () => {
+  it('records visual shields without changing the scoring rule', () => {
     const shieldCards = ['card-016', 'card-028', 'card-029', 'card-038', 'card-043', 'card-050'];
     for (const id of shieldCards) {
       const card = getCardDefinition(id);
