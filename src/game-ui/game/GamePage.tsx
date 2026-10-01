@@ -148,6 +148,14 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
     originOffset: ORIGIN,
   });
 
+  // Начальная камера: один initial fit/center после mount/layout,
+  // когда viewport уже имеет реальные размеры. Центрирование выполняется
+  // по занятым клеткам (на старте — card-133 в (0,0)).
+  const initialCameraFitDone = useRef(false);
+  useLayoutEffect(() => {
+    if (initialCameraFitDone.current) return;
+    const viewport = viewportRef.current;
+    if (!viewport || viewport.clientWidth === 0 || viewport.clientHeight === 0) return;
   useLayoutEffect(() => {
     if (initialCameraFitDone.current || !viewportRef.current) return;
     initialCameraFitDone.current = true;
@@ -246,6 +254,10 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
                 aria-label={`Поставить карту: ${position.x}, ${position.y}`}
                 key={`${position.x},${position.y}`}
                 style={{ left: (position.x + ORIGIN) * CELL, top: (position.y + ORIGIN) * CELL }}
+                onClick={() => {
+                  // Явный клик по кнопке легальной клетки — не подавляется жестами камеры.
+                  placeAt(position);
+                }}
                 onClick={() => placeAt(position)}
               ><span>＋</span></button>
             ))}
@@ -272,6 +284,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
               aria-label="Только что установленная карта"
               style={{ left: (flow.game.lastPlacedTile.position.x + ORIGIN) * CELL, top: (flow.game.lastPlacedTile.position.y + ORIGIN) * CELL }}
               onClick={() => {
+                // Явный клик по цели — не подавляется жестами камеры.
                 if (!meepleMode) return;
                 if (legalMeeples.length === 0) {
                   setPlacementFeedback('На этой карте нет доступных мест для человечка');
@@ -340,6 +353,18 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
         <section className="game-menu-sheet meeple-dialog">
           <h2>{meepleDialogTitle(legalMeeples)}</h2>
           {legalMeeples.map((target) => (
+            <button
+              type="button"
+              key={key(target)}
+              onClick={() => {
+                setFlow((current) => selectTurnMeeple(current, target));
+                setMeepleDialogOpen(false);
+                setMeepleMode(false);
+                setPlacementFeedback(null);
+              }}
+            >
+              {legalMeeples.length === 1 ? 'Подтвердить' : meepleTargetLabel(legalMeeples, target)}
+            </button>
             <button type="button" key={key(target)} onClick={() => {
               setFlow((current) => selectTurnMeeple(current, target));
               setMeepleDialogOpen(false);
