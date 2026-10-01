@@ -19,6 +19,8 @@ import type { MeeplePlacement } from '../../game/types/geometry';
 import { playerIdentity } from '../../game/session';
 import type { LocalGameConfig } from '../../game/session';
 import { TileRenderer } from '../tiles/TileRenderer';
+import { MeepleIcon } from '../tiles/MeepleIcon';
+import { anchorForPlacement } from '../tiles/tileSemanticManifest';
 import { createLocalGame } from './localGameBootstrap';
 import { useBoardCamera } from './useBoardCamera';
 import './gamePage.css';
@@ -213,6 +215,21 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
                 <TileRenderer definition={getTileDefinition(tile.definitionId)} rotation={tile.rotation} size={CELL} />
               </div>
             ))}
+            {flow.game.meeples.filter((meeple) => meeple.position && meeple.placement).map((meeple) => {
+              const position = meeple.position!;
+              const anchor = anchorForPlacement(meeple.placement!);
+              const owner = flow.game.players.find((item) => item.id === meeple.playerId);
+              return <svg
+                key={meeple.id}
+                className="board-meeple"
+                viewBox="0 0 100 100"
+                aria-label={`Человечек игрока ${owner?.name ?? meeple.playerId}`}
+                style={{
+                  left: (position.x + ORIGIN) * CELL + (anchor.x * CELL) / 100,
+                  top: (position.y + ORIGIN) * CELL + (anchor.y * CELL) / 100,
+                }}
+              ><MeepleIcon fill={owner?.color ?? '#b8332b'} size={30} /></svg>;
+            })}
             {flow.legalPlacements.map((position) => (
               <button
                 className="legal-cell"

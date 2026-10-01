@@ -73,5 +73,6 @@
 .preview-rotate { position: absolute; inset: 17px; min-width: 58px; min-height: 58px; border: 2px solid #fff0ba; border-radius: 50%; color: white; background: #19261bc7; font-size: 2rem; touch-action: manipulation; }
 .new-tile-meeple-target { position: absolute; z-index: 5; width: 92px; height: 92px; border: 0; background: transparent; touch-action: manipulation; }
 .new-tile-meeple-target.is-active { border: 4px solid #fff0a4; border-radius: 8px; box-shadow: inset 0 0 18px #ffe16e, 0 0 18px #ffe16e; }
+.board-meeple { position: absolute; z-index: 6; width: 46px; height: 46px; margin: -23px; overflow: visible; pointer-events: none; filter: drop-shadow(0 3px 2px #000a); }
 .turn-controls .confirm-placement:not(:disabled) { background: linear-gradient(#4f9d4e, #28652e); border-color: #86ca69; color: white; }
 .meeple-dialog h2 { margin: 0 0 8px; color: #f6e5b8; }

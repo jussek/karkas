@@ -5,7 +5,7 @@ import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { AUDITED_CARD_IDS_101_144 } from '../cards/audited101144';
 
 describe('Stage 3H canonical visual audit 101-144', () => {
-  it('audits every id in the final source-image range except removed 106', () => {
+  it('audits every available source image in the final range (106 uses a runtime fallback)', () => {
     expect(AUDITED_CARD_IDS_101_144).toHaveLength(43);
     expect(AUDITED_CARD_IDS_101_144).toContain('card-105');
     expect(AUDITED_CARD_IDS_101_144).not.toContain('card-106');

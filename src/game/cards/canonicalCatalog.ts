@@ -10,8 +10,8 @@ import type { CardDefinition } from './types';
  * Crossroads split roads into independent road features, as they terminate a road.
  * Blue coat-of-arms shields are scoring shields; expansion/edition badges are ignored.
  * The legacy catalog is an import/source layer only. Runtime consumers use
- * GAME_CARD_CATALOG, which excludes only the user-removed card 106.
- * Card 106 is intentionally removed from the game by product decision; card 105 remains.
+ * GAME_CARD_CATALOG applies the runtime contract: card 133 is the river
+ * source, card 106 is the river end, and obsolete card 091 is excluded.
  */
 const AUDITED_001_050: readonly CardDefinition[] = [
   { id:'card-001', asset:'1 (1).jpg', edges:{north:'city',east:'city',south:'field',west:'field'}, topology:{roads:[],cities:[[0,1]],cityShields:[0]}, shields:0 },
