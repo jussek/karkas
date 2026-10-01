@@ -12,7 +12,7 @@ const verifiedStart = GAME_CARD_CATALOG.find((card) => card.reviewRequired !== t
 const reviewCard = GAME_CARD_CATALOG.find((card) => card.reviewRequired === true);
 
 describe('card catalog adapter', () => {
-  it('converts all 143 runtime cards exactly without mutation', () => {
+  it('converts the 143 runtime cards exactly without mutation', () => {
     expect(GAME_CARD_CATALOG).toHaveLength(143);
 
     for (const card of GAME_CARD_CATALOG) {

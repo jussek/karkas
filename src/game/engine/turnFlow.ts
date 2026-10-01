@@ -52,7 +52,7 @@ export interface TurnFlowState {
    */
   legalPlacements: TilePosition[];
   /**
-   * Позиция tile, ожидающая подтверждения ориентации (после drop).
+   * Позиция tile, ожидающая подтверждения ориентации (после выбора клетки).
    * Null вне TILE_POSITIONED.
    */
   positionedAt: TilePosition | null;
@@ -615,7 +615,7 @@ function drawLandTile(state: TurnFlowState): TurnFlowState {
 }
 
 /**
- * Post-drop ориентация из authoritative legal-списка клетки: следующий
+ * Ориентация preview из authoritative legal-списка клетки: следующий
  * rotation по циклу (детерминированный). Вне TILE_POSITIONED — no-op.
  * Board GameState НЕ мутируется: tile ещё не placed, скоринг не запускается.
  */
@@ -651,7 +651,7 @@ export function confirmTurnTilePlacement(state: TurnFlowState): TurnFlowState {
 }
 
 /**
- * Drop карты на клетку. Клетка без legal rotations — строгий no-op
+ * Выбор клетки для карты. Клетка без legal rotations — строгий no-op
  * (engine state не меняется, карта остаётся в hand). Для legal клетки
  * выбирается deterministic first legal rotation (стабильный порядок 0,90,180,270).
  * Фаза TILE_POSITIONED: ориентацию можно.cycle'ить до подтверждения.
@@ -671,21 +671,11 @@ export function placeTurnTile(state: TurnFlowState, position: TilePosition): Tur
 }
 
 /**
- * Отмена неподтверждённого drop: карта возвращается в hand, board не менялся.
+ * Отмена неподтверждённого размещения: карта возвращается в hand, board не менялся.
  */
 export function cancelPositionedTurnTile(state: TurnFlowState): TurnFlowState {
   if (state.phase !== 'TILE_POSITIONED') return state;
   return { ...state, phase: 'TILE_IN_HAND', rotation: 0, positionedAt: null, positionedRotations: [] };
-}
-
-/**
- * Legacy-совместимость с существующими autoplay-тестами: «повернуть» теперь
- * cicly'ит ориентацию positioned tile; вне TILE_POSITIONED — строгий no-op
- * (hand-tile всегда ожидает с rotation 0 и подсветкой всех legal клеток).
- */
-export function rotateTurnTile(state: TurnFlowState): TurnFlowState {
-  if (state.phase !== 'TILE_POSITIONED') return state;
-  return rotatePositionedTurnTile(state);
 }
 
 export function selectTurnMeeple(state: TurnFlowState, target: MeeplePlacement | null): TurnFlowState {

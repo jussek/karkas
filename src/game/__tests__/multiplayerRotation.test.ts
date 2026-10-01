@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  createTurnFlow, drawTurnTile, endTurn, placeTurnTile, RIVER_CARD_COUNT,
+  confirmTurnTilePlacement, createTurnFlow, drawTurnTile, endTurn, placeTurnTile, RIVER_CARD_COUNT,
 } from '../engine/turnFlow';
 import { buildPlayers } from '../session';
 
@@ -13,7 +13,7 @@ function playOneTurn(state: ReturnType<typeof createTurnFlow>): { state: ReturnT
   if (next.phase === 'GAME_OVER') throw new Error('unexpected game over');
   next = drawTurnTile(next);
   if (next.phase !== 'TILE_IN_HAND') throw new Error(`expected TILE_IN_HAND, got ${next.phase}`);
-  next = placeTurnTile(next, next.legalPlacements[0]);
+  next = confirmTurnTilePlacement(placeTurnTile(next, next.legalPlacements[0]));
   if (next.phase !== 'TILE_PLACED') throw new Error(`expected TILE_PLACED, got ${next.phase}`);
   const before = next.game.players[next.game.currentPlayerIndex]?.id ?? '';
   next = endTurn(next);

@@ -101,8 +101,8 @@ export function createGame(options: CreateGameOptions): GameState {
   const start = options.startTile ?? {
     // Дефолтная стартовая плитка: legacy-тесты Stage 2 (engine.test.ts)
     // используют тестовые тайлы T-*; canonical runtime-игры всегда передают
-    // явный startTile (исток реки card-091). Определяем реестр детерминированно.
-    definitionId: options.getDefinition === getTestTile ? 'T-C-CCCC' : 'card-091',
+    // явный startTile (исток реки card-133). Определяем реестр детерминированно.
+    definitionId: options.getDefinition === getTestTile ? 'T-C-CCCC' : 'card-133',
     position: { x: 0, y: 0 },
   };
   // Валидность стартового шаблона проверяем сразу (это программная ошибка, не игровая).
