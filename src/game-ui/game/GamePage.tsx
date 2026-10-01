@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { getCardDefinition, getTileDefinition } from '../../game/cards/catalogApi';
 import { getTileDefinition } from '../../game/cards/catalogApi';
 import {
   RIVER_CARD_COUNT,
@@ -22,6 +23,7 @@ import { TileRenderer } from '../tiles/TileRenderer';
 import { MeepleIcon } from '../tiles/MeepleIcon';
 import { anchorForPlacement } from '../tiles/tileSemanticManifest';
 import { createLocalGame } from './localGameBootstrap';
+import { meepleDialogTitle, meepleTargetLabel } from './meepleDialogModel';
 import { useBoardCamera } from './useBoardCamera';
 import './gamePage.css';
 
@@ -111,6 +113,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
 
   const unplayableTile = flow.phase === 'TILE_IN_HAND'
     && heldId !== null
+    && !getCardDefinition(heldId).riverCard
     && !hasAnyLegalTilePlacement(flow, heldId);
   const message = flow.phase === 'GAME_OVER'
     ? 'Игра окончена'
@@ -326,13 +329,15 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
       {rulesOpen && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Правила">
         <section className="game-menu-sheet">
           <h2>Как играть</h2>
-          <p>Возьмите карту, поверните и поставьте её на подсвеченное место. Подданный необязателен. Очки начисляются только после завершения хода.</p>
+          <p>Возьмите карту и выберите подсвеченное место. Если доступно несколько поворотов, выберите подходящий и подтвердите установку. После этого можно поставить человечка или закончить ход.</p>
           <button type="button" onClick={() => setRulesOpen(false)}>Понятно</button>
         </section>
       </div>}
 
       {meepleDialogOpen && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Выбор места человечка">
         <section className="game-menu-sheet meeple-dialog">
+          <h2>{meepleDialogTitle(legalMeeples)}</h2>
+          {legalMeeples.map((target) => {
           <h2>{legalMeeples.length === 1
             ? `Поставить человечка ${legalMeeples[0].featureType === 'road' ? 'на дорогу' : legalMeeples[0].featureType === 'city' ? 'в город' : 'на монастырь'}?`
             : 'Куда поставить человечка?'}</h2>
@@ -344,6 +349,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
               setFlow((current) => selectTurnMeeple(current, target));
               setMeepleDialogOpen(false);
               setPlacementFeedback(null);
+            }}>{legalMeeples.length === 1 ? 'Подтвердить' : meepleTargetLabel(legalMeeples, target)}</button>;
             }}>{legalMeeples.length === 1 ? 'Подтвердить' : `${label}${number}`}</button>;
           })}
           <button type="button" onClick={() => setMeepleDialogOpen(false)}>Отмена</button>
