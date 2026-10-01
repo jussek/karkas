@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  createTurnFlow, drawTurnTile, endTurn, placeTurnTile, RIVER_CARD_COUNT,
+  confirmTurnTilePlacement, createTurnFlow, drawTurnTile, endTurn, placeTurnTile, RIVER_CARD_COUNT,
   type TurnFlowState,
 } from '../engine/turnFlow';
 import type { Player } from '../types/state';
@@ -14,7 +14,7 @@ function autoplay(state: TurnFlowState, maxTurns = 400): TurnFlowState {
     if (current.phase === 'GAME_OVER') return current;
     const drawn = drawTurnTile(current);
     if (drawn.phase !== 'TILE_IN_HAND') return drawn; // blocked или game over
-    const placed = placeTurnTile(drawn, drawn.legalPlacements[0]);
+    const placed = confirmTurnTilePlacement(placeTurnTile(drawn, drawn.legalPlacements[0]));
     if (placed.phase !== 'TILE_PLACED') return placed;
     current = endTurn(placed);
   }

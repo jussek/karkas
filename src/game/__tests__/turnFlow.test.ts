@@ -26,11 +26,13 @@ describe('Stage 3G turn flow', () => {
     expect(state.game.drawnTileDefinitionId).toBeNull();
   });
 
-  it('defines exactly 19 river cards with source first and end last', () => {
+  it('defines the 19-card river with source 133 first and end 106 last', () => {
     const state = createTurnFlow({ gameId: 'g', players, seed: 12 });
     expect(RIVER_CARD_COUNT).toBe(19);
     expect(getRiverCards()).toHaveLength(19);
+    expect(Object.values(state.game.board)[0].definitionId).toBe('card-133');
     expect(state.riverDeck).toHaveLength(18);
+    expect(state.riverDeck[state.riverDeck.length - 1]).toBe('card-106');
     expect(getRiverCards().find((card) => card.id === state.riverDeck[state.riverDeck.length - 1])?.riverKind).toBe('end');
     expect(state.riverDeck.slice(0, -1).every((id) => getRiverCards().find((card) => card.id === id)?.riverKind === 'middle')).toBe(true);
   });

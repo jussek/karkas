@@ -15,14 +15,14 @@ describe('Stage 3H canonical visual audit 101-144', () => {
   it('keeps exactly 143 playable cards and 19 river cards', () => {
     expect(GAME_CARD_CATALOG).toHaveLength(143);
     expect(GAME_CARD_CATALOG.filter((card) => card.riverCard)).toHaveLength(19);
-    expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(false);
+    expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(true);
     expect(AUDITED_CARD_IDS_101_144[AUDITED_CARD_IDS_101_144.length - 1]).toBe('card-144');
   });
 
   it('keeps exactly 143 playable cards and 19 river cards', () => {
     expect(RUNTIME_CARD_CATALOG).toHaveLength(143);
     expect(RUNTIME_CARD_CATALOG.filter((card) => card.riverCard)).toHaveLength(19);
-    expect(RUNTIME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(false);
+    expect(RUNTIME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(true);
   });
 
   it('restores 105 as the road-to-city tile confirmed by the source image', () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getTileDefinition } from '../cards/catalogApi';
 import {
-  createTurnFlow, drawTurnTile, endTurn, placeTurnTile, selectTurnMeeple,
+  confirmTurnTilePlacement, createTurnFlow, drawTurnTile, endTurn, placeTurnTile, selectTurnMeeple,
 } from '../engine/turnFlow';
 import { getLegalMeeplePlacements } from '../rules/localFeatures';
 import { placementKey } from '../types/geometry';
@@ -14,7 +14,7 @@ function placedState(gameId: string, seed: number) {
   let state = createTurnFlow({ gameId, players: onePlayer, seed });
   state = drawTurnTile(state);
   expect(state.phase).toBe('TILE_IN_HAND');
-  state = placeTurnTile(state, state.legalPlacements[0]);
+  state = confirmTurnTilePlacement(placeTurnTile(state, state.legalPlacements[0]));
   expect(state.phase).toBe('TILE_PLACED');
   const legal = getLegalMeeplePlacements(state.game, getTileDefinition);
   return { state, legal };
@@ -24,7 +24,7 @@ describe('Stage 4A: selectTurnMeeple validates against authoritative legal targe
   it('rejects an invalid target as strict no-op; phase never hangs in MEEPLE_SELECTION', () => {
     const { state } = placedState('meeple-invalid', 3);
     // Заведомо нелегальная цель: monastery на стартовой river tile недостижима
-    // (card-091 — река без монастыря).
+    // (текущая river-карта не имеет монастыря).
     const next = selectTurnMeeple(state, { featureType: 'monastery', edge: null });
     expect(next).toBe(state); // strict no-op: тот же объект
     expect(next.phase).toBe('TILE_PLACED');

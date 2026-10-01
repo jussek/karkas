@@ -87,7 +87,7 @@ describe('Stage 4A full-flow integration through TurnFlow', () => {
     let state = createTurnFlow({ gameId: 'flow-3', players: twoPlayers, seed: 12 });
     // Ход 1: p1 размещает тайл и ставит meeple на первую legal цель.
     let drawn = drawTurnTile(state);
-    drawn = placeTurnTile(drawn, drawn.legalPlacements[0]);
+    drawn = confirmTurnTilePlacement(placeTurnTile(drawn, drawn.legalPlacements[0]));
     const placed = drawn.game.lastPlacedTile!;
     const target = { featureType: 'city' as const, edge: (placed.rotation % 360 === 0 ? 1 : 0) as EdgeIndex };
     const withMeeple = selectTurnMeeple(drawn, target);
@@ -145,7 +145,7 @@ describe('Stage 4A full-flow integration through TurnFlow', () => {
     while (state.phase !== 'GAME_OVER' && guard < 400) {
       let next = drawTurnTile(state);
       if (next.game.drawnTileDefinitionId === tileId && !monasteryPlaced) {
-        next = placeTurnTile(next, next.legalPlacements[0]);
+        next = confirmTurnTilePlacement(placeTurnTile(next, next.legalPlacements[0]));
         if (next.phase === 'TILE_PLACED') {
           next = selectTurnMeeple(next, { featureType: 'monastery', edge: null });
           monasteryPlaced = true;

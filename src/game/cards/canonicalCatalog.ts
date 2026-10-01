@@ -75,21 +75,28 @@ const AUDITED_BY_ID = new Map<string, CardDefinition>([
 /**
  * Authoritative Stage 3H runtime catalog.
  *
- * Overrides below record the final product audit: 091/133 are the sole river
- * terminals and 096 is a land tile with decorative pond artwork. Gardens and
+ * Overrides below record the product contract: 133 is the river source, 106
+ * is its final tile, and 096 is a land tile with decorative pond artwork. Gardens and
  * edition badges intentionally have no semantic representation.
  */
 export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
-  .filter((card) => card.id !== 'card-106')
+  .filter((card) => card.id !== 'card-091')
   .map((legacy) => AUDITED_BY_ID.get(legacy.id) ?? legacy)
   .map((card): CardDefinition => {
-    if (card.id === 'card-091') return {
+    if (card.id === 'card-133') return {
       ...card,
       edges: { north: 'field', east: 'field', south: 'river', west: 'field' },
       topology: { roads: [], cities: [], riverEdges: [2] },
       shields: 0,
       riverCard: true,
       riverKind: 'start',
+    };
+    if (card.id === 'card-106') return {
+      ...card,
+      edges: { ...card.edges, west: 'field' },
+      topology: { ...card.topology, riverEdges: [1] },
+      riverCard: true,
+      riverKind: 'end',
     };
     if (card.id === 'card-096') return {
       ...card,
