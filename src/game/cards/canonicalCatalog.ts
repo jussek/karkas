@@ -4,14 +4,12 @@ import { AUDITED_101_144 } from './audited101144';
 import type { CardDefinition } from './types';
 
 /**
- * Stage 3H canonical visual audit.
- * Cards 001..050 were re-read directly from the user-supplied JPG archive.
+ * Canonical visual audit of the user-supplied JPG archive.
  * Edge order in topology is N=0, E=1, S=2, W=3.
- * Crossroads split roads into independent road features, as they terminate a road.
- * Blue coat-of-arms shields are scoring shields; expansion/edition badges are ignored.
- * The legacy catalog is an import/source layer only. Runtime consumers use
- * GAME_CARD_CATALOG applies the runtime contract: card 133 is the river
- * source, card 106 is the river end, and obsolete card 091 is excluded.
+ * Crossroads split roads into independent road features when the artwork
+ * terminates them at a junction. Blue coat-of-arms are recorded visually,
+ * but shield scoring is intentionally not implemented until its rule is confirmed.
+ * Runtime consumers use GAME_CARD_CATALOG; the legacy catalog is only an id/source layer.
  */
 const AUDITED_001_050: readonly CardDefinition[] = [
   { id:'card-001', asset:'1 (1).jpg', edges:{north:'city',east:'city',south:'field',west:'field'}, topology:{roads:[],cities:[[0,1]],cityShields:[0]}, shields:0 },
@@ -73,39 +71,13 @@ const AUDITED_BY_ID = new Map<string, CardDefinition>([
 ].map((card) => [card.id, card]));
 
 /**
- * Authoritative Stage 3H runtime catalog.
- *
- * Overrides below record the product contract: 133 is the river source, 106
- * is its final tile, and 096 is a land tile with decorative pond artwork. Gardens and
- * edition badges intentionally have no semantic representation.
+ * Authoritative runtime catalog. Every physical JPG card 001..144 is present
+ * exactly once. River semantics live in the audited definitions themselves:
+ * card-133 is the pre-placed source, card-106 is the forced final river card,
+ * card-091 is a real river middle, card-109 is the three-edge river fork, and
+ * card-096 is land (its decorative pond does not reach a border).
  */
 export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
-  .filter((card) => card.id !== 'card-091')
-  .map((legacy) => AUDITED_BY_ID.get(legacy.id) ?? legacy)
-  .map((card): CardDefinition => {
-    if (card.id === 'card-133') return {
-      ...card,
-      edges: { north: 'field', east: 'field', south: 'river', west: 'field' },
-      topology: { roads: [], cities: [], riverEdges: [2] },
-      shields: 0,
-      riverCard: true,
-      riverKind: 'start',
-    };
-    if (card.id === 'card-106') return {
-      ...card,
-      edges: { ...card.edges, west: 'field' },
-      topology: { ...card.topology, riverEdges: [1] },
-      riverCard: true,
-      riverKind: 'end',
-    };
-    if (card.id === 'card-096') return {
-      ...card,
-      edges: { north: 'road', east: 'field', south: 'road', west: 'field' },
-      topology: { roads: [[0, 2]], cities: [] },
-      shields: 0,
-      riverCard: undefined,
-      riverKind: undefined,
-    };
-    return card;
-  });
+  .map((legacy) => AUDITED_BY_ID.get(legacy.id) ?? legacy);
+
 export const AUDITED_CARD_IDS_001_050: readonly string[] = AUDITED_001_050.map((card) => card.id);

@@ -2,7 +2,6 @@ import type { CardDefinition } from './types';
 
 /** Manual visual audit of the user-supplied archive, cards 101..144.
  * Topology edge order: N=0, E=1, S=2, W=3.
- * Card 106 is intentionally excluded by product decision.
  * White expansion badges and garden artwork are not gameplay features.
  */
 export const AUDITED_101_144: readonly CardDefinition[] = [
@@ -11,9 +10,10 @@ export const AUDITED_101_144: readonly CardDefinition[] = [
   { id:'card-103', asset:'1 (103).jpg', edges:{north:'field',east:'field',south:'field',west:'road'}, topology:{roads:[[3]],cities:[]}, shields:0 },
   { id:'card-104', asset:'1 (104).jpg', edges:{north:'road',east:'road',south:'field',west:'field'}, topology:{roads:[[0,1]],cities:[]}, shields:0 },
   { id:'card-105', asset:'1 (105).jpg', edges:{north:'road',east:'field',south:'city',west:'field'}, topology:{roads:[[0]],cities:[[2]],cityShields:[0]}, shields:0 },
+  { id:'card-106', asset:'1 (106).jpg', edges:{north:'field',east:'field',south:'field',west:'river'}, topology:{roads:[],cities:[],riverEdges:[3]}, shields:0, riverCard:true, riverKind:'end' },
   { id:'card-107', asset:'1 (107).jpg', edges:{north:'field',east:'river',south:'field',west:'river'}, topology:{roads:[],cities:[],riverEdges:[1,3]}, shields:0, riverCard:true, riverKind:'middle' },
   { id:'card-108', asset:'1 (108).jpg', edges:{north:'road',east:'river',south:'road',west:'river'}, topology:{roads:[[0,2]],cities:[],riverEdges:[1,3]}, shields:0, riverCard:true, riverKind:'middle' },
-  { id:'card-109', asset:'1 (109).jpg', edges:{north:'river',east:'field',south:'field',west:'river'}, topology:{roads:[],cities:[],riverEdges:[0,3]}, shields:0, riverCard:true, riverKind:'middle' },
+  { id:'card-109', asset:'1 (109).jpg', edges:{north:'river',east:'river',south:'field',west:'river'}, topology:{roads:[],cities:[],riverEdges:[0,1,3]}, shields:0, riverCard:true, riverKind:'middle' },
   { id:'card-110', asset:'1 (110).jpg', edges:{north:'road',east:'river',south:'city',west:'river'}, topology:{roads:[[0]],cities:[[2]],cityShields:[0],riverEdges:[1,3]}, shields:0, riverCard:true, riverKind:'middle' },
   { id:'card-111', asset:'1 (111).jpg', edges:{north:'field',east:'river',south:'river',west:'field'}, topology:{roads:[],cities:[],riverEdges:[1,2]}, shields:0, riverCard:true, riverKind:'middle' },
   { id:'card-112', asset:'1 (112).jpg', edges:{north:'field',east:'field',south:'field',west:'city'}, topology:{roads:[],cities:[[3]],cityShields:[0]}, shields:0 },
