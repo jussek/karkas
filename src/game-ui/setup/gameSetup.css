@@ -21,3 +21,8 @@
 .setup-player input { flex: 1; min-width: 0; height: 48px; border-radius: 12px; border: 1px solid #ffffff2b; background: #17231b; color: #fff; padding: 0 12px; font-size: 1rem; }
 .setup-actions { position: sticky; bottom: max(12px, env(safe-area-inset-bottom)); }
 .setup-start { width: 100%; min-height: 56px; border: 0; border-radius: 16px; background: #e9b957; color: #172015; font-size: 1.15rem; font-weight: 800; touch-action: manipulation; }
+
+/* Stage 4C: выбор таймера хода */
+.setup-timer-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.setup-timer-option { min-height: 44px; padding: 6px 12px; border: 2px solid #7f592b; border-radius: 10px; background: #3f2817; color: #ffe5a5; font-size: .85rem; }
+.setup-timer-option[aria-checked="true"] { border-color: #f1c75e; box-shadow: 0 0 0 2px #7c5b24; background: linear-gradient(#5d4229, #332419); font-weight: 700; }

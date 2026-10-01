@@ -22,6 +22,24 @@ import type { LocalGameConfig } from '../../game/session';
 export const LOCAL_GAME_SAVE_KEY = 'karkas.local-game.v1';
 export const SETTINGS_KEY = 'karkas.settings.v1';
 
+/** Stage 4C: метаданные матча (таймер/пауза) — UI-слой, не engine phase. */
+export interface UiMatchState {
+  /** null → таймер выключен; иначе оставшиеся секунды текущего хода. */
+  timerRemainingSeconds: number | null;
+  paused: boolean;
+}
+
+export interface LocalGameSaveV2 {
+  version: 2;
+  savedAt: string;
+  config: LocalGameConfig;
+  flow: TurnFlowState;
+  uiMatchState?: UiMatchState;
+}
+
+/** Совместимость: публичный тип load — любой валидный вариант сохранения. */
+export type LocalGameSave = LocalGameSaveV2;
+
 /* ------------------------------------------------------------------ */
 /* Storage helpers (safe on missing/broken storage)                    */
 /* ------------------------------------------------------------------ */
@@ -130,6 +148,7 @@ function configToDto(config: LocalGameConfig): Record<string, unknown> {
       color: player.color,
       score: player.score,
     })),
+    ...(config.matchOptions ? { matchOptions: { ...config.matchOptions } } : {}),
   };
 }
 
@@ -202,6 +221,24 @@ export interface LocalGameSaveV1 {
   flow: TurnFlowState;
 }
 
+/** null → невалидно; undefined → отсутствует (старый save, ок). */
+function validateMatchOptions(value: unknown): { turnTimerSeconds: number } | null | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) return null;
+  const s = value.turnTimerSeconds;
+  if (s !== 0 && s !== 60 && s !== 90 && s !== 120) return null;
+  return { turnTimerSeconds: s };
+}
+
+/** Битый uiMatchState → безопасный fallback undefined (не валит валидный save). */
+function validateUiMatchState(value: unknown): UiMatchState | undefined {
+  if (!isRecord(value)) return undefined;
+  const remaining = value.timerRemainingSeconds;
+  const timerRemainingSeconds =
+    remaining === null || (isFiniteNumber(remaining) && remaining >= 0) ? (remaining as number | null) : null;
+  return { timerRemainingSeconds, paused: value.paused === true };
+}
+
 function validateConfig(value: unknown): LocalGameConfig | null {
   if (!isRecord(value)) return null;
   if (!isNonEmptyString(value.gameId)) return null;
@@ -212,7 +249,12 @@ function validateConfig(value: unknown): LocalGameConfig | null {
     if (!isNonEmptyString(raw.id) || !isNonEmptyString(raw.name)) return null;
     if (typeof raw.color !== 'string' || !isFiniteNumber(raw.score)) return null;
   }
-  return value as unknown as LocalGameConfig;
+  const matchOptions = validateMatchOptions(value.matchOptions);
+  if (matchOptions === null) return null;
+  const config = { ...(value as object), ...(matchOptions ? { matchOptions } : {}) } as unknown as LocalGameConfig;
+  // Stage 4C migration: старый V1-save без matchOptions → таймер выключен.
+  if (config.matchOptions === undefined) config.matchOptions = { turnTimerSeconds: 0 };
+  return config;
 }
 
 function validateResolution(value: unknown): boolean {
@@ -290,8 +332,8 @@ function validateFlow(value: unknown): TurnFlowState | null {
 /* Public API                                                          */
 /* ------------------------------------------------------------------ */
 
-/** Загружает и валидирует сохранение; null при любом повреждении. */
-export function loadLocalGameSave(): LocalGameSaveV1 | null {
+/** Загружает и валидирует сохранение; null при любом повреждении. V1 мигрирует в V2. */
+export function loadLocalGameSave(): LocalGameSaveV2 | null {
   const storage = getStorage();
   if (!storage) return null;
   let raw: string | null = null;
@@ -308,7 +350,9 @@ export function loadLocalGameSave(): LocalGameSaveV1 | null {
     clearLocalGameSave();
     return null;
   }
-  if (!isRecord(parsed) || parsed.version !== 1) return null;
+  if (!isRecord(parsed)) return null;
+  // Валидные версии: 1 (Stage 4B) и 2 (Stage 4C). Старый save НЕ удаляем.
+  if (parsed.version !== 1 && parsed.version !== 2) return null;
   if (typeof parsed.savedAt !== 'string') return null;
   const config = validateConfig(parsed.config);
   const flow = validateFlow(parsed.flow);
@@ -316,18 +360,24 @@ export function loadLocalGameSave(): LocalGameSaveV1 | null {
     clearLocalGameSave();
     return null;
   }
-  return { version: 1, savedAt: parsed.savedAt, config, flow };
+  const uiMatchState = validateUiMatchState(parsed.uiMatchState);
+  return { version: 2, savedAt: parsed.savedAt, config, flow, ...(uiMatchState ? { uiMatchState } : {}) };
 }
 
 /** Сохраняет партию; возвращает false если хранилище недоступно/бросает. */
-export function saveLocalGameSave(config: LocalGameConfig, flow: TurnFlowState): boolean {
+export function saveLocalGameSave(
+  config: LocalGameConfig,
+  flow: TurnFlowState,
+  uiMatchState?: UiMatchState,
+): boolean {
   const storage = getStorage();
   if (!storage) return false;
   const payload = {
-    version: 1 as const,
+    version: 2 as const,
     savedAt: new Date().toISOString(),
     config: configToDto(config) as unknown as LocalGameConfig,
     flow: flowToDto(flow) as unknown as TurnFlowState,
+    ...(uiMatchState ? { uiMatchState: { ...uiMatchState } } : {}),
   };
   try {
     storage.setItem(LOCAL_GAME_SAVE_KEY, JSON.stringify(payload));

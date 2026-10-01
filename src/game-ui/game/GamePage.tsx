@@ -25,6 +25,20 @@ import { createLocalGame } from './localGameBootstrap';
 import { meepleDialogTitle, meepleTargetLabel } from './meepleDialogModel';
 import { useBoardCamera } from './useBoardCamera';
 import { saveLocalGameSave } from '../persistence/localGamePersistence';
+import type { UiMatchState } from '../persistence/localGamePersistence';
+import {
+  createMatchTimer,
+  formatTimerRemaining,
+  getRemainingLandTiles,
+  getRemainingRiverTiles,
+  matchTimerAfterFlowChange,
+  onTimerExpiredFlow,
+  pauseMatchTimer,
+  resumeMatchTimer,
+  tickMatchTimer,
+  turnKeyOf,
+} from './matchTimer';
+import type { MatchTimerState } from './matchTimer';
 import './gamePage.css';
 
 const CELL = 92;
@@ -75,14 +89,27 @@ export interface GamePageProps {
   config?: LocalGameConfig;
   /** Stage 4B: восстановленный из сохранения authoritative flow (не пересобирает колоды). */
   initialFlow?: TurnFlowState;
+  /** Stage 4C: восстановленные таймер/пауза (не reset при загрузке). */
+  initialUiMatchState?: UiMatchState;
   onExit?: () => void;
   onNewGame?: () => void;
+  /** Stage 4C: rematch генерируется в App/browser layer, не внутри игры. */
+  onRematch?: () => void;
 }
 
-export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePageProps) {
+export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onNewGame, onRematch }: GamePageProps) {
   const [flow, setFlow] = useState<TurnFlowState>(() =>
     initialFlow ?? (config ? createLocalGame(config) : createLocalGame()),
   );
+  const turnTimerSeconds = config?.matchOptions?.turnTimerSeconds ?? 0;
+  const [timer, setTimer] = useState<MatchTimerState>(() => {
+    if (initialUiMatchState?.timerRemainingSeconds != null) {
+      const remaining = Math.max(0, Math.floor(initialUiMatchState.timerRemainingSeconds));
+      return { durationSeconds: turnTimerSeconds, remainingSeconds: remaining, running: false, expired: remaining === 0 };
+    }
+    return createMatchTimer(turnTimerSeconds);
+  });
+  const [paused, setPaused] = useState<boolean>(initialUiMatchState?.paused ?? false);
   const [meepleMode, setMeepleMode] = useState(false);
   const [feedbackTick, setFeedbackTick] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -158,10 +185,68 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
   }, [camera.fitContent]);
 
   /* --- Stage 4B: autosave authoritative flow (не camera/modal/UI-состояние) --- */
+  const timerRef = useRef(timer);
+  timerRef.current = timer;
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+
+  const currentUiMatchState = useCallback((): UiMatchState | undefined => {
+    if (timerRef.current.durationSeconds === 0 && !pausedRef.current) return undefined;
+    return {
+      timerRemainingSeconds: timerRef.current.durationSeconds > 0 ? timerRef.current.remainingSeconds : null,
+      paused: pausedRef.current,
+    };
+  }, []);
+
   useEffect(() => {
     if (!config) return;
-    saveLocalGameSave(config, flow);
-  }, [config, flow]);
+    saveLocalGameSave(config, flow, currentUiMatchState());
+  }, [config, flow, currentUiMatchState]);
+
+  /* --- Stage 4C: таймер хода. Reset ТОЛЬКО при реальном переходе хода. --- */
+  const turnKey = turnKeyOf(flow.game.turnNumber, flow.game.currentPlayerIndex);
+  const prevFlowRef = useRef({ flow, turnKey });
+  useEffect(() => {
+    const prev = prevFlowRef.current;
+    prevFlowRef.current = { flow, turnKey };
+    if (flow === prev.flow) return;
+    setTimer((current) => matchTimerAfterFlowChange(current, prev.turnKey, turnKey).timer);
+  }, [flow, turnKey]);
+
+  // Один interval максимум; cleanup при unmount/паузе.
+  useEffect(() => {
+    if (!timer.running || paused || gameOver) return;
+    const id = window.setInterval(() => {
+      setTimer((current) => tickMatchTimer(current));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [timer.running, paused, gameOver]);
+
+  // Timeout НЕ дёргает engine actions — flow остаётся неизменным (контракт).
+  useEffect(() => {
+    if (timer.expired) setFlow((current) => onTimerExpiredFlow(current));
+  }, [timer.expired]);
+
+  // Редкая запись таймера (максимум раз в ~5 сек), без цикла с flow-autosave.
+  useEffect(() => {
+    if (!config || timer.durationSeconds === 0) return;
+    const id = window.setInterval(() => {
+      saveLocalGameSave(config, flow, currentUiMatchState());
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [config, flow, timer.durationSeconds, currentUiMatchState]);
+
+  const exitToMenu = () => {
+    if (config) saveLocalGameSave(config, flow, currentUiMatchState());
+    onExit?.();
+  };
+
+  const togglePause = () => {
+    const next = !paused;
+    setPaused(next);
+    setTimer((current) => (next ? pauseMatchTimer(current) : resumeMatchTimer(current)));
+    if (config) saveLocalGameSave(config, flow, currentUiMatchState());
+  };
 
   const placeAt = useCallback((position: { x: number; y: number }) => {
     const next = placeTurnTile(flow, position);
@@ -194,13 +279,16 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
 
   const gameOver = flow.phase === 'GAME_OVER' || flow.game.status === 'finished';
   const finalScores = flow.lastResolution.final;
+  const riverActive = flow.riverPlaced < RIVER_CARD_COUNT;
+  const remainingTiles = riverActive ? getRemainingRiverTiles(flow) : getRemainingLandTiles(flow);
 
   return (
     <main className="game-page">
       <header className="game-header">
         <div>
           <strong>Каркассон</strong>
-          <span>{flow.riverPlaced < RIVER_CARD_COUNT ? `Река — ${flow.riverPlaced}/${RIVER_CARD_COUNT}` : `Ход ${flow.game.turnNumber}`}</span>
+          <span>Ход {flow.game.turnNumber}</span>
+          <span>Сейчас: {player?.name ?? '—'}</span>
         </div>
         <div className="game-scores">
           {flow.game.players.map((item, index) => (
@@ -210,7 +298,17 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
             </span>
           ))}
         </div>
-        <button type="button" className="game-menu-button" aria-label="Меню игры" onClick={() => setMenuOpen(true)}>☰</button>
+        <div className="game-hud-right">
+          <span className="tiles-remaining">{riverActive ? `Река: осталось ${remainingTiles}` : `Карты: осталось ${remainingTiles}`}</span>
+          {timer.durationSeconds > 0 && (
+            <span
+              className={`turn-timer${timer.remainingSeconds <= 10 && timer.remainingSeconds > 0 ? ' is-warning' : ''}${timer.expired ? ' is-expired' : ''}`}
+              role="timer"
+              aria-label="Оставшееся время хода"
+            >⏱ {timer.expired ? 'Время вышло' : formatTimerRemaining(timer.remainingSeconds)}</span>
+          )}
+          <button type="button" className="game-menu-button" aria-label="Меню игры" onClick={() => setMenuOpen(true)}>☰</button>
+        </div>
       </header>
 
       <p className="turn-message" role="status">{message}</p>
@@ -252,6 +350,7 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
               <button
                 className="legal-cell"
                 type="button"
+                disabled={paused}
                 aria-label={`Поставить карту: ${position.x}, ${position.y}`}
                 key={`${position.x},${position.y}`}
                 style={{ left: (position.x + ORIGIN) * CELL, top: (position.y + ORIGIN) * CELL }}
@@ -270,6 +369,7 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
                 {flow.positionedRotations.length > 1 && <button
                   type="button"
                   className="preview-rotate"
+                  disabled={paused}
                   aria-label="Выбрать следующий разрешённый поворот"
                   onClick={() => setFlow(rotatePositionedTurnTile)}
                 >↻</button>}
@@ -277,6 +377,7 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
             )}
             {flow.game.lastPlacedTile && ['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) && <button
               type="button"
+              disabled={paused}
               className={`new-tile-meeple-target${meepleMode ? ' is-active' : ''}`}
               aria-label="Только что установленная карта"
               style={{ left: (flow.game.lastPlacedTile.position.x + ORIGIN) * CELL, top: (flow.game.lastPlacedTile.position.y + ORIGIN) * CELL }}
@@ -293,15 +394,25 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
           </div>
         </div>
 
-        <div className="camera-controls" aria-label="Камера доски">
-          <button type="button" className="camera-button" aria-label="Приблизить" onClick={camera.zoomIn}>+</button>
-          <button type="button" className="camera-button" aria-label="Отдалить" onClick={camera.zoomOut}>−</button>
-          <button type="button" className="camera-button" aria-label="Вписать доску" onClick={() => camera.fitContent()}>⤢</button>
+        <div className={`camera-controls${paused ? ' is-paused' : ''}`} aria-label="Камера доски">
+          <button type="button" className="camera-button" aria-label="Приблизить" disabled={paused} onClick={camera.zoomIn}>+</button>
+          <button type="button" className="camera-button" aria-label="Отдалить" disabled={paused} onClick={camera.zoomOut}>−</button>
+          <button type="button" className="camera-button" aria-label="Вписать доску" disabled={paused} onClick={() => camera.fitContent()}>⤢</button>
           {flow.phase === 'TILE_IN_HAND' && (
             <button type="button" className="camera-button camera-show-moves" onClick={showLegalMoves}>Показать ходы</button>
           )}
         </div>
       </section>
+
+      {paused && !gameOver && (
+        <div className="pause-overlay" role="dialog" aria-modal="true" aria-label="Пауза">
+          <section className="pause-sheet">
+            <h2>Игра на паузе</h2>
+            <button type="button" onClick={togglePause}>Продолжить</button>
+            <button type="button" className="danger" onClick={exitToMenu}>Выйти в меню</button>
+          </section>
+        </div>
+      )}
 
       {gameOver && finalScores && (
         <section className="game-over-panel" role="status" aria-live="assertive">
@@ -315,15 +426,17 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
               ))}
           </ol>
           {flow.game.players.length === 1 ? (
-            <p>Итоговый результат: {finalScores.scoreByPlayerId[flow.game.players[0].id] ?? 0}</p>
+            <p>Результат: {finalScores.scoreByPlayerId[flow.game.players[0].id] ?? 0} очков</p>
           ) : finalScores.tied ? (
             <p>Ничья: {finalScores.leaderPlayerIds.map(nameById).join(', ')}</p>
           ) : (
             <p>Победитель: {finalScores.leaderPlayerIds.map(nameById).join(', ')}</p>
           )}
+          <p>Сыграно ходов: {flow.game.turnNumber}</p>
           <div className="game-over-actions">
+            {onRematch && <button type="button" className="rematch-action" onClick={onRematch}>Сыграть ещё раз</button>}
             {onNewGame && <button type="button" onClick={onNewGame}>Новая игра</button>}
-            {onExit && <button type="button" onClick={onExit}>Главное меню</button>}
+            {onExit && <button type="button" onClick={exitToMenu}>Главное меню</button>}
           </div>
         </section>
       )}
@@ -332,9 +445,10 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
         <section className="game-menu-sheet">
           <h2>Меню</h2>
           <button type="button" onClick={() => setMenuOpen(false)}>Продолжить</button>
+          {!gameOver && <button type="button" aria-pressed={paused} onClick={() => { setMenuOpen(false); togglePause(); }}>Пауза</button>}
           <button type="button" onClick={() => { setMenuOpen(false); setRulesOpen(true); }}>Правила</button>
           {onNewGame && <button type="button" onClick={onNewGame}>Новая игра</button>}
-          {onExit && <button type="button" className="danger" onClick={onExit}>Выйти в меню</button>}
+          {onExit && <button type="button" className="danger" onClick={() => { setMenuOpen(false); exitToMenu(); }}>Выйти в меню</button>}
         </section>
       </div>}
 
@@ -367,11 +481,12 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
         </section>
       </div>}
 
-      <section className="turn-controls" aria-label="Действия хода">
+      <section className={`turn-controls${paused ? ' is-paused' : ''}`} aria-label="Действия хода" aria-hidden={paused} inert={paused}>
         {heldId && <div
           className={`held-tile${unplayableTile ? ' is-unplayable' : ''}`}
         >{unplayableTile && <button
           type="button"
+          disabled={paused}
           className="replace-action"
           aria-label="Заменить неразмещаемую карту"
           onClick={() => {
@@ -379,12 +494,12 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
             setFlow((current) => replaceUnplayableTurnTile(current));
           }}
         >↺ <span>Заменить</span></button>}<TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={86} /><span>{flow.rotation}°</span></div>}
-        <button type="button" className="draw-action" disabled={flow.phase !== 'AWAITING_DRAW'} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
-        <button type="button" className="confirm-placement" aria-label="Подтвердить размещение карты" disabled={flow.phase !== 'TILE_POSITIONED'} onClick={() => setFlow(confirmTurnTilePlacement)}>✓ <span>Поставить</span></button>
+        <button type="button" className="draw-action" disabled={flow.phase !== 'AWAITING_DRAW' || paused} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
+        <button type="button" className="confirm-placement" aria-label="Подтвердить размещение карты" disabled={flow.phase !== 'TILE_POSITIONED' || paused} onClick={() => setFlow(confirmTurnTilePlacement)}>✓ <span>Поставить</span></button>
         <button
           type="button"
           aria-pressed={meepleMode}
-          disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) || available === 0}
+          disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) || available === 0 || paused}
           onClick={() => {
             if (meepleMode) {
               setFlow((current) => selectTurnMeeple(current, null));
@@ -396,7 +511,7 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
         <button
           type="button"
           className="end-turn"
-          disabled={!canEndTurn(flow)}
+          disabled={!canEndTurn(flow) || paused}
           onClick={endTurnAction}
         ><b>✓</b><span>Закончить ход</span></button>
       </section>

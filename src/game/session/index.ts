@@ -69,22 +69,39 @@ export function buildPlayers(options: BuildPlayersOptions): Player[] {
   }));
 }
 
+/** Опции локальной партии (Stage 4C). Только browser/local-match настройки. */
+export interface LocalMatchOptions {
+  /** 0 = таймер выключен; иначе длительность хода в секундах. */
+  turnTimerSeconds: 0 | 60 | 90 | 120;
+}
+
+export const DEFAULT_MATCH_OPTIONS: LocalMatchOptions = { turnTimerSeconds: 0 };
+
 export interface LocalGameConfig {
   gameId: string;
   seed: number;
   players: Player[];
+  /** Stage 4C; опционально для обратной совместимости со старыми сохранениями. */
+  matchOptions?: LocalMatchOptions;
+}
+
+export interface CreateLocalGameConfigInput {
+  gameId: string;
+  seed: number;
+  count: number;
+  names?: readonly (string | undefined)[];
+  matchOptions?: LocalMatchOptions;
 }
 
 /**
  * Детерминированная конфигурация новой локальной партии.
  * gameId/seed передаются явно (UI/bootstrap), чтобы домен оставался чистым.
  */
-export function createLocalGameConfig(
-  input: { gameId: string; seed: number; count: number; names?: readonly (string | undefined)[] },
-): LocalGameConfig {
+export function createLocalGameConfig(input: CreateLocalGameConfigInput): LocalGameConfig {
   return {
     gameId: input.gameId,
     seed: input.seed >>> 0,
     players: buildPlayers({ count: input.count, names: input.names }),
+    matchOptions: input.matchOptions ?? DEFAULT_MATCH_OPTIONS,
   };
 }

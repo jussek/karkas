@@ -7,8 +7,15 @@
 
 import { useState } from 'react';
 import { MAX_PLAYERS, MIN_PLAYERS, PLAYER_IDENTITIES, buildPlayers, defaultPlayerName } from '../../game/session';
-import type { LocalGameConfig } from '../../game/session';
+import type { LocalGameConfig, LocalMatchOptions } from '../../game/session';
 import './gameSetup.css';
+
+const TURN_TIMER_OPTIONS: readonly { value: 0 | 60 | 90 | 120; label: string }[] = [
+  { value: 0, label: 'Без таймера' },
+  { value: 60, label: '60 секунд' },
+  { value: 90, label: '90 секунд' },
+  { value: 120, label: '120 секунд' },
+];
 
 export interface GameSetupPageProps {
   /** Вызывается после нажатия «Создать игру» с готовой конфигурацией партии. */
@@ -23,6 +30,7 @@ export interface GameSetupPageProps {
 export function GameSetupPage({ onStart, makeGameId, makeSeed, onBack }: GameSetupPageProps) {
   const [count, setCount] = useState<number>(MIN_PLAYERS);
   const [names, setNames] = useState<(string | undefined)[]>([]);
+  const [turnTimerSeconds, setTurnTimerSeconds] = useState<0 | 60 | 90 | 120>(0);
 
   const setName = (index: number, value: string) => {
     setNames((current) => {
@@ -36,7 +44,7 @@ export function GameSetupPage({ onStart, makeGameId, makeSeed, onBack }: GameSet
   const start = () => {
     // Валидация количества дублирует движок заранее (движок — authoritative).
     if (!Number.isInteger(count) || count < MIN_PLAYERS || count > MAX_PLAYERS) return;
-    onStart(createLocalSetupConfig({ gameId: makeGameId(), seed: makeSeed(), count, names }));
+    onStart(createLocalSetupConfig({ gameId: makeGameId(), seed: makeSeed(), count, names, matchOptions: { turnTimerSeconds } }));
   };
 
   return (
@@ -104,6 +112,22 @@ export function GameSetupPage({ onStart, makeGameId, makeSeed, onBack }: GameSet
         ))}
       </section>
 
+      <section className="setup-card" aria-label="Таймер хода">
+        <span className="setup-label">Таймер хода</span>
+        <div className="setup-timer-row" role="radiogroup" aria-label="Длительность хода">
+          {TURN_TIMER_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className="setup-timer-option"
+              role="radio"
+              aria-checked={turnTimerSeconds === option.value}
+              onClick={() => setTurnTimerSeconds(option.value)}
+            >{option.label}</button>
+          ))}
+        </div>
+      </section>
+
       <p className="setup-note">Онлайн-лобби и боты пока недоступны. Эта партия работает локально на устройстве.</p>
 
       <div className="setup-actions">
@@ -120,10 +144,16 @@ export function createLocalSetupConfig(input: {
   seed: number;
   count: number;
   names?: readonly (string | undefined)[];
+  /** Stage 4C; отсутствует/битый → таймер выключен (обратная совместимость). */
+  matchOptions?: LocalMatchOptions;
 }): LocalGameConfig {
+  const seconds = input.matchOptions?.turnTimerSeconds;
+  const turnTimerSeconds: 0 | 60 | 90 | 120 =
+    seconds === 60 || seconds === 90 || seconds === 120 ? seconds : 0;
   return {
     gameId: input.gameId,
     seed: input.seed >>> 0,
     players: buildPlayers({ count: input.count, names: input.names }),
+    matchOptions: { turnTimerSeconds },
   };
 }
