@@ -75,6 +75,7 @@ describe('canonical river set', () => {
     expect(RIVER_CARD_COUNT).toBe(20);
     expect(river).toHaveLength(20);
     expect(river.filter((card) => card.riverKind === 'start')).toHaveLength(1);
+    expect(river.filter((card) => card.riverKind === 'middle')).toHaveLength(18);
     expect(river.filter((card) => card.riverKind === 'end')).toHaveLength(1);
     expect(river.find((card) => card.riverKind === 'start')?.id).toBe(SOURCE_ID);
     expect(river.find((card) => card.riverKind === 'end')?.id).toBe(END_ID);
@@ -90,7 +91,7 @@ describe('canonical river set', () => {
   it('plans all 18 middles once and 106 last', () => {
     const plan = planRiver(7, startBoard());
     expect(plan).toHaveLength(19);
-    expect(plan.at(-1)?.cardId).toBe(END_ID);
+    expect(plan[plan.length - 1]?.cardId).toBe(END_ID);
     const middles = plan.slice(0, -1).map((step) => step.cardId);
     expect(new Set(middles).size).toBe(18);
     expect([...middles].sort()).toEqual([...CANONICAL_MIDDLE].sort());
@@ -125,10 +126,6 @@ describe('fork-aware frontiers', () => {
   });
 
   it('does not require an impossible zero-open-edge graph after the single final tile', () => {
-    // One source (degree 1), one final (degree 1) and the verified fork
-    // (degree 3) make a zero-open-edge graph impossible unless another odd
-    // river tile exists. The product invariant is therefore sequencing: 106
-    // is the last river card, after which land begins.
     const plan = planRiver(4, startBoard());
     let board = startBoard();
     for (const step of plan) {
@@ -141,7 +138,7 @@ describe('fork-aware frontiers', () => {
         },
       };
     }
-    expect(plan.at(-1)?.cardId).toBe(END_ID);
+    expect(plan[plan.length - 1]?.cardId).toBe(END_ID);
     expect(frontiersOf(board).length).toBeGreaterThanOrEqual(1);
   });
 });
@@ -151,7 +148,7 @@ describe('river solvability across seeds', () => {
     for (let seed = 0; seed < 1000; seed += 1) {
       const plan = planRiver(seed, startBoard());
       expect(plan).toHaveLength(19);
-      expect(plan.at(-1)?.cardId).toBe(END_ID);
+      expect(plan[plan.length - 1]?.cardId).toBe(END_ID);
       expect(new Set(plan.map((step) => step.cardId)).size).toBe(19);
     }
   }, 300_000);
@@ -204,7 +201,7 @@ describe('player choices and land transition', () => {
     expect(state.riverPlaced).toBe(20);
     expect(riverDraws).toHaveLength(19);
     expect(new Set([SOURCE_ID, ...riverDraws]).size).toBe(20);
-    expect(riverDraws.at(-1)).toBe(END_ID);
+    expect(riverDraws[riverDraws.length - 1]).toBe(END_ID);
     expect(state.discardedTileIds).toEqual([]);
 
     state = drawTurnTile(state);
