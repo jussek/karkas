@@ -59,7 +59,7 @@ describe('architecture and migration regression', () => {
   });
 
   it('migration has hardened schemas, invoker wrappers, grants, and join invariants', () => {
-    const sql = readFileSync(join(process.cwd(), 'supabase/migrations/20261001000000_stage5a_online_lobbies.sql'), 'utf8');
+    const sql = readFileSync(join(process.cwd(), 'supabase/migrations/20261001131523_stage5a_online_lobbies.sql'), 'utf8');
     const publicFunctions = [...sql.matchAll(/create function public\.[\s\S]*?(?=create function|revoke all on function)/g)].map(([definition]) => definition);
     expect(sql).toContain('create schema if not exists private');
     expect(sql).toContain('private.is_online_lobby_member(p_lobby_id uuid)');
