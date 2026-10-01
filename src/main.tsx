@@ -34,7 +34,7 @@ function browserSeed(): number {
   return Date.now() >>> 0;
 }
 
-type Screen = "menu" | "setup" | "lobby" | "game";
+export type Screen = "menu" | "setup" | "lobby" | "game" | "online-browser" | "online-create" | "online-lobby";
 
 /**
  * Stage 4C: rematch-конфиг генерируется в App/browser layer (не внутри игры):
@@ -155,6 +155,7 @@ export function App() {
           onContinueGame={hasSavedGame ? continueGame : undefined}
           onCreateGame={() => guardDestructive(() => setScreen("setup"))}
           onQuickGame={() => guardDestructive(quickGame)}
+          onFindGame={() => setScreen("online-browser")}
           onRules={() => setRulesOpen(true)}
           onSettings={() => setSettingsOpen(true)}
         />
@@ -201,6 +202,10 @@ export function App() {
         )}
       </>
     );
+  }
+
+  if (screen === "online-browser" || screen === "online-create" || screen === "online-lobby") {
+    return <main className="setup-page"><section className="setup-card"><h1>Сетевая игра</h1><p>Подключение к онлайн-лобби недоступно без настроенного Supabase.</p><button type="button" onClick={() => setScreen("menu")}>← Меню</button></section></main>;
   }
 
   if (screen === "setup") {
