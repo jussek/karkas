@@ -1,116 +1,86 @@
-# Stage 3H — canonical card-data contract
+# Canonical card-data contract
 
-This file records the project decisions that are authoritative while the old pixel-classified catalog is replaced by image-verified data.
+This document records the runtime card and river contract after re-auditing the user-supplied JPG artwork. `GAME_CARD_CATALOG` is the sole runtime card collection. The older `CARD_CATALOG` is only a historical/import layer and is not authoritative when it conflicts with the audited JPG data.
 
-## Set
+## Physical set
 
-- Physical image set after audit: **143 playable tiles**.
-- `1 (105).jpg` / `card-105` is a normal retained road/city tile.
-- `card-106` is the only user-removed tile and is absent from runtime data and the runtime artwork manifest. Its legacy source JPG may remain in Git because this review channel cannot carry binary deletion patches.
-- River opening: **19 tiles**.
-- Normal deck after the river: **124 tiles**.
-- Do not synthesize a replacement tile to restore the historical count of 144.
+- Physical/runtime set: **144 image-backed tiles**, `card-001` through `card-144`.
+- `card-105` is a normal road/city tile and is retained.
+- `card-106` is retained and is the forced final river tile. Its real JPG is bundled as `src/game/cards/1 (106).jpg`.
+- `card-091` is retained and is a middle river tile.
+- The river set contains **20 tiles** total: one pre-placed source, 18 middle tiles, and one forced final tile.
+- The normal land deck contains **124 tiles** and begins only after `card-106` has been played.
+- Runtime counts are derived from the canonical catalog rather than repeated as magic constants.
 
 ## Gameplay features
 
-Meeples may be placed only on:
-
-- roads;
-- cities;
-- monasteries.
-
-The following are intentionally not gameplay/scoring features:
-
-- farmers / fields;
-- abbots;
-- gardens.
-
-A river is placement topology, not a meeple target.
+Meeples may be placed only on roads, cities, and monasteries. Farmers/field ownership, abbots, and gardens are intentionally not implemented. `field` remains a terrain type for edge compatibility. River is placement topology and is not a meeple target.
 
 ## Scoring
 
-Scoring is resolved when the active player presses **End turn**, not when the tile or meeple preview is selected.
+Scoring is resolved when the active player presses **End turn**. Connected road/city majority is computed across the entire connected feature; every tied leader receives the full feature score, minority players receive zero, and all meeples on a completed feature return. Monasteries score from their surrounding tiles and return their meeple when completed.
 
-For a completed connected road or city, count meeples across the whole connected feature. The player(s) with the greatest count receive the full feature score. A tie for first awards the full score to every tied player. Meeples on a completed feature return to their owners after scoring. Monasteries score according to their surrounding tiles and return their meeple when completed.
+The JPG artwork contains visible city shields and the catalog may preserve their visual association with city features. **Shield bonus scoring is not implemented because the project scoring rule for shields has not been confirmed.** Current city scoring remains the existing project rule; the catalog must not silently add shield points.
 
-City shields printed on the supplied JPG artwork are real scoring data and must be associated with the city feature that contains the shield.
+## Canonical river set
 
-## Image data is authoritative
+The visually audited runtime river cards are:
 
-The legacy `catalog.ts` was generated from pixel classification and contains known semantic errors. It must not be treated as ground truth when it conflicts with the supplied JPG.
+`053, 054, 055, 067, 079, 088, 090, 091, 099, 100, 101, 102, 106, 107, 108, 109, 110, 111, 121, 133`.
 
-Confirmed corrections include:
+Roles and high-risk corrections:
 
-- card 009: the visible path/road runs from the left side toward the bottom; the legacy north/south description is wrong;
-- card 021: monastery plus a city/castle fragment; the legacy road description is wrong;
-- card 105: retained as a normal road/city tile, backed by the local `1 (105).jpg` artwork;
-- card 106: excluded entirely;
-- card 091: the one-edge river source;
-- card 133: the one-edge river end;
-- card 096: a normal land tile whose blue pond is not river topology.
-- card 105: excluded entirely.
+- `card-133` — **source/start**, already placed at `(0,0)`, rotation `0`; N field, E field, S river, W field; `riverEdges:[2]`.
+- `card-106` — **forced final river tile**; N/E/S field, W river; `riverEdges:[3]`.
+- `card-091` — middle river tile; E+S river; `riverEdges:[1,2]`.
+- `card-079` — N+S river, E road, W city; road `[[1]]`, city `[[3]]`, river `[0,2]`.
+- `card-109` — three-edge river fork; N+E+W river, S field; `riverEdges:[0,1,3]`.
+- `card-096` — normal land tile; the internal blue pond does **not** reach a border and is not river topology; road N↔S, field E/W.
 
-Each retained tile must ultimately be verified for:
+### River draw order
 
-1. canonical N/E/S/W terrain;
-2. each independent road group;
-3. each independent city group;
-4. shield count per city group;
-5. monastery presence;
-6. river connectivity and river role where applicable;
-7. a UI meeple anchor for each legal road/city/monastery target.
+1. `card-133` is already on the board.
+2. All 18 middle river cards are consumed exactly once. A seeded shuffle defines deterministic random priority; the solver may choose the next usable priority card when a higher-priority choice would make completion impossible. River cards are never discarded.
+3. `card-106` is reserved and is always the final river draw.
+4. Only after the final river turn does the seeded land deck begin.
 
-Rotation remains engine-derived; canonical card data must not duplicate rotated variants.
+`card-109` means the river can have multiple open frontiers. The planner therefore operates on **all** exposed river frontiers, grouped by empty target cell, and normal authoritative edge matching still applies to every occupied neighbour.
 
-## River audit
+Because the verified set contains one degree-3 fork (`109`) plus a degree-1 source (`133`) and only one degree-1 forced final tile (`106`), the physical river graph has odd total boundary degree. Requiring the final tile to reduce the number of open river edges to zero would therefore be mathematically incompatible with this audited set. The product invariant is sequencing and legal connectivity: `133 -> every middle once -> 106 -> land`.
 
-After excluding card 106 and correcting the pond on card 096, the canonical audit identifies these 19 river tiles:
+## Edge/topology contract
 
-`053, 054, 055, 067, 079, 088, 090, 091, 099, 100, 101, 102, 107, 108, 109, 110, 111, 121, 133`.
+Canonical side order is `N=0, E=1, S=2, W=3`. Every runtime tile must satisfy:
 
-`card-091` is the sole source, `card-133` is the sole end, and the other 17 cards are middle tiles. The previous catalog's river flags are not authoritative.
-After excluding card 105, the current image audit identified these 19 river-image candidates:
+1. exactly four canonical edge terrains (`field | road | city | river`);
+2. every road border edge appears in exactly one local road feature;
+3. every city border edge appears in exactly one local city feature;
+4. every river border edge appears exactly once in `topology.riverEdges`;
+5. topology never assigns a border edge to a different terrain type;
+6. non-river cards have neither `riverKind` nor river edges;
+7. exactly one river source and exactly one river end exist;
+8. rotation is engine-derived with `rotateEdge`; rotated duplicate card records are forbidden.
 
-`053, 054, 055, 067, 079, 088, 090, 091, 099, 100, 101, 102, 107, 108, 109, 110, 111, 121, 133`.
+Placement legality remains authoritative in the pure engine: target cell must be empty, must touch at least one orthogonal neighbour, and **all** touching sides must have compatible terrain. River planning filters choices for future solvability but never weakens those normal placement rules.
 
-This list is the Stage 3H image-audit set. The previous catalog's river flags are not authoritative. `card-105` remains a normal road/city tile; only `card-106` is excluded from runtime.
-`053, 054, 067, 079, 088, 090, 091, 099, 100, 101, 102, 106, 107, 108, 109, 110, 111, 121, 133`.
+## Assets
 
-This list is the Stage 3H image-audit set. The previous catalog's river flags are not authoritative. No three-way river behavior is required after card 105 is removed.
+Every runtime card must resolve to its real project JPG through the standard tile asset manifest. Synthetic card artwork fallbacks are not part of the canonical contract. In particular `card-106` now resolves to `1 (106).jpg` like every other card.
 
 ## Acceptance gates
 
-Stage 3H is not complete merely because TypeScript compiles. Completion requires:
+A card/river change is acceptable only when:
 
-- exactly 143 retained image-backed card records;
-- `card-105` and local `1 (105).jpg` artwork retained;
-- no runtime `card-106` record and no `1 (106).jpg` entry in the runtime artwork manifest;
-- no `card-105` record and no `1 (105).jpg` asset;
-- exactly 19 river-opening records and 124 normal-deck records;
-- catalog-wide validation of edge/topology consistency;
-- no field/farmer, abbot, or garden meeple targets;
-- shields represented in scoring data;
-- all card images resolvable by the UI;
-- typecheck, tests, and production build passing.
+- runtime catalog contains exactly 144 unique IDs/assets;
+- structural topology validation passes for every runtime tile;
+- the high-risk cards `079, 091, 096, 106, 109, 133` match the audited sides above;
+- source `133` starts pre-placed and `106` is always the last river draw;
+- every river tile is used exactly once and none is discarded;
+- land draw starts only after the river sequence completes;
+- no field/farmer, abbot, or garden meeple target is introduced;
+- all artwork resolves through the UI asset manifest;
+- typecheck, full tests, and production build pass.
 
-## Handoff after Stage 3H
+## Remaining board/UI work
 
-The pure TypeScript engine owns placement validation, connected-feature resolution,
-majority scoring, completed-feature meeple return, final scoring, seeded deck order,
-and the explicit draw/rotate/place/end-turn state machine. React consumes legal
-coordinates and legal meeple targets from those APIs; it does not infer rules from
-JPG pixels. `GAME_CARD_CATALOG` is the sole runtime card collection, while
-`CARD_CATALOG` remains only the historical import layer beneath audited overrides.
-
-Implemented gameplay currently covers roads, cities, monasteries, river-first play,
-normal tile placement, optional meeples, and end-turn scoring. Farmers/field ownership
-and scoring, abbots, gardens, and expansion/edition badge behavior are intentionally
-absent. Road and river topology may coexist independently on bridge tiles.
-
-Logical next tasks, without adding unsupported rules, are:
-
-1. persist and restore the canonical turn-flow state through the existing application boundary;
-2. add end-to-end mobile interaction coverage for board pan, draw, rotate, placement, and end turn;
-3. improve board camera framing so distant legal placements are easy to reach;
-4. expose completed-feature scoring events as player-facing turn feedback;
-5. add a migration guard for any serialized games that still reference removed `card-106`.
+The engine board is unbounded. UI projection must not impose a gameplay boundary. Camera pan/pinch/fit is presentation-only and must never change legality. Interactive board controls must keep their own pointer events rather than being captured by the camera gesture layer. The board view should initially frame the source tile and fit placed/legal cells on demand without resetting after rotation.
