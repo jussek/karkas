@@ -24,7 +24,15 @@ export async function createLobby(input: CreateLobbyInput): Promise<OnlineLobbyS
 export async function joinLobby(lobbyId: string, displayName?: string): Promise<OnlineLobbySnapshot> { return rpcLobby('join_online_lobby', { p_lobby_id: lobbyId, p_display_name: displayName?.trim() || null }); }
 export async function joinLobbyByCode(code: string, displayName?: string): Promise<OnlineLobbySnapshot> { return rpcLobby('join_online_lobby_by_code', { p_code: code.trim().toUpperCase(), p_display_name: displayName?.trim() || null }); }
 export async function leaveLobby(lobbyId: string): Promise<void> { await ensureOnlineIdentity(); const { error } = await requireSupabaseClient().rpc('leave_online_lobby', { p_lobby_id: lobbyId }); if (error) throw error; }
-export async function setReady(lobbyId: string, ready: boolean): Promise<void> { await ensureOnlineIdentity(); const { error } = await requireSupabaseClient().from('online_lobby_players').update({ ready }).eq('lobby_id', lobbyId); if (error) throw error; }
+export async function setReady(lobbyId: string, ready: boolean): Promise<void> {
+  const userId = await ensureOnlineIdentity();
+  const { error } = await requireSupabaseClient()
+    .from('online_lobby_players')
+    .update({ ready })
+    .eq('lobby_id', lobbyId)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
 export async function updateLobbySettings(lobbyId: string, settings: UpdateLobbySettingsInput): Promise<OnlineLobbySnapshot> { return rpcLobby('update_online_lobby_settings', { p_lobby_id: lobbyId, p_settings: settings }); }
 export async function getLobby(lobbyId: string): Promise<OnlineLobbySnapshot> { await ensureOnlineIdentity(); const { data, error } = await requireSupabaseClient().from('online_lobbies').select(selectLobby).eq('id', lobbyId).single(); if (error) throw error; return convert(data); }
 
