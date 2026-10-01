@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { getCardDefinition, getTileDefinition } from '../../game/cards/catalogApi';
 import {
   RIVER_CARD_COUNT,
@@ -24,6 +24,7 @@ import { anchorForPlacement } from '../tiles/tileSemanticManifest';
 import { createLocalGame } from './localGameBootstrap';
 import { meepleDialogTitle, meepleTargetLabel } from './meepleDialogModel';
 import { useBoardCamera } from './useBoardCamera';
+import { saveLocalGameSave } from '../persistence/localGamePersistence';
 import './gamePage.css';
 
 const CELL = 92;
@@ -72,13 +73,15 @@ export function formatResolution(
 
 export interface GamePageProps {
   config?: LocalGameConfig;
+  /** Stage 4B: восстановленный из сохранения authoritative flow (не пересобирает колоды). */
+  initialFlow?: TurnFlowState;
   onExit?: () => void;
   onNewGame?: () => void;
 }
 
-export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
+export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePageProps) {
   const [flow, setFlow] = useState<TurnFlowState>(() =>
-    config ? createLocalGame(config) : createLocalGame(),
+    initialFlow ?? (config ? createLocalGame(config) : createLocalGame()),
   );
   const [meepleMode, setMeepleMode] = useState(false);
   const [feedbackTick, setFeedbackTick] = useState(0);
@@ -153,6 +156,12 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
     initialCameraFitDone.current = true;
     camera.fitContent();
   }, [camera.fitContent]);
+
+  /* --- Stage 4B: autosave authoritative flow (не camera/modal/UI-состояние) --- */
+  useEffect(() => {
+    if (!config) return;
+    saveLocalGameSave(config, flow);
+  }, [config, flow]);
 
   const placeAt = useCallback((position: { x: number; y: number }) => {
     const next = placeTurnTile(flow, position);
