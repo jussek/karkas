@@ -80,6 +80,17 @@ beforeEach(() => {
 });
 
 describe('local game save: format & safety', () => {
+  it('loads legacy 90/120 second timer options with disabled fallback', () => {
+    const flow = makeFlow();
+    expect(saveLocalGameSave({ ...config, matchOptions: { turnTimerSeconds: 0 } }, flow)).toBe(true);
+    for (const legacySeconds of [90, 120]) {
+      const raw = JSON.parse(window.localStorage.getItem(LOCAL_GAME_SAVE_KEY)!);
+      raw.config.matchOptions.turnTimerSeconds = legacySeconds;
+      window.localStorage.setItem(LOCAL_GAME_SAVE_KEY, JSON.stringify(raw));
+      expect(loadLocalGameSave()?.config.matchOptions?.turnTimerSeconds).toBe(0);
+    }
+  });
+
   it('A. save/load roundtrip preserves authoritative fields', () => {
     const flow = playOneTurn(makeFlow());
     expect(saveLocalGameSave(config, flow)).toBe(true);

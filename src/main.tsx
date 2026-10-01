@@ -7,6 +7,10 @@ import { GamePage } from "./game-ui/game/GamePage";
 import { GameSetupPage } from "./game-ui/setup/GameSetupPage";
 import { LocalLobby } from "./game-ui/setup/LocalLobby";
 import { MainMenu } from "./game-ui/menu/MainMenu";
+import { FindGamePage } from "./game-ui/online/FindGamePage";
+import { OnlineCreateScaffold, OnlineLobbyScaffold } from "./game-ui/online/OnlineScaffoldPage";
+import { onlineNavigationTarget } from "./game-ui/online/onlineNavigation";
+import type { OnlineLobbySnapshot } from "./online/types";
 import type { LocalGameConfig } from "./game/session";
 import { DEFAULT_MATCH_OPTIONS, createLocalGameConfig } from "./game/session";
 import type { TurnFlowState } from "./game/engine/turnFlow";
@@ -34,7 +38,7 @@ function browserSeed(): number {
   return Date.now() >>> 0;
 }
 
-type Screen = "menu" | "setup" | "lobby" | "game";
+export type Screen = "menu" | "setup" | "lobby" | "game" | "online-browser" | "online-create" | "online-lobby";
 
 /**
  * Stage 4C: rematch-конфиг генерируется в App/browser layer (не внутри игры):
@@ -75,6 +79,7 @@ export function App() {
   const [confirmNewGame, setConfirmNewGame] = useState(false);
   const [hasSavedGame, setHasSavedGame] = useState(() => loadLocalGameSave() !== null);
   const [settings, setSettings] = useState<LocalSettings>(() => loadSettings());
+  const [onlineLobby, setOnlineLobby] = useState<OnlineLobbySnapshot | null>(null);
 
   const updateSetting = (patch: Partial<LocalSettings>) => {
     setSettings((current) => {
@@ -153,10 +158,9 @@ export function App() {
           onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })}
           onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })}
           onContinueGame={hasSavedGame ? continueGame : undefined}
-          onCreateGame={() => guardDestructive(() => setScreen("setup"))}
+          onCreateGame={() => setScreen(onlineNavigationTarget("create"))}
           onQuickGame={() => guardDestructive(quickGame)}
-          onRules={() => setRulesOpen(true)}
-          onSettings={() => setSettingsOpen(true)}
+          onFindGame={() => setScreen(onlineNavigationTarget("find"))}
         />
         {rulesOpen && (
           <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="rules-title">
@@ -202,6 +206,10 @@ export function App() {
       </>
     );
   }
+
+  if (screen === "online-browser") return <FindGamePage onBack={() => setScreen(onlineNavigationTarget("back"))} onCreate={() => setScreen(onlineNavigationTarget("create"))} onJoined={(lobby) => { setOnlineLobby(lobby); setScreen(onlineNavigationTarget("joined")); }} />;
+  if (screen === "online-create") return <OnlineCreateScaffold onBack={() => setScreen("menu")} />;
+  if (screen === "online-lobby" && onlineLobby) return <OnlineLobbyScaffold lobby={onlineLobby} onBack={() => { setOnlineLobby(null); setScreen("menu"); }} />;
 
   if (screen === "setup") {
     return (
@@ -253,10 +261,9 @@ export function App() {
       onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })}
       onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })}
       onContinueGame={hasSavedGame ? continueGame : undefined}
-      onCreateGame={() => guardDestructive(() => setScreen("setup"))}
+      onCreateGame={() => setScreen(onlineNavigationTarget("create"))}
       onQuickGame={() => guardDestructive(quickGame)}
-      onRules={() => setRulesOpen(true)}
-      onSettings={() => setSettingsOpen(true)}
+      onFindGame={() => setScreen(onlineNavigationTarget("find"))}
     />
   );
 }
