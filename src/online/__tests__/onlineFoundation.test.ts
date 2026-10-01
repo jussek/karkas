@@ -58,13 +58,33 @@ describe('architecture and migration regression', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('migration enables RLS and restricts identity, seat, and host mutation', () => {
+  it('migration has hardened schemas, invoker wrappers, grants, and join invariants', () => {
     const sql = readFileSync(join(process.cwd(), 'supabase/migrations/20261001000000_stage5a_online_lobbies.sql'), 'utf8');
+    const publicFunctions = [...sql.matchAll(/create function public\.[\s\S]*?(?=create function|revoke all on function)/g)].map(([definition]) => definition);
+    expect(sql).toContain('create schema if not exists private');
+    expect(sql).toContain('private.is_online_lobby_member(p_lobby_id uuid)');
+    expect(sql).not.toContain('p_user_id uuid');
+    expect(publicFunctions).not.toHaveLength(0);
+    expect(publicFunctions.every((definition) => definition.includes('security invoker'))).toBe(true);
+    expect(publicFunctions.every((definition) => !definition.includes('security definer'))).toBe(true);
     expect(sql).toContain('alter table public.online_lobbies enable row level security');
     expect(sql).toContain('alter table public.online_lobby_players enable row level security');
     expect(sql).toContain('grant update (ready) on public.online_lobby_players to authenticated');
-    expect(sql).toContain("status='waiting'");
-    expect(sql).toContain('host_user_id=auth.uid()');
+    expect(sql).toContain("v_visibility = 'private' and not p_allow_private");
+    expect(sql).toMatch(/exists\(select 1 from public\.online_lobby_players[\s\S]+?return p_lobby_id; end if;[\s\S]+?v_humans \+ 1 \+ v_bots > v_max/);
+    expect(sql).toContain('if v_humans + v_bots > v_max');
+    expect(sql).toContain('revoke all on function public.create_online_lobby');
+    expect(sql).toContain('from public, anon');
     expect((sql.match(/create policy/g) ?? []).length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('database tests exercise identities, private joins, capacity, atomicity, and closed state', () => {
+    const sql = readFileSync(join(process.cwd(), 'supabase/tests/database/online_lobby_security.test.sql'), 'utf8');
+    for (const contract of ['anon cannot execute application RPC', 'creator is host', 'private lobby cannot be joined by UUID', 'private lobby can be joined with code', 'repeated join is idempotent even when full', 'bot slots count toward capacity', 'failed settings update rolls back both values', 'closed lobby rejects joins']) expect(sql).toContain(contract);
+  });
+
+  it('setReady narrows its update to lobby and authenticated user', () => {
+    const source = readFileSync(join(process.cwd(), 'src/online/lobbyApi.ts'), 'utf8');
+    expect(source).toMatch(/setReady[\s\S]+?const userId = await ensureOnlineIdentity\(\)[\s\S]+?\.eq\('lobby_id', lobbyId\)\s*\.eq\('user_id', userId\)/);
   });
 });
