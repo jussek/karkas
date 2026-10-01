@@ -5,7 +5,7 @@ import type { LocalGameConfig } from '../../game/session';
 import { canActorUpdateLobby, canHostStartLobby, lobbyFromDto, type OnlineMatchReference } from '../types';
 import { getSupabaseClient, readOnlineEnvironment, resetSupabaseClientForTests } from '../supabaseClient';
 
-const lobbyRow = { id: 'lobby-id', code: 'ABC123', host_user_id: 'host', name: null, visibility: 'public', status: 'waiting', max_players: 4, turn_timer_seconds: 30, bot_slots: 0, created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-01T00:00:00Z' };
+const lobbyRow = { id: 'lobby-id', code: 'ABC123', host_user_id: 'host', name: null, visibility: 'public', status: 'waiting', max_players: 4, turn_timer_seconds: 30, bot_slots: 0, bot_fill_enabled: false, created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-01T00:00:00Z' };
 const player = (id: string, seat: number, ready = true) => ({ lobby_id: 'lobby-id', user_id: id, seat_index: seat, display_name: `Игрок ${seat + 1}`, ready, joined_at: '2026-10-01T00:00:00Z' });
 
 describe('Stage 5A online foundation', () => {
@@ -37,7 +37,7 @@ describe('Stage 5A online foundation', () => {
     expect(canActorUpdateLobby(lobby, 'guest')).toBe(false);
     expect(canActorUpdateLobby(lobby, 'host')).toBe(true);
     expect(canHostStartLobby({ ...lobby, players: [lobby.players[0], { ...lobby.players[1], ready: false }] }, 'host')).toBe(false);
-    expect(canHostStartLobby({ ...lobby, botSlots: 3 }, 'host')).toBe(false);
+    expect(canHostStartLobby({ ...lobby, botFillEnabled: true, players: [lobby.players[0]] }, 'host')).toBe(true);
   });
 
   it('keeps local configuration and online references explicitly separate', () => {
@@ -71,8 +71,6 @@ describe('architecture and migration regression', () => {
     expect(sql).toContain('alter table public.online_lobby_players enable row level security');
     expect(sql).toContain('grant update (ready) on public.online_lobby_players to authenticated');
     expect(sql).toContain("v_visibility = 'private' and not p_allow_private");
-    expect(sql).toMatch(/exists\(select 1 from public\.online_lobby_players[\s\S]+?return p_lobby_id; end if;[\s\S]+?v_humans \+ 1 \+ v_bots > v_max/);
-    expect(sql).toContain('if v_humans + v_bots > v_max');
     expect(sql).toContain('revoke all on function public.create_online_lobby');
     expect(sql).toContain('from public, anon');
     expect((sql.match(/create policy/g) ?? []).length).toBeGreaterThanOrEqual(4);
@@ -80,7 +78,7 @@ describe('architecture and migration regression', () => {
 
   it('database tests exercise identities, private joins, capacity, atomicity, and closed state', () => {
     const sql = readFileSync(join(process.cwd(), 'supabase/tests/database/online_lobby_security.test.sql'), 'utf8');
-    for (const contract of ['anon cannot execute application RPC', 'creator is host', 'private lobby cannot be joined by UUID', 'private lobby can be joined with code', 'repeated join is idempotent even when full', 'bot slots count toward capacity', 'failed settings update rolls back both values', 'closed lobby rejects joins']) expect(sql).toContain(contract);
+    for (const contract of ['anon cannot execute application RPC', 'creator is host', 'private lobby cannot be joined by UUID', 'private lobby can be joined with code', 'repeated join is idempotent even when full', 'bot fill does not reserve waiting seats', 'failed settings update rolls back both values', 'closed lobby rejects joins']) expect(sql).toContain(contract);
   });
 
   it('setReady narrows its update to lobby and authenticated user', () => {

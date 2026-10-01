@@ -8,7 +8,8 @@ import { GameSetupPage } from "./game-ui/setup/GameSetupPage";
 import { LocalLobby } from "./game-ui/setup/LocalLobby";
 import { MainMenu } from "./game-ui/menu/MainMenu";
 import { FindGamePage } from "./game-ui/online/FindGamePage";
-import { OnlineCreateScaffold, OnlineLobbyScaffold } from "./game-ui/online/OnlineScaffoldPage";
+import { OnlineCreatePage } from "./game-ui/online/OnlineCreatePage";
+import { OnlineLobbyPage } from "./game-ui/online/OnlineLobbyPage";
 import { onlineNavigationTarget } from "./game-ui/online/onlineNavigation";
 import type { OnlineLobbySnapshot } from "./online/types";
 import type { LocalGameConfig } from "./game/session";
@@ -57,15 +58,6 @@ export function buildRematchConfig(
   };
 }
 
-const RULES_STEPS = [
-  "Возьмите карту.",
-  "Выберите подсвеченное место.",
-  "Если доступно несколько поворотов — выберите нужный.",
-  "Подтвердите карту.",
-  "При желании поставьте человечка.",
-  "Закончите ход.",
-];
-
 export function App() {
   // Stage 4B: локальная партия сохраняется автоматически; из меню её
   // можно продолжить. Engine/scoring/river — нетронутые, UI-слой только
@@ -74,8 +66,6 @@ export function App() {
   const [config, setConfig] = useState<LocalGameConfig | null>(null);
   const [restoredFlow, setRestoredFlow] = useState<TurnFlowState | null>(null);
   const [restoredUiMatchState, setRestoredUiMatchState] = useState<UiMatchState | undefined>(undefined);
-  const [rulesOpen, setRulesOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmNewGame, setConfirmNewGame] = useState(false);
   const [hasSavedGame, setHasSavedGame] = useState(() => loadLocalGameSave() !== null);
   const [settings, setSettings] = useState<LocalSettings>(() => loadSettings());
@@ -163,35 +153,6 @@ export function App() {
           onFindGame={() => setScreen(onlineNavigationTarget("find"))}
           onExit={() => { if (typeof window !== "undefined" && window.history.length > 1) window.history.back(); }}
         />
-        {rulesOpen && (
-          <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="rules-title">
-            <section className="rules-card">
-              <button type="button" className="rules-close" aria-label="Закрыть правила" onClick={() => setRulesOpen(false)}>×</button>
-              <h2 id="rules-title">Как играть</h2>
-              <ol>
-                {RULES_STEPS.map((step) => <li key={step}>{step}</li>)}
-              </ol>
-              <p>Река строится первой — пока все речные карты не размещены, сдаются только они.</p>
-              <p>Человечки ставятся только на дорогу, город или монастырь. Поля и сады игровыми целями не являются.</p>
-            </section>
-          </div>
-        )}
-        {settingsOpen && (
-          <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-            <section className="rules-card">
-              <button type="button" className="rules-close" aria-label="Закрыть настройки" onClick={() => setSettingsOpen(false)}>×</button>
-              <h2 id="settings-title">Настройки</h2>
-              <div className="settings-row">
-                <button type="button" aria-pressed={settings.soundEnabled} onClick={() => updateSetting({ soundEnabled: !settings.soundEnabled })}>
-                  Звук: {settings.soundEnabled ? "вкл" : "выкл"}
-                </button>
-                <button type="button" aria-pressed={settings.musicEnabled} onClick={() => updateSetting({ musicEnabled: !settings.musicEnabled })}>
-                  Музыка: {settings.musicEnabled ? "вкл" : "выкл"}
-                </button>
-              </div>
-            </section>
-          </div>
-        )}
         {confirmNewGame && (
           <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="newgame-title">
             <section className="rules-card">
@@ -209,8 +170,8 @@ export function App() {
   }
 
   if (screen === "online-browser") return <FindGamePage onBack={() => setScreen(onlineNavigationTarget("back"))} onCreate={() => setScreen(onlineNavigationTarget("create"))} onJoined={(lobby) => { setOnlineLobby(lobby); setScreen(onlineNavigationTarget("joined")); }} />;
-  if (screen === "online-create") return <OnlineCreateScaffold onBack={() => setScreen("menu")} />;
-  if (screen === "online-lobby" && onlineLobby) return <OnlineLobbyScaffold lobby={onlineLobby} onBack={() => { setOnlineLobby(null); setScreen("menu"); }} />;
+  if (screen === "online-create") return <OnlineCreatePage onBack={() => setScreen("menu")} onCreated={(lobby) => { setOnlineLobby(lobby); setScreen("online-lobby"); }} />;
+  if (screen === "online-lobby" && onlineLobby) return <OnlineLobbyPage lobbyId={onlineLobby.id} initialLobby={onlineLobby} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} />;
 
   if (screen === "setup") {
     return (

@@ -22,6 +22,7 @@ export interface OnlineLobbySnapshot {
   maxPlayers: number;
   turnTimerSeconds: OnlineTurnTimerSeconds;
   botSlots: number;
+  botFillEnabled: boolean;
   createdAt: string;
   updatedAt: string;
   players: OnlineLobbyPlayer[];
@@ -33,10 +34,12 @@ export interface CreateLobbyInput {
   visibility: LobbyVisibility;
   maxPlayers: number;
   turnTimerSeconds: OnlineTurnTimerSeconds;
-  botSlots: number;
+  botFillEnabled: boolean;
   displayName?: string;
 }
-export type UpdateLobbySettingsInput = Partial<Pick<CreateLobbyInput, 'name' | 'visibility' | 'maxPlayers' | 'turnTimerSeconds' | 'botSlots'>>;
+export type UpdateLobbySettingsInput = Partial<Pick<CreateLobbyInput, 'name' | 'visibility' | 'maxPlayers' | 'turnTimerSeconds' | 'botFillEnabled'>>;
+
+export interface OnlineLobbyMessage { id: number; lobbyId: string; userId: string; displayName: string; body: string; createdAt: string }
 
 type Row = Record<string, unknown>;
 const stringValue = (row: Row, key: string): string => {
@@ -63,11 +66,13 @@ export function lobbyFromDto(value: unknown, players: readonly unknown[] = []): 
   if (visibility !== 'public' && visibility !== 'private') throw new Error('Invalid lobby DTO: visibility');
   if (!['waiting', 'starting', 'in_game', 'finished', 'closed'].includes(String(status))) throw new Error('Invalid lobby DTO: status');
   if (!ONLINE_TIMER_OPTIONS.includes(timer as OnlineTurnTimerSeconds)) throw new Error('Invalid lobby DTO: turn_timer_seconds');
-  return { id: stringValue(row, 'id'), code: stringValue(row, 'code'), hostUserId: stringValue(row, 'host_user_id'), name: row.name === null ? null : stringValue(row, 'name'), visibility, status: status as LobbyStatus, maxPlayers: integerValue(row, 'max_players'), turnTimerSeconds: timer as OnlineTurnTimerSeconds, botSlots: integerValue(row, 'bot_slots'), createdAt: stringValue(row, 'created_at'), updatedAt: stringValue(row, 'updated_at'), players: players.map(lobbyPlayerFromDto).sort((a, b) => a.seatIndex - b.seatIndex) };
+  if (typeof row.bot_fill_enabled !== 'boolean') throw new Error('Invalid lobby DTO: bot_fill_enabled');
+  return { id: stringValue(row, 'id'), code: stringValue(row, 'code'), hostUserId: stringValue(row, 'host_user_id'), name: row.name === null ? null : stringValue(row, 'name'), visibility, status: status as LobbyStatus, maxPlayers: integerValue(row, 'max_players'), turnTimerSeconds: timer as OnlineTurnTimerSeconds, botSlots: integerValue(row, 'bot_slots'), botFillEnabled: row.bot_fill_enabled, createdAt: stringValue(row, 'created_at'), updatedAt: stringValue(row, 'updated_at'), players: players.map(lobbyPlayerFromDto).sort((a, b) => a.seatIndex - b.seatIndex) };
 }
 
 export function canHostStartLobby(lobby: OnlineLobbySnapshot, actorUserId: string): boolean {
-  return actorUserId === lobby.hostUserId && lobby.status === 'waiting' && lobby.players.length >= 2 && lobby.players.every((p) => p.ready) && lobby.players.length + lobby.botSlots <= lobby.maxPlayers;
+  const minimumMet = lobby.botFillEnabled ? lobby.players.length >= 1 && lobby.maxPlayers >= 2 : lobby.players.length >= 2;
+  return actorUserId === lobby.hostUserId && lobby.status === 'waiting' && minimumMet && lobby.players.every((p) => p.ready);
 }
 
 export function canActorUpdateLobby(lobby: OnlineLobbySnapshot, actorUserId: string): boolean {
