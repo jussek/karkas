@@ -161,6 +161,7 @@ export function App() {
           onCreateGame={() => setScreen(onlineNavigationTarget("create"))}
           onQuickGame={() => guardDestructive(quickGame)}
           onFindGame={() => setScreen(onlineNavigationTarget("find"))}
+          onExit={() => { if (typeof window !== "undefined" && window.history.length > 1) window.history.back(); }}
         />
         {rulesOpen && (
           <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="rules-title">
