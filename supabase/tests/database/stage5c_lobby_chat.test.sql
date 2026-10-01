@@ -17,9 +17,10 @@ select lives_ok(format('select public.update_online_lobby_settings(%L,%L::jsonb)
 select is((select count(*) from public.online_lobby_players where lobby_id=:'fill_lobby' and ready),0::bigint,'gameplay settings reset all ready');
 select throws_ok(format('select public.update_online_lobby_settings(%L,%L::jsonb)', :'fill_lobby','{"maxPlayers":1}'),'P0001','configured capacity exceeded','cannot shrink below humans');
 select throws_ok(format('select public.start_online_lobby(%L)', :'fill_lobby'),'P0001','all human players must be ready','all humans ready required');
-update public.online_lobby_players set ready=true where lobby_id=:'fill_lobby';
+update public.online_lobby_players set ready=true where lobby_id=:'fill_lobby' and user_id=auth.uid();
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-00000000000b',true);
 select throws_ok(format('select public.start_online_lobby(%L)', :'fill_lobby'),'P0001','host cannot start lobby','non-host cannot start');
+update public.online_lobby_players set ready=true where lobby_id=:'fill_lobby' and user_id=auth.uid();
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-00000000000a',true);
 select lives_ok(format('select public.start_online_lobby(%L)', :'fill_lobby'),'host starts all-ready lobby');
 select results_eq(format('select status,bot_slots from public.online_lobbies where id=%L', :'fill_lobby'),$$values ('starting',2)$$,'start sets starting and fills bots');
