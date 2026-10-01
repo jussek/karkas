@@ -5,7 +5,7 @@ import { filterLobbies, formatLobbyTimer, isLobbyJoinable, lobbyDisplayName, lob
 import { onlineNavigationTarget } from '../onlineNavigation';
 
 function lobby(timer: 0 | 15 | 30 | 60, overrides: Partial<OnlineLobbySnapshot> = {}): OnlineLobbySnapshot {
-  return { id: `id-${timer}`, code: `CODE${timer}`, hostUserId: 'host', name: `Lobby ${timer}`, visibility: 'public', status: 'waiting', maxPlayers: 4, turnTimerSeconds: timer, botSlots: 0, createdAt: '', updatedAt: '', players: [], ...overrides };
+  return { id: `id-${timer}`, code: `CODE${timer}`, hostUserId: 'host', name: `Lobby ${timer}`, visibility: 'public', status: 'waiting', maxPlayers: 4, turnTimerSeconds: timer, botSlots: 0, botFillEnabled: false, createdAt: '', updatedAt: '', players: [], ...overrides };
 }
 
 describe('online lobby browser model', () => {
@@ -21,7 +21,7 @@ describe('online lobby browser model', () => {
     expect(lobbyJoinLabel(lobby(0))).toBe('Присоединиться');
     expect(isLobbyJoinable(lobby(0, { maxPlayers: 2, players: [{}, {}] as never }))).toBe(false);
     expect(lobbyJoinLabel(lobby(0, { maxPlayers: 2, players: [{}, {}] as never }))).toBe('Заполнено');
-    expect(isLobbyJoinable(lobby(0, { maxPlayers: 3, botSlots: 2, players: [{}] as never }))).toBe(false);
+    expect(isLobbyJoinable(lobby(0, { maxPlayers: 3, botSlots: 2, botFillEnabled: true, players: [{}] as never }))).toBe(true);
     expect(lobbyJoinLabel(lobby(0, { status: 'in_game' }))).toBe('Игра началась');
   });
   it('reports missing Supabase and produces stable thumbnail seeds', () => {

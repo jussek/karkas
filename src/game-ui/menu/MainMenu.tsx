@@ -1,5 +1,6 @@
 import type { LocalSettings } from '../persistence/localGamePersistence';
 import { OnlineIcon } from '../online/OnlineIcon';
+import { exitMainMenu } from './menuExit';
 import './mainMenu.css';
 
 export interface MainMenuProps {
@@ -22,7 +23,7 @@ export function MainMenu({ onCreateGame, onQuickGame, onFindGame, onExit, hasSav
     <div className="main-menu__toolbar">
       <button type="button" aria-label="Звук" aria-pressed={soundEnabled} onClick={onToggleSound}><OnlineIcon name="sound" /></button>
       <button type="button" aria-label="Музыка" aria-pressed={musicEnabled} onClick={onToggleMusic}><OnlineIcon name="music" /></button>
-      <button type="button" aria-label="Выход" onClick={onExit}><OnlineIcon name="close" /></button>
+      <button type="button" aria-label="Выход" onClick={() => exitMainMenu(onExit, typeof window === 'undefined' ? undefined : window)}><OnlineIcon name="close" /></button>
     </div>
     <section className="main-menu__content">
       <div className="main-menu__emblem" aria-hidden="true"><OnlineIcon name="meeple" /></div>

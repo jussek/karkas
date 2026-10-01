@@ -15,8 +15,8 @@ export function lobbyDisplayName(lobby: Pick<OnlineLobbySnapshot, 'name' | 'code
   return lobby.name?.trim() || `Лобби #${lobby.code}`;
 }
 
-export function isLobbyJoinable(lobby: Pick<OnlineLobbySnapshot, 'status' | 'players' | 'botSlots' | 'maxPlayers'>): boolean {
-  return lobby.status === 'waiting' && lobby.players.length + lobby.botSlots < lobby.maxPlayers;
+export function isLobbyJoinable(lobby: Pick<OnlineLobbySnapshot, 'status' | 'players' | 'maxPlayers'>): boolean {
+  return lobby.status === 'waiting' && lobby.players.length < lobby.maxPlayers;
 }
 
 export function lobbyJoinLabel(lobby: Pick<OnlineLobbySnapshot, 'status' | 'players' | 'botSlots' | 'maxPlayers'>, joining = false): string {

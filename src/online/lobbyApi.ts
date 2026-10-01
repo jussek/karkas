@@ -19,7 +19,7 @@ export async function listPublicLobbies(): Promise<OnlineLobbySnapshot[]> {
   return (data ?? []).map((row) => convert(row));
 }
 export async function createLobby(input: CreateLobbyInput): Promise<OnlineLobbySnapshot> {
-  return rpcLobby('create_online_lobby', { p_name: input.name?.trim() || null, p_visibility: input.visibility, p_max_players: input.maxPlayers, p_turn_timer_seconds: input.turnTimerSeconds, p_bot_slots: input.botSlots, p_display_name: input.displayName?.trim() || null });
+  return rpcLobby('create_online_lobby', { p_name: input.name?.trim() || null, p_visibility: input.visibility, p_max_players: input.maxPlayers, p_turn_timer_seconds: input.turnTimerSeconds, p_bot_fill_enabled: input.botFillEnabled, p_display_name: input.displayName?.trim() || null });
 }
 export async function joinLobby(lobbyId: string, displayName?: string): Promise<OnlineLobbySnapshot> { return rpcLobby('join_online_lobby', { p_lobby_id: lobbyId, p_display_name: displayName?.trim() || null }); }
 export async function joinLobbyByCode(code: string, displayName?: string): Promise<OnlineLobbySnapshot> { return rpcLobby('join_online_lobby_by_code', { p_code: code.trim().toUpperCase(), p_display_name: displayName?.trim() || null }); }
@@ -36,5 +36,7 @@ export async function setReady(lobbyId: string, ready: boolean): Promise<void> {
 export async function updateLobbySettings(lobbyId: string, settings: UpdateLobbySettingsInput): Promise<OnlineLobbySnapshot> { return rpcLobby('update_online_lobby_settings', { p_lobby_id: lobbyId, p_settings: settings }); }
 export async function getLobby(lobbyId: string): Promise<OnlineLobbySnapshot> { await ensureOnlineIdentity(); const { data, error } = await requireSupabaseClient().from('online_lobbies').select(selectLobby).eq('id', lobbyId).single(); if (error) throw error; return convert(data); }
 
-/** Stage 5C will implement this through a server-authoritative action endpoint. */
-export async function startMatch(_lobbyId: string): Promise<never> { throw new Error('Online match start is not available until the server-authoritative Stage 5C protocol.'); }
+export async function startLobby(lobbyId: string): Promise<OnlineLobbySnapshot> { return rpcLobby('start_online_lobby', { p_lobby_id: lobbyId }); }
+
+/** Stage 5D will create the authoritative online match after a lobby starts. */
+export async function startMatch(_lobbyId: string): Promise<never> { throw new Error('Online match creation is reserved for Stage 5D.'); }
