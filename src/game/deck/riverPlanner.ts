@@ -1,34 +1,30 @@
 /**
- * River planner (Stage 4A Repair 2B, OPTION_A).
+ * Deterministic river planner for the audited physical tile set.
  *
- * Гарантирует детерминированную, разрешимую последовательность river-карт:
- * - source card-133 всегда первой;
- * - ВСЕ 17 middle карт используются ровно один раз, без discard и skip;
- * - end card-106 всегда последняя (19-я river tile);
- * - порядок детерминирован от seed (тот же seed + та же доска => тот же план);
- * - legality проверяется существующими authoritative правилами
- *   (getLegalTilePlacements / isLegalTilePlacement) — правила НЕ ослабляются.
- *
- * Алгоритм: seededShuffle задаёт deterministic priority remaining-карт;
- * DFS с backtracking находит continuation, при котором для каждой следующей
- * карты существует legal placement у единственного river frontier И полный
- * completion оставшихся middle + end. Это НЕ reroll-until-success: один seed
- * порождает один конкретный solved plan.
- *
- * Прuned search space (защита от exponential disaster):
- * - frontier всегда ровно одна клетка (инвариант реки);
- * - проверяются только позиции на frontier (не board-wide перебор);
- * - максимум 4 ротации на карту;
- * - memoization dead-end состояний (frontier key + sorted remaining ids).
+ * Product contract:
+ * - card-133 is already placed at game start;
+ * - every remaining middle river card is used exactly once, without discard;
+ * - seededShuffle defines deterministic random card priority;
+ * - card-106 is reserved and placed only after all middle cards;
+ * - ordinary placement legality remains authoritative for every occupied edge;
+ * - card-109 is a real three-edge river fork, therefore the planner supports
+ *   multiple simultaneous open river frontiers.
  */
 
 import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
-import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
-import { areEdgesCompatible, edgeOffset, getTileEdges, oppositeEdge, rotateEdge } from '../engine/geometry';
+import {
+  RIVER_END_CARD,
+  RIVER_SOURCE_CARD,
+  RIVER_TERMINAL_OPEN_EDGE_COUNT,
+  RUNTIME_RIVER_CARDS,
+} from '../cards/runtimeCatalog';
+import { edgeOffset, oppositeEdge, rotateEdge } from '../engine/geometry';
 import { getLegalTilePlacements } from '../rules/placement';
 import { posKey, type Board } from '../types/state';
-import type { EdgeIndex, EdgeType, Rotation, TilePosition } from '../types/geometry';
+import type { EdgeIndex, Rotation, TilePosition } from '../types/geometry';
 import { seededShuffle } from './seededShuffle';
+
+const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];
 
 export interface RiverPlanStep {
   cardId: string;
@@ -36,67 +32,9 @@ export interface RiverPlanStep {
   position: TilePosition;
 }
 
-/**
- * Кандидат placement ДОЛЖЕН быть полностью совместим со всеми четырьмя
- * ортогональными соседями занятой доски (river + terrain) по той же
- * authoritative функции areEdgesCompatible, что использует general rules.
- * Planner никогда не планирует шаг, который позднее будет отбракован
- * legality filter'ом на фактической доске.
- */
-function edgesCompatibleWithOccupied(board: Board, cardId: string, rotation: Rotation, position: TilePosition): boolean {
-  const mine = getTileEdges(getTileDefinition(cardId), rotation);
-  for (const edge of [0, 1, 2, 3] as const) {
-    const offset = edgeOffset(edge);
-    const neighbor = board[posKey({ x: position.x + offset.x, y: position.y + offset.y })];
-    if (!neighbor) continue;
-    const theirs = getTileEdges(getTileDefinition(neighbor.definitionId), neighbor.rotation);
-    if (!areEdgesCompatible(mine as readonly EdgeType[], edge, theirs, ((edge + 2) % 4) as EdgeIndex)) return false;
-  }
-  return true;
-}
-
-/**
- * Required edge of the NEW tile on the shared boundary with an existing tile
- * whose exposed river edge is `exposedEdge` (convention 0=N,1=E,2=S,3=W):
- * N -> S, E -> W, S -> N, W -> E.
- */
-export function requiredEdgeForFrontier(exposedEdge: EdgeIndex): EdgeIndex {
-  return oppositeEdge(exposedEdge);
-}
-
-const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];
-
-function riverCardsByKind() {
-  const cards = RUNTIME_CARD_CATALOG.filter((card) => card.riverCard === true);
-  const source = cards.find((card) => card.riverKind === 'start');
-  const end = cards.find((card) => card.riverKind === 'end');
-  const middle = cards.filter((card) => card.riverKind === 'middle').map((card) => card.id);
-  return { source, end, middle, total: cards.length };
-}
-
-/**
- * Единственный незакрытый river endpoint текущей доски (или null, если их
- * ноль или больше одного).
- *
- * Семантика: exposed river edge существующей river-плитки смотрит в пустую
- * клетку. Новая плитка на этой общей границе должна иметь реку на СВОЕЙ
- * стороне, то есть на opposite(exposedEdge). Инверсия выполняется РОВНО ОДИН
- * раз (см. requiredEdgeForFrontier + unit test).
- */
-export function frontierOf(board: Board): { position: TilePosition; requiredEdge: EdgeIndex } | null {
-  const open: { position: TilePosition; requiredEdge: EdgeIndex }[] = [];
-  for (const tile of Object.values(board)) {
-    const card = getCardDefinition(tile.definitionId);
-    if (!card.riverCard) continue;
-    for (const baseEdge of card.topology.riverEdges ?? []) {
-      const edge = rotateEdge(baseEdge, tile.rotation);
-      const offset = edgeOffset(edge);
-      const position = { x: tile.position.x + offset.x, y: tile.position.y + offset.y };
-      if (board[posKey(position)] !== undefined) continue;
-      open.push({ position, requiredEdge: requiredEdgeForFrontier(edge) });
-    }
-  }
-  return open.length === 1 ? open[0] : null;
+export interface RiverFrontier {
+  position: TilePosition;
+  requiredEdges: EdgeIndex[];
 }
 
 interface Candidate {
@@ -104,43 +42,63 @@ interface Candidate {
   position: TilePosition;
 }
 
-/**
- * Canonical board serialization for memoization: sorted "x,y:defId:rot" keys.
- * Полностью описывает occupied geometry, поэтому одинаковый signature
- * гарантирует одинаковую задачу solvability.
- */
+export function requiredEdgeForFrontier(exposedEdge: EdgeIndex): EdgeIndex {
+  return oppositeEdge(exposedEdge);
+}
+
+function riverContract() {
+  const starts = RUNTIME_RIVER_CARDS.filter((card) => card.riverKind === 'start');
+  const ends = RUNTIME_RIVER_CARDS.filter((card) => card.riverKind === 'end');
+  const middle = RUNTIME_RIVER_CARDS.filter((card) => card.riverKind === 'middle').map((card) => card.id);
+  if (starts.length !== 1 || ends.length !== 1 || !RIVER_SOURCE_CARD || !RIVER_END_CARD) {
+    throw new Error(
+      `River catalog requires exactly one start and one end; starts=${starts.length} ends=${ends.length}`,
+    );
+  }
+  return { source: RIVER_SOURCE_CARD, end: RIVER_END_CARD, middle };
+}
+
+/** All exposed river endpoints, grouped by the empty cell they enter. */
+export function frontiersOf(board: Board): RiverFrontier[] {
+  const grouped = new Map<string, { position: TilePosition; required: Set<EdgeIndex> }>();
+  for (const tile of Object.values(board)) {
+    const card = getCardDefinition(tile.definitionId);
+    if (!card.riverCard) continue;
+    for (const baseEdge of card.topology.riverEdges ?? []) {
+      const exposedEdge = rotateEdge(baseEdge, tile.rotation);
+      const offset = edgeOffset(exposedEdge);
+      const position = { x: tile.position.x + offset.x, y: tile.position.y + offset.y };
+      if (board[posKey(position)] !== undefined) continue;
+      const key = posKey(position);
+      const item = grouped.get(key) ?? { position, required: new Set<EdgeIndex>() };
+      item.required.add(requiredEdgeForFrontier(exposedEdge));
+      grouped.set(key, item);
+    }
+  }
+  return [...grouped.values()]
+    .map(({ position, required }) => ({
+      position,
+      requiredEdges: [...required].sort((a, b) => a - b),
+    }))
+    .sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
+}
+
+/** Legacy helper retained for tests/callers that explicitly require one endpoint. */
+export function frontierOf(board: Board): { position: TilePosition; requiredEdge: EdgeIndex } | null {
+  const frontiers = frontiersOf(board);
+  if (frontiers.length !== 1 || frontiers[0].requiredEdges.length !== 1) return null;
+  return { position: frontiers[0].position, requiredEdge: frontiers[0].requiredEdges[0] };
+}
+
+export function countOpenRiverEdges(board: Board): number {
+  return frontiersOf(board).reduce((sum, frontier) => sum + frontier.requiredEdges.length, 0);
+}
+
 export function boardSignature(board: Board): string {
   return Object.values(board)
     .sort((a, b) => a.position.x - b.position.x || a.position.y - b.position.y)
     .map((tile) => `${tile.position.x},${tile.position.y}:${tile.definitionId}:${tile.rotation}`)
     .join(';');
-}
-
-/** Legal placements карты с учётом существующих правил + requirement стыковки с frontier. */
-function candidatesFor(
-  board: Board,
-  cardId: string,
-  frontier: NonNullable<ReturnType<typeof frontierOf>>,
-): Candidate[] {
-  const def = getTileDefinition(cardId);
-  const out: Candidate[] = [];
-  for (const rotation of ROTATIONS) {
-    const rotatedRiverEdges = (getCardDefinition(cardId).topology.riverEdges ?? []).map(
-      (edge) => rotateEdge(edge, rotation),
-    );
-    if (!rotatedRiverEdges.includes(frontier.requiredEdge)) continue;
-    // Полная legality по всем занятым соседям (тот же стандарт, что у general
-    // rules) — иначе planner планирует шаги, которые turnFlow позднее
-    // отбраковывает, и река «заканчивается» без continuation.
-    if (!edgesCompatibleWithOccupied(board, cardId, rotation, frontier.position)) continue;
-    const positions = getLegalTilePlacements(
-      { board, getDefinition: getTileDefinition },
-      def,
-      rotation,
-    ).filter((position) => position.x === frontier.position.x && position.y === frontier.position.y);
-    for (const position of positions) out.push({ rotation, position });
-  }
-  return out;
 }
 
 function withTile(board: Board, cardId: string, candidate: Candidate): Board {
@@ -154,180 +112,223 @@ function withTile(board: Board, cardId: string, candidate: Candidate): Board {
   };
 }
 
+function samePosition(a: TilePosition, b: TilePosition): boolean {
+  return a.x === b.x && a.y === b.y;
+}
+
 /**
- * Рекурсивный deterministic backtracking.
- * Возвращает solved continuation для remainingIds или null.
+ * General placement rules stay authoritative. We only additionally require
+ * the new river tile to satisfy every exposed river edge aimed at the chosen
+ * frontier cell.
  */
-function solve(
+function candidatesFor(board: Board, cardId: string): Candidate[] {
+  const card = getCardDefinition(cardId);
+  if (!card.riverCard) return [];
+  const frontiers = frontiersOf(board);
+  if (frontiers.length === 0) return [];
+  const definition = getTileDefinition(cardId);
+  const out: Candidate[] = [];
+
+  for (const rotation of ROTATIONS) {
+    const rotatedRiverEdges = (card.topology.riverEdges ?? []).map((edge) => rotateEdge(edge, rotation));
+    const ordinaryLegal = getLegalTilePlacements(
+      { board, getDefinition: getTileDefinition },
+      definition,
+      rotation,
+    );
+    for (const frontier of frontiers) {
+      if (!frontier.requiredEdges.every((edge) => rotatedRiverEdges.includes(edge))) continue;
+      if (!ordinaryLegal.some((position) => samePosition(position, frontier.position))) continue;
+      out.push({ rotation, position: frontier.position });
+    }
+  }
+
+  return out.sort(
+    (a, b) => a.position.y - b.position.y || a.position.x - b.position.x || a.rotation - b.rotation,
+  );
+}
+
+function stateKey(board: Board, remainingIds: readonly string[]): string {
+  return `${boardSignature(board)}|${[...remainingIds].sort().join(',')}`;
+}
+
+/**
+ * Fast feasibility solver. MRV card ordering is allowed here because this
+ * function answers existence only; visible draw order is handled separately.
+ */
+function solveAny(
   board: Board,
   remainingIds: readonly string[],
   endId: string,
   deadStates: Set<string>,
 ): RiverPlanStep[] | null {
   if (remainingIds.length === 0) {
-    // End проверяется ТОЛЬКО после всех middle.
-    const frontier = frontierOf(board);
-    if (!frontier) return null;
-    for (const candidate of candidatesFor(board, endId, frontier)) {
+    for (const candidate of candidatesFor(board, endId)) {
       const next = withTile(board, endId, candidate);
-      if (frontierOf(next) === null) {
+      if (countOpenRiverEdges(next) === RIVER_TERMINAL_OPEN_EDGE_COUNT) {
         return [{ cardId: endId, rotation: candidate.rotation, position: candidate.position }];
       }
     }
     return null;
   }
 
-  const frontier = frontierOf(board);
-  if (!frontier) return null;
+  const key = stateKey(board, remainingIds);
+  if (deadStates.has(key)) return null;
 
-  // Memoization key обязан включать ДОСТАТОЧНОЕ состояние: legality будущих
-  // river placement зависит от всей occupied board geometry (terrain-соседи),
-  // поэтому ключ = полная каноническая сериализация доски + sorted remaining.
-  // Ключ frontier+remaining был бы небезопасен: разные геометрии с одинаковым
-  // frontier могут иметь разные continuation.
-  const stateKey = boardSignature(board) + '|' + [...remainingIds].sort().join(',');
-  if (deadStates.has(stateKey)) return null;
+  const available = remainingIds
+    .map((cardId) => ({ cardId, candidates: candidatesFor(board, cardId) }))
+    .filter((entry) => entry.candidates.length > 0)
+    .sort((a, b) => a.candidates.length - b.candidates.length || a.cardId.localeCompare(b.cardId));
 
-  // Deterministic card selection: the priority order is fixed by the seed,
-  // but a card that cannot complete the river is NOT discarded — we try the
-  // next remaining card by deterministic priority. Every used card is removed
-  // from the set exactly once; nothing is skipped or dropped.
-  for (let i = 0; i < remainingIds.length; i += 1) {
-    const cardId = remainingIds[i];
-    const rest = [...remainingIds.slice(0, i), ...remainingIds.slice(i + 1)];
-    for (const candidate of candidatesFor(board, cardId, frontier)) {
-      const nextBoard = withTile(board, cardId, candidate);
-      const solution = solve(nextBoard, rest, endId, deadStates);
-      if (solution) {
-        return [{ cardId, rotation: candidate.rotation, position: candidate.position }, ...solution];
+  for (const entry of available) {
+    const rest = remainingIds.filter((id) => id !== entry.cardId);
+    for (const candidate of entry.candidates) {
+      const next = withTile(board, entry.cardId, candidate);
+      const tail = solveAny(next, rest, endId, deadStates);
+      if (tail) {
+        return [{ cardId: entry.cardId, rotation: candidate.rotation, position: candidate.position }, ...tail];
       }
     }
   }
-  deadStates.add(stateKey);
+
+  deadStates.add(key);
   return null;
 }
 
-/**
- * Строит полный решаемый river plan: 18 middle+end шагов после source.
- * board должен содержать уже размещённый source (детерминированный старт @(0,0)).
- * Бросает invariant error, если canonical river set не может быть завершён
- * (для корректного canonical набора это недостижимо — покрыто 1000-seed тестом).
- */
-export function planRiver(seed: number, board: Board): RiverPlanStep[] {
-  const { source, end, middle, total } = riverCardsByKind();
-  if (!source || !end || middle.length !== 17 || total !== 19) {
-    throw new Error('River requires one source, one end, and 17 middle tiles.');
+function globalPriority(seed: number): string[] {
+  return seededShuffle(riverContract().middle, seed);
+}
+
+function solvePreferred(
+  seed: number,
+  board: Board,
+  remainingIds: readonly string[],
+  endId: string,
+): RiverPlanStep[] | null {
+  if (remainingIds.length === 0) return solveAny(board, [], endId, new Set<string>());
+
+  const remaining = new Set(remainingIds);
+  const priority = globalPriority(seed).filter((id) => remaining.has(id));
+  for (const id of remainingIds) if (!priority.includes(id)) priority.push(id);
+  const feasibilityDead = new Set<string>();
+
+  for (const cardId of priority) {
+    const rest = remainingIds.filter((id) => id !== cardId);
+    for (const candidate of candidatesFor(board, cardId)) {
+      const next = withTile(board, cardId, candidate);
+      if (solveAny(next, rest, endId, feasibilityDead) === null) continue;
+      const tail = solvePreferred(seed, next, rest, endId);
+      if (tail) {
+        return [{ cardId, rotation: candidate.rotation, position: candidate.position }, ...tail];
+      }
+    }
   }
-  const priority = seededShuffle(middle, seed);
-  const deadStates = new Set<string>();
-  const plan = solve(board, priority, end.id, deadStates);
+  return null;
+}
+
+export function planRiver(seed: number, board: Board): RiverPlanStep[] {
+  const { source, end, middle } = riverContract();
+  const sourceOnBoard = Object.values(board).some((tile) => tile.definitionId === source.id);
+  if (!sourceOnBoard) throw new Error(`River plan requires pre-placed source ${source.id}.`);
+  const plan = solvePreferred(seed, board, middle, end.id);
   if (!plan) {
     throw new Error(
-      `River invariant violation: no solvable order. seed=${seed} remaining=[${priority.join(',')}]`,
+      `River invariant violation: no solvable order. seed=${seed} remaining=[${middle.join(',')}] ` +
+      `frontiers=${frontiersOf(board).length}`,
     );
   }
   return plan;
 }
 
-/**
- * Инкрементальный выбор СЛЕДУЮЩЕЙ river карты от ФАКТИЧЕСКОЙ доски.
- *
- * Возвращает первую карту (по deterministic seeded-priority среди remaining),
- * для которой существует legal placement у frontier И полный completion path
- * оставшихся middle + end. Это гарантирует: любой разрешённый игроком safe
- * placement сохраняет решаемость реки (не только autoplay-first-path).
- *
- * Если ни одна карта не проходит — это НЕ throw и НЕ discard: возвращается
- * null, что означает «front-of-deck порядок больше не гарантирован». Вызывающий
- * код обязан переиграть plan для текущей фактической доски (planRiver с тем же
- * seed) — canonical набор всегда планораешем, поэтому такой fallback сам
- * находит решаемый порядок без потери карт.
- */
 export function findSolvableRiverContinuation(options: {
   board: Board;
   remainingMiddleIds: readonly string[];
   seed: number;
 }): string | null {
   const { board, remainingMiddleIds, seed } = options;
-  const { end } = riverCardsByKind();
-  if (!end) throw new Error('River requires one source and one end.');
+  const { end } = riverContract();
   if (remainingMiddleIds.length === 0) return end.id;
-  const frontier = frontierOf(board);
-  if (!frontier) {
-    throw new Error(`River invariant violation: no single frontier. seed=${seed}`);
-  }
-  // Deterministic priority: stable shuffle всех remaining карт от seed.
-  const priority = seededShuffle([...remainingMiddleIds], seed);
+
+  const remaining = new Set(remainingMiddleIds);
+  const priority = globalPriority(seed).filter((id) => remaining.has(id));
+  for (const id of remainingMiddleIds) if (!priority.includes(id)) priority.push(id);
+  const deadStates = new Set<string>();
+
   for (const cardId of priority) {
     const rest = remainingMiddleIds.filter((id) => id !== cardId);
-    for (const candidate of candidatesFor(board, cardId, frontier)) {
-      const nextBoard = withTile(board, cardId, candidate);
-      const deadStates = new Set<string>();
-      if (solve(nextBoard, rest, end.id, deadStates) !== null) {
-        return cardId;
-      }
+    for (const candidate of candidatesFor(board, cardId)) {
+      const next = withTile(board, cardId, candidate);
+      if (solveAny(next, rest, end.id, deadStates) !== null) return cardId;
     }
   }
   return null;
 }
 
 /**
- * Solvability check от ФАКТИЧЕСКОЙ доски с ЯВНЫМ списком оставшихся middle
- * (river-safe placement filter в turnFlow). Deterministic: тот же вход —
- * тот же результат. Бросает ошибку, если continuation не существует.
+ * Every returned placement connects to an exposed river endpoint and preserves
+ * a completion path for all unplayed middle cards plus the forced end.
  */
+export function safeRiverPlacements(options: {
+  board: Board;
+  cardId: string;
+  rotation: Rotation;
+  remainingMiddleIds: readonly string[];
+  seed: number;
+}): TilePosition[] {
+  const { board, cardId, rotation, remainingMiddleIds } = options;
+  const { end } = riverContract();
+  const card = getCardDefinition(cardId);
+  if (!card.riverCard) return [];
+
+  return candidatesFor(board, cardId)
+    .filter((candidate) => candidate.rotation === rotation)
+    .filter((candidate) => {
+      const next = withTile(board, cardId, candidate);
+      if (cardId === end.id) {
+        return remainingMiddleIds.length === 0
+          && countOpenRiverEdges(next) === RIVER_TERMINAL_OPEN_EDGE_COUNT;
+      }
+      const rest = remainingMiddleIds.filter((id) => id !== cardId);
+      return solveAny(next, rest, end.id, new Set<string>()) !== null;
+    })
+    .map((candidate) => candidate.position);
+}
+
 export function assertRiverSolvableFrom(
   seed: number,
   board: Board,
   remainingMiddleIds: readonly string[],
 ): void {
-  const { end } = riverCardsByKind();
-  if (!end) throw new Error('River requires one source and one end.');
-  const deduped = Array.from(new Set(remainingMiddleIds));
-  const deadStates = new Set<string>();
-  const plan = solve(board, deduped, end.id, deadStates);
-  if (!plan) {
-    const frontier = frontierOf(board);
+  void seed;
+  const { end } = riverContract();
+  const deduped = [...new Set(remainingMiddleIds)];
+  if (solveAny(board, deduped, end.id, new Set<string>()) === null) {
     throw new Error(
-      `River invariant violation: no completion path. seed=${seed} remaining=[${deduped.join(',')}]` +
-        ` frontier=${frontier ? posKey(frontier.position) : 'none'} board=[${Object.keys(board).join(' ')}]`,
+      `River invariant violation: no completion path. remaining=[${deduped.join(',')}] ` +
+      `frontiers=${frontiersOf(board).map((frontier) => posKey(frontier.position)).join(' ')}`,
     );
   }
 }
 
-/**
- * Полный перепланинг реки от ФАКТИЧЕСКОЙ доски (fallback, когда прежний
- * front-order приоритет больше не решаем после выбора игрока).
- * Возвращает решаемый порядок ОСТАВШИХСЯ middle карт + end, ровно по одному
- * использованию каждой карты, без discard. Бросает invariant error, если
- * continuation объективно невозможен (для корректного canonical набора
- * недостижимо при любом river-safe выборе — покрыто тестами).
- */
 export function replanRemainingRiver(seed: number, board: Board): string[] {
-  const { end } = riverCardsByKind();
-  if (!end) throw new Error('River requires one source and one end.');
+  const { end, middle } = riverContract();
   const used = new Set(
-    Object.values(board).filter((tile) => getCardDefinition(tile.definitionId).riverCard).map((tile) => tile.definitionId),
+    Object.values(board)
+      .filter((tile) => getCardDefinition(tile.definitionId).riverCard === true)
+      .map((tile) => tile.definitionId),
   );
-  const remainingMiddle = RUNTIME_CARD_CATALOG
-    .filter((card) => card.riverCard === true && card.riverKind === 'middle' && !used.has(card.id))
-    .map((card) => card.id);
-  const priority = seededShuffle(remainingMiddle, seed);
-  const deadStates = new Set<string>();
-  const plan = solve(board, priority, end.id, deadStates);
+  const remainingMiddle = middle.filter((id) => !used.has(id));
+  const plan = solvePreferred(seed, board, remainingMiddle, end.id);
   if (!plan) {
-    const frontier = frontierOf(board);
     throw new Error(
       `River invariant violation: no re-plan continuation. seed=${seed} ` +
-        `remaining=[${priority.join(',')}] frontier=${frontier ? posKey(frontier.position) : 'none'}`,
+      `remaining=[${remainingMiddle.join(',')}] frontiers=${frontiersOf(board).length}`,
     );
   }
-  return [...plan.map((step) => step.cardId), end.id];
+  return plan.map((step) => step.cardId);
 }
 
-/** Полный river order (source + 17 middle + end) для initial deck создания. */
 export function solvedRiverOrder(seed: number, boardWithSource: Board): string[] {
-  const { source, end } = riverCardsByKind();
-  if (!source || !end) throw new Error('River requires one source and one end.');
-  return [source.id, ...planRiver(seed, boardWithSource).map((step) => step.cardId), end.id];
+  const { source } = riverContract();
+  return [source.id, ...planRiver(seed, boardWithSource).map((step) => step.cardId)];
 }
