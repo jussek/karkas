@@ -90,7 +90,6 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
   const [meepleDialogOpen, setMeepleDialogOpen] = useState(false);
   const [placementFeedback, setPlacementFeedback] = useState<string | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  const initialCameraFitDone = useRef(false);
   /** Клетки для ближайшего вызова fitContent (для «Показать ходы»). */
   const fitOverrideRef = useRef<{ x: number; y: number }[] | null>(null);
 
@@ -151,14 +150,7 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
     originOffset: ORIGIN,
   });
 
-  // Начальная камера: один initial fit/center после mount/layout,
-  // когда viewport уже имеет реальные размеры. Центрирование выполняется
-  // по занятым клеткам (на старте — card-133 в (0,0)).
   const initialCameraFitDone = useRef(false);
-  useLayoutEffect(() => {
-    if (initialCameraFitDone.current) return;
-    const viewport = viewportRef.current;
-    if (!viewport || viewport.clientWidth === 0 || viewport.clientHeight === 0) return;
   useLayoutEffect(() => {
     if (initialCameraFitDone.current || !viewportRef.current) return;
     initialCameraFitDone.current = true;
@@ -263,10 +255,6 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
                 aria-label={`Поставить карту: ${position.x}, ${position.y}`}
                 key={`${position.x},${position.y}`}
                 style={{ left: (position.x + ORIGIN) * CELL, top: (position.y + ORIGIN) * CELL }}
-                onClick={() => {
-                  // Явный клик по кнопке легальной клетки — не подавляется жестами камеры.
-                  placeAt(position);
-                }}
                 onClick={() => placeAt(position)}
               ><span>＋</span></button>
             ))}
@@ -374,12 +362,6 @@ export function GamePage({ config, initialFlow, onExit, onNewGame }: GamePagePro
             >
               {legalMeeples.length === 1 ? 'Подтвердить' : meepleTargetLabel(legalMeeples, target)}
             </button>
-            <button type="button" key={key(target)} onClick={() => {
-              setFlow((current) => selectTurnMeeple(current, target));
-              setMeepleDialogOpen(false);
-              setMeepleMode(false);
-              setPlacementFeedback(null);
-            }}>{legalMeeples.length === 1 ? 'Подтвердить' : meepleTargetLabel(legalMeeples, target)}</button>
           ))}
           <button type="button" onClick={() => setMeepleDialogOpen(false)}>Отмена</button>
         </section>
