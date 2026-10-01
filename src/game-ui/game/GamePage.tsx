@@ -87,6 +87,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
   const [meepleDialogOpen, setMeepleDialogOpen] = useState(false);
   const [placementFeedback, setPlacementFeedback] = useState<string | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const initialCameraFitDone = useRef(false);
   /** Клетки для ближайшего вызова fitContent (для «Показать ходы»). */
   const fitOverrideRef = useRef<{ x: number; y: number }[] | null>(null);
 
@@ -155,6 +156,8 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
     if (initialCameraFitDone.current) return;
     const viewport = viewportRef.current;
     if (!viewport || viewport.clientWidth === 0 || viewport.clientHeight === 0) return;
+  useLayoutEffect(() => {
+    if (initialCameraFitDone.current || !viewportRef.current) return;
     initialCameraFitDone.current = true;
     camera.fitContent();
   }, [camera.fitContent]);
@@ -255,6 +258,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
                   // Явный клик по кнопке легальной клетки — не подавляется жестами камеры.
                   placeAt(position);
                 }}
+                onClick={() => placeAt(position)}
               ><span>＋</span></button>
             ))}
             {heldId && flow.phase === 'TILE_POSITIONED' && flow.positionedAt && (
@@ -361,6 +365,12 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
             >
               {legalMeeples.length === 1 ? 'Подтвердить' : meepleTargetLabel(legalMeeples, target)}
             </button>
+            <button type="button" key={key(target)} onClick={() => {
+              setFlow((current) => selectTurnMeeple(current, target));
+              setMeepleDialogOpen(false);
+              setMeepleMode(false);
+              setPlacementFeedback(null);
+            }}>{legalMeeples.length === 1 ? 'Подтвердить' : meepleTargetLabel(legalMeeples, target)}</button>
           ))}
           <button type="button" onClick={() => setMeepleDialogOpen(false)}>Отмена</button>
         </section>
