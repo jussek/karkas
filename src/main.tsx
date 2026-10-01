@@ -8,7 +8,7 @@ import { GameSetupPage } from "./game-ui/setup/GameSetupPage";
 import { LocalLobby } from "./game-ui/setup/LocalLobby";
 import { MainMenu } from "./game-ui/menu/MainMenu";
 import type { LocalGameConfig } from "./game/session";
-import { createLocalGameConfig } from "./game/session";
+import { DEFAULT_MATCH_OPTIONS, createLocalGameConfig } from "./game/session";
 import type { TurnFlowState } from "./game/engine/turnFlow";
 import {
   clearLocalGameSave,
@@ -16,7 +16,7 @@ import {
   loadSettings,
   saveSettings,
 } from "./game-ui/persistence/localGamePersistence";
-import type { LocalSettings } from "./game-ui/persistence/localGamePersistence";
+import type { LocalSettings, UiMatchState } from "./game-ui/persistence/localGamePersistence";
 
 function browserGameId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -36,6 +36,23 @@ function browserSeed(): number {
 
 type Screen = "menu" | "setup" | "lobby" | "game";
 
+/**
+ * Stage 4C: rematch-конфиг генерируется в App/browser layer (не внутри игры):
+ * те же players/names/colors/order и matchOptions, НОВЫЕ gameId/seed.
+ */
+export function buildRematchConfig(
+  previous: LocalGameConfig,
+  gameId: string,
+  seed: number,
+): LocalGameConfig {
+  return {
+    gameId,
+    seed,
+    players: previous.players.map((player) => ({ ...player })),
+    matchOptions: { ...(previous.matchOptions ?? DEFAULT_MATCH_OPTIONS) },
+  };
+}
+
 const RULES_STEPS = [
   "Возьмите карту.",
   "Выберите подсвеченное место.",
@@ -52,6 +69,7 @@ export function App() {
   const [screen, setScreen] = useState<Screen>("menu");
   const [config, setConfig] = useState<LocalGameConfig | null>(null);
   const [restoredFlow, setRestoredFlow] = useState<TurnFlowState | null>(null);
+  const [restoredUiMatchState, setRestoredUiMatchState] = useState<UiMatchState | undefined>(undefined);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmNewGame, setConfirmNewGame] = useState(false);
@@ -77,14 +95,21 @@ export function App() {
     setHasSavedGame(false);
     setConfirmNewGame(false);
     setRestoredFlow(null);
+    setRestoredUiMatchState(undefined);
     setScreen("setup");
   };
 
   const quickGame = () => {
     // sensible defaults: 2 local players, default names, new random gameId/seed.
-    const next = createLocalGameConfig({ gameId: browserGameId(), seed: browserSeed(), count: 2 });
+    const next = createLocalGameConfig({
+      gameId: browserGameId(),
+      seed: browserSeed(),
+      count: 2,
+      matchOptions: { turnTimerSeconds: 0 },
+    });
     setConfig(next);
     setRestoredFlow(null);
+    setRestoredUiMatchState(undefined);
     setScreen("game");
   };
 
@@ -96,12 +121,26 @@ export function App() {
     }
     setConfig(save.config);
     setRestoredFlow(save.flow);
+    setRestoredUiMatchState(save.uiMatchState);
+    setScreen("game");
+  };
+
+  /** Stage 4C rematch: те же игроки/опции, новые id/seed; старое сохранение заменяется. */
+  const rematch = () => {
+    if (!config) return;
+    clearLocalGameSave();
+    const next = buildRematchConfig(config, browserGameId(), browserSeed());
+    setConfig(next);
+    setRestoredFlow(null);
+    setRestoredUiMatchState(undefined);
+    setHasSavedGame(true);
     setScreen("game");
   };
 
   const prepare = (next: LocalGameConfig) => {
     setConfig(next);
     setRestoredFlow(null);
+    setRestoredUiMatchState(undefined);
     setScreen("lobby");
   };
 
@@ -127,7 +166,7 @@ export function App() {
               <ol>
                 {RULES_STEPS.map((step) => <li key={step}>{step}</li>)}
               </ol>
-              <p>Река строится первой — пока все 19 речных карт не размещены, сдаются только они.</p>
+              <p>Река строится первой — пока все речные карты не размещены, сдаются только они.</p>
               <p>Человечки ставятся только на дорогу, город или монастырь. Поля и сады игровыми целями не являются.</p>
             </section>
           </div>
@@ -191,11 +230,14 @@ export function App() {
         config={config}
         key={restoredFlow ? `${config.gameId}:resume` : config.gameId}
         initialFlow={restoredFlow ?? undefined}
-        onExit={() => { setRestoredFlow(null); setHasSavedGame(true); setScreen("menu"); }}
+        initialUiMatchState={restoredUiMatchState}
+        onExit={() => { setRestoredFlow(null); setRestoredUiMatchState(undefined); setHasSavedGame(true); setScreen("menu"); }}
+        onRematch={rematch}
         onNewGame={() => {
           clearLocalGameSave();
           setHasSavedGame(false);
           setRestoredFlow(null);
+          setRestoredUiMatchState(undefined);
           setConfig(null);
           setScreen("setup");
         }}

@@ -76,3 +76,21 @@
 .board-meeple { position: absolute; z-index: 6; width: 46px; height: 46px; margin: -23px; overflow: visible; pointer-events: none; filter: drop-shadow(0 3px 2px #000a); }
 .turn-controls .confirm-placement:not(:disabled) { background: linear-gradient(#4f9d4e, #28652e); border-color: #86ca69; color: white; }
 .meeple-dialog h2 { margin: 0 0 8px; color: #f6e5b8; }
+
+/* Stage 4C: HUD (ход/игрок, счётчики карт, таймер), пауза */
+.game-hud-right { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.tiles-remaining { padding: 6px 10px; border-radius: 999px; background: #241911c9; color: #d9c69a; font-size: .75rem; white-space: nowrap; }
+.turn-timer { min-width: 68px; padding: 6px 10px; border-radius: 999px; background: #241911c9; color: #f0e2b8; font: 700 .8rem ui-monospace, monospace; text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.turn-timer.is-warning { color: #ffd36b; }
+.turn-timer.is-expired { color: #ffb0a0; background: #5b1f18e0; }
+.pause-overlay { position: fixed; z-index: 60; inset: 0; display: grid; place-items: center; background: #000c; touch-action: none; }
+.pause-sheet { display: grid; gap: 12px; width: min(86vw, 340px); padding: 26px; border: 3px solid #d7aa57; border-radius: 20px; background: linear-gradient(#443022, #211712); box-shadow: 0 20px 80px #000c; }
+.pause-sheet h2 { margin: 0 0 6px; color: #f6e5b8; text-align: center; }
+.pause-sheet button { min-height: 50px; border: 1px solid #947041; border-radius: 12px; color: #f6e5b8; background: #493321; font-weight: 700; }
+.pause-sheet .danger { color: #ffc0af; }
+.turn-controls.is-paused { pointer-events: none; opacity: .5; }
+.camera-controls.is-paused { pointer-events: none; opacity: .5; }
+.game-over-actions { display: grid; gap: 10px; margin-top: 14px; }
+.game-over-actions button { min-height: 48px; border: 1px solid #947041; border-radius: 12px; color: #f6e5b8; background: #493321; font-weight: 700; }
+.game-over-actions .rematch-action { background: linear-gradient(#4f9d4e, #28652e); border-color: #86ca69; color: white; }
+@media (max-width: 620px) { .tiles-remaining { display: none; } }
