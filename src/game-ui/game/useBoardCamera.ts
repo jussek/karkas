@@ -3,8 +3,8 @@
  * pinch-зум вокруг focal point, кнопки +/−, fit/recenter, «Показать ходы».
  *
  * Камера живёт ОТДЕЛЬНО от игровых координат: legality считает engine,
- * transform только рисует. pointer-down НИКОГДА не ставит плитку —
- * размещение происходит по tap (движение ниже порога) над кнопкой клетки.
+ * transform только рисует. Interactive descendants (buttons/inputs/etc.)
+ * own their pointer gesture; camera never captures those pointers.
  */
 
 import { useCallback, useRef, useState } from 'react';
@@ -24,6 +24,7 @@ import type { Camera, Point, ViewportSize } from '../board/boardTransform';
 
 export const MIN_CAMERA_SCALE = 0.3;
 export const MAX_CAMERA_SCALE = 2.5;
+const INTERACTIVE_SELECTOR = 'button,input,select,textarea,a,[role="button"]';
 
 export interface ActivePointer {
   x: number;
@@ -39,6 +40,12 @@ export interface ElementRectOrigin {
 
 export function clientPointToLocal(point: Point, rect: ElementRectOrigin): Point {
   return { x: point.x - rect.left, y: point.y - rect.top };
+}
+
+export function isInteractiveTarget(target: EventTarget | null): boolean {
+  const maybeElement = target as { closest?: (selector: string) => unknown } | null;
+  return typeof maybeElement?.closest === 'function'
+    && Boolean(maybeElement.closest(INTERACTIVE_SELECTOR));
 }
 
 /** Mutable state for one pointer gesture, kept outside React for deterministic tests. */
@@ -85,12 +92,12 @@ export class CameraGestureSession {
     this.pointers.delete(pointerId);
     if (this.pointers.size > 0) return null;
     return Boolean(
-      active &&
-      this.startedAsSingle &&
-      !this.hadMultiPointer &&
-      !this.cancelled &&
-      !this.moved &&
-      !wasCancelled,
+      active
+      && this.startedAsSingle
+      && !this.hadMultiPointer
+      && !this.cancelled
+      && !this.moved
+      && !wasCancelled,
     );
   }
 }
@@ -99,7 +106,6 @@ export interface UseBoardCameraOptions {
   viewportRef: RefObject<HTMLDivElement | null>;
   contentWidth: number;
   contentHeight: number;
-  /** Клетки в game-координатах, которые нужно уместить («Показать ходы» / fit). */
   getFitCells: () => readonly Point[];
   cellSize: number;
   originOffset: number;
@@ -120,7 +126,6 @@ export interface BoardCamera {
   zoomIn: () => void;
   zoomOut: () => void;
   fitContent: () => void;
-  /** true, если последний tap был распознан (для проверки, что tile не ставится при drag). */
   wasTapAtEnd: () => boolean;
   toContentPoint: (screen: Point) => Point;
 }
@@ -146,7 +151,6 @@ export function useBoardCamera(options: UseBoardCameraOptions): BoardCamera {
     const cells = getFitCells();
     const viewport = readViewport();
     if (cells.length === 0) {
-      // Пустая доска: центрируем область старта без привязки к card id.
       setCamera(fitBounds(
         { minX: 0, minY: 0, maxX: contentWidth, maxY: contentHeight },
         viewport,
@@ -174,6 +178,7 @@ export function useBoardCamera(options: UseBoardCameraOptions): BoardCamera {
   }, [contentHeight, contentWidth, cellSize, getFitCells, originOffset, readViewport]);
 
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (isInteractiveTarget(event.target)) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
     gesture.current.pointerDown(event.pointerId, { x: event.clientX, y: event.clientY });
     if (gesture.current.pointers.size === 1) {
@@ -204,13 +209,8 @@ export function useBoardCamera(options: UseBoardCameraOptions): BoardCamera {
 
     const dx = event.clientX - lastPan.current.x;
     const dy = event.clientY - lastPan.current.y;
-    const totalMove = Math.hypot(
-      event.clientX - active.startX,
-      event.clientY - active.startY,
-    );
-    if (totalMove > TAP_MOVE_THRESHOLD_PX) {
-      panningRef.current = true;
-    }
+    const totalMove = Math.hypot(event.clientX - active.startX, event.clientY - active.startY);
+    if (totalMove > TAP_MOVE_THRESHOLD_PX) panningRef.current = true;
     if (panningRef.current && (Math.abs(dx) > 0 || Math.abs(dy) > 0)) {
       lastPan.current = { x: event.clientX, y: event.clientY };
       setCamera((current) => panCamera(current, { x: dx, y: dy }));
@@ -218,6 +218,7 @@ export function useBoardCamera(options: UseBoardCameraOptions): BoardCamera {
   }, []);
 
   const finishPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>, cancelled: boolean) => {
+    if (!gesture.current.pointers.has(event.pointerId)) return;
     const tap = gesture.current.pointerEnd(
       event.pointerId,
       { x: event.clientX, y: event.clientY },

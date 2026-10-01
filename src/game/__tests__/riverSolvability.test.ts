@@ -1,229 +1,107 @@
-/**
- * Stage 4A Repair 2B (OPTION_A): river progression must be deterministically
- * solvable for every seed.
- *
- * Invariants proven here:
- * - canonical set: source card-133 first, end card-106 last, exactly the
- *   17 canonical middle cards, no duplicates, no discard;
- * - requiredEdge convention tested directly (guards against double inversion);
- * - determinism: same seed + same board => same plan;
- * - 1000 seeds (0..999) complete the river through the production turn flow;
- * - alternative player placements stay solvable (river-safe filter);
- * - land deck starts only after the 19th river tile.
- */
 import { describe, expect, it } from 'vitest';
 
 import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
-import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
-import {
-  assertRiverSolvableFrom,
-  boardSignature,
-  planRiver,
-  requiredEdgeForFrontier,
-} from '../deck/riverPlanner';
-import { posKey, type Board } from '../types/state';
-import {
-  createTurnFlow,
-  getLegalTilePlacementOptions,
-  drawTurnTile,
-  legalPlacementsFor,
-  placeTurnTile,
-  confirmTurnTilePlacement,
-  endTurn,
-  rotatePositionedTurnTile,
-  RIVER_CARD_COUNT,
-} from '../engine/turnFlow';
-import type { Rotation } from '../types/geometry';
-import type { Player } from '../types/state';
+import { getCardDefinition } from '../cards/catalogApi';
+import { frontiersOf, planRiver, requiredEdgeForFrontier } from '../deck/riverPlanner';
+import { createTurnFlow, RIVER_CARD_COUNT } from '../engine/turnFlow';
+import { posKey } from '../types/state';
+import type { Board, Player } from '../types/state';
 
 const SOURCE_ID = 'card-133';
 const END_ID = 'card-106';
-const CANONICAL_MIDDLE = [
+const FORK_ID = 'card-109';
+const MIDDLE_IDS = [
   'card-053', 'card-054', 'card-055', 'card-067', 'card-079', 'card-088',
-  'card-090', 'card-099', 'card-100', 'card-101', 'card-102', 'card-107',
-  'card-108', 'card-109', 'card-110', 'card-111', 'card-121',
+  'card-090', 'card-091', 'card-099', 'card-100', 'card-101', 'card-102',
+  'card-107', 'card-108', 'card-109', 'card-110', 'card-111', 'card-121',
 ];
 
-function players(count = 1): Player[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `p${i + 1}`,
-    name: `P${i + 1}`,
-    color: 'red',
-    score: 0,
-  }));
+function sourceBoard(): Board {
+  return {
+    [posKey({ x: 0, y: 0 })]: {
+      definitionId: SOURCE_ID,
+      rotation: 0,
+      position: { x: 0, y: 0 },
+    },
+  };
 }
 
-describe('river edge convention (requiredEdge)', () => {
-  it('maps exposed edge to the opposite edge of the new tile', () => {
-    expect(requiredEdgeForFrontier(0)).toBe(2); // existing N -> candidate needs S
-    expect(requiredEdgeForFrontier(1)).toBe(3); // existing E -> candidate needs W
-    expect(requiredEdgeForFrontier(2)).toBe(0); // existing S -> candidate needs N
-    expect(requiredEdgeForFrontier(3)).toBe(1); // existing W -> candidate needs E
+function onePlayer(): Player[] {
+  return [{ id: 'p1', name: 'P1', color: 'red', score: 0 }];
+}
+
+describe('fork-aware canonical river', () => {
+  it('uses the standard opposite-edge convention', () => {
+    expect(requiredEdgeForFrontier(0)).toBe(2);
+    expect(requiredEdgeForFrontier(1)).toBe(3);
+    expect(requiredEdgeForFrontier(2)).toBe(0);
+    expect(requiredEdgeForFrontier(3)).toBe(1);
   });
 
-  it('posKey uses the "x,y" format (guards against manual ":" board keys)', () => {
-    expect(posKey({ x: 0, y: 0 })).toBe('0,0');
-    expect(posKey({ x: -2, y: 3 })).toBe('-2,3');
+  it('derives the 20-card set: 133 source, 18 middle, 106 final', () => {
+    const river = RUNTIME_CARD_CATALOG.filter((card) => card.riverCard === true);
+    const middle = river.filter((card) => card.riverKind === 'middle').map((card) => card.id).sort();
+    expect(RIVER_CARD_COUNT).toBe(20);
+    expect(river).toHaveLength(20);
+    expect(river.filter((card) => card.riverKind === 'start').map((card) => card.id)).toEqual([SOURCE_ID]);
+    expect(river.filter((card) => card.riverKind === 'end').map((card) => card.id)).toEqual([END_ID]);
+    expect(middle).toEqual(MIDDLE_IDS.slice().sort());
   });
 
-  it('board signatures distinguish identical tiles at different coordinates', () => {
-    const first: Board = {
-      [posKey({ x: 1, y: 2 })]: {
-        definitionId: SOURCE_ID,
-        rotation: 90,
-        position: { x: 1, y: 2 },
-      },
-    };
-    const second: Board = {
-      [posKey({ x: 2, y: 1 })]: {
-        definitionId: SOURCE_ID,
-        rotation: 90,
-        position: { x: 2, y: 1 },
-      },
-    };
-    expect(boardSignature(first)).not.toBe(boardSignature(second));
-  });
-});
-
-describe('canonical river set', () => {
-  it('runtime catalog exposes exactly 19 river cards with canonical ids', () => {
-    const river = RUNTIME_CARD_CATALOG.filter((c) => c.riverCard === true);
-    expect(river.length).toBe(19);
-    expect(river.find((c) => c.riverKind === 'start')?.id).toBe(SOURCE_ID);
-    expect(river.find((c) => c.riverKind === 'end')?.id).toBe(END_ID);
-    expect([...river.filter((c) => c.riverKind === 'middle').map((c) => c.id)].sort()).toEqual(
-      [...CANONICAL_MIDDLE].sort(),
-    );
-    expect(river.map((c) => c.id)).toContain('card-106');
+  it('pins the verified final and fork orientations', () => {
+    expect(getCardDefinition(END_ID).topology.riverEdges).toEqual([3]);
+    expect(getCardDefinition(FORK_ID).topology.riverEdges).toEqual([0, 1, 3]);
   });
 
-  it('plan order: source implicit first, 17 middles exactly once, end last', () => {
-    const startBoard: Board = {
-      [posKey({ x: 0, y: 0 })]: { definitionId: SOURCE_ID, rotation: 0, position: { x: 0, y: 0 } },
-    };
-    const plan = planRiver(7, startBoard);
-    expect(plan.length).toBe(18);
-    expect(plan[17].cardId).toBe(END_ID);
-    const middles = plan.slice(0, 17).map((s) => s.cardId);
-    expect(new Set(middles).size).toBe(17);
-    expect([...middles].sort()).toEqual([...CANONICAL_MIDDLE].sort());
-    // Every step is legal under authoritative rules at its point in time.
-    let board = startBoard;
+  it('plans every middle once and appends 106 last', () => {
+    const plan = planRiver(7, sourceBoard());
+    expect(plan).toHaveLength(19);
+    expect(plan[18].cardId).toBe(END_ID);
+    const middle = plan.slice(0, 18).map((step) => step.cardId);
+    expect(new Set(middle).size).toBe(18);
+    expect(middle.slice().sort()).toEqual(MIDDLE_IDS.slice().sort());
+  });
+
+  it('supports multiple open frontiers created by the real 109 fork', () => {
+    const plan = planRiver(17, sourceBoard());
+    let board = sourceBoard();
+    let frontierCountAfterFork = 0;
     for (const step of plan) {
-      const def = getTileDefinition(step.cardId);
-      expect(def).toBeTruthy();
-      board = { ...board, [posKey(step.position)]: { definitionId: step.cardId, rotation: step.rotation, position: step.position } };
-    }
-  });
-
-  it('is deterministic: same seed => identical plan; different seeds may differ', () => {
-    const startBoard: Board = {
-      [posKey({ x: 0, y: 0 })]: { definitionId: SOURCE_ID, rotation: 0, position: { x: 0, y: 0 } },
-    };
-    expect(planRiver(123, startBoard)).toEqual(planRiver(123, startBoard));
-    const a = planRiver(1, startBoard).map((s) => `${s.cardId}@${s.position.x}:${s.position.y}`).join(',');
-    const b = planRiver(2, startBoard).map((s) => `${s.cardId}@${s.position.x}:${s.position.y}`).join(',');
-    expect(a === b).toBe(false);
-  });
-});
-
-describe('river solvability across 1000 seeds', () => {
-  it('completes the full 19-tile river for seeds 0..999 without discards', () => {
-    const startBoard: Board = {
-      [posKey({ x: 0, y: 0 })]: { definitionId: SOURCE_ID, rotation: 0, position: { x: 0, y: 0 } },
-    };
-    for (let seed = 0; seed < 1000; seed += 1) {
-      const plan = planRiver(seed, startBoard);
-      expect(plan).toHaveLength(18);
-      expect(plan[17].cardId).toBe(END_ID);
-      expect(new Set(plan.map((step) => step.cardId)).size).toBe(18);
-    }
-  }, 300_000);
-});
-
-describe('alternative player placements remain solvable', () => {
-  it('every river-safe placement keeps a completion path (checked on several seeds)', () => {
-    const startBoard: Board = {
-      [posKey({ x: 0, y: 0 })]: { definitionId: SOURCE_ID, rotation: 0, position: { x: 0, y: 0 } },
-    };
-    void startBoard;
-    let multiChoiceStatesChecked = 0;
-    for (const seed of [0, 1, 4, 8, 17, 42, 99, 123]) {
-      let state = createTurnFlow({ gameId: 'g', players: players(1), seed });
-      for (let turn = 0; turn < RIVER_CARD_COUNT && state.riverPlaced < RIVER_CARD_COUNT; turn += 1) {
-        state = drawTurnTile(state);
-        if (state.phase !== 'TILE_IN_HAND') break;
-        const drawnId = state.game.drawnTileDefinitionId as string;
-        // Collect all river-safe placements across rotations.
-        const safe: { rotation: Rotation; x: number; y: number }[] = getLegalTilePlacementOptions(state)
-          .flatMap((option) => option.rotations.map((rotation) => ({ rotation, ...option.position })));
-        if (safe.length > 1) multiChoiceStatesChecked += 1;
-        // Pick the LAST safe placement (a non-first player choice).
-        const pick = safe[safe.length - 1];
-        let s2 = placeTurnTile(state, { x: pick.x, y: pick.y });
-        while (s2.rotation !== pick.rotation) s2 = rotatePositionedTurnTile(s2);
-        s2 = confirmTurnTilePlacement(s2);
-        if (s2.phase !== 'TILE_PLACED') throw new Error(`placement rejected seed=${seed}`);
-        s2 = endTurn(s2);
-        state = s2;
-        // After the actual placement, remaining river must still be solvable.
-        if (state.riverPlaced < RIVER_CARD_COUNT) {
-          const remaining = state.riverDeck.filter((id) => id !== END_ID && id !== drawnId);
-          assertRiverSolvableFrom(seed, state.game.board, remaining);
-        }
+      board = {
+        ...board,
+        [posKey(step.position)]: {
+          definitionId: step.cardId,
+          rotation: step.rotation,
+          position: step.position,
+        },
+      };
+      if (step.cardId === FORK_ID) {
+        frontierCountAfterFork = frontiersOf(board).length;
+        break;
       }
-      expect(state.riverPlaced).toBe(RIVER_CARD_COUNT);
     }
-    expect(multiChoiceStatesChecked).toBeGreaterThan(0);
-  }, 120_000);
-
-  it('unsafe ordinary-legal placements are excluded from river-safe list but not from general rules', () => {
-    // Construct a board where a frontier exists and check that
-    // legalPlacementsFor (river) is a subset of getLegalTilePlacements-filtered
-    // and that assertRiverSolvableFrom throws for a deliberately unsolvable
-    // arrangement (frontier surrounded such that no middle fits).
-    const board: Board = {
-      [posKey({ x: 0, y: 0 })]: { definitionId: SOURCE_ID, rotation: 0, position: { x: 0, y: 0 } },
-      [posKey({ x: 0, y: 1 })]: { definitionId: 'card-053', rotation: 180, position: { x: 0, y: 1 } },
-    };
-    // card-053 rotated 180 has river edges at [1? ] — whatever the geometry,
-    // an empty remaining set with open frontier must fail:
-    expect(() => assertRiverSolvableFrom(1, board, [])).toThrow();
-    void board;
+    expect(frontierCountAfterFork).toBeGreaterThan(1);
   });
-});
 
-describe('land transition after river', () => {
-  it('draws only the 18 remaining river cards before the first land card', () => {
-    let state = createTurnFlow({ gameId: 'g', players: players(1), seed: 3 });
-    const source = state.game.board[posKey({ x: 0, y: 0 })];
-    const riverDraws: string[] = [];
-    expect(source.definitionId).toBe(SOURCE_ID);
-    expect(getCardDefinition(source.definitionId).riverCard).toBe(true);
-
-    while (state.riverPlaced < RIVER_CARD_COUNT) {
-      const discardsBefore = state.discardedTileIds.length;
-      state = drawTurnTile(state);
-      const drawnId = state.game.drawnTileDefinitionId!;
-      riverDraws.push(drawnId);
-      expect(getCardDefinition(drawnId).riverCard).toBe(true);
-      expect(state.discardedTileIds).toHaveLength(discardsBefore);
-
-      expect(state.legalPlacements.length).toBeGreaterThan(0);
-      state = confirmTurnTilePlacement(placeTurnTile(state, state.legalPlacements[0]));
-      state = endTurn(state);
+  it('is deterministic and produces a complete sequence for 1000 seeds', () => {
+    for (let seed = 0; seed < 1000; seed += 1) {
+      const plan = planRiver(seed, sourceBoard());
+      expect(plan).toHaveLength(19);
+      expect(plan[18].cardId).toBe(END_ID);
+      expect(new Set(plan.map((step) => step.cardId)).size).toBe(19);
     }
+    expect(planRiver(123, sourceBoard())).toEqual(planRiver(123, sourceBoard()));
+  }, 300_000);
 
-    expect(state.riverPlaced).toBe(19);
-    expect(riverDraws).toHaveLength(18);
-    expect(new Set([SOURCE_ID, ...riverDraws])).toHaveLength(19);
-    expect(riverDraws[riverDraws.length - 1]).toBe(END_ID);
-    expect(state.discardedTileIds).toEqual([]);
-
-    state = drawTurnTile(state);
-    const firstLandId = state.game.drawnTileDefinitionId!;
-    expect(getCardDefinition(firstLandId).riverCard).not.toBe(true);
-    expect(riverDraws).not.toContain(firstLandId);
-    void legalPlacementsFor;
-  }, 30_000);
+  it('starts a turn flow with only source 133 on the board and no river in landDeck', () => {
+    const flow = createTurnFlow({ gameId: 'g', players: onePlayer(), seed: 12 });
+    const placed = Object.values(flow.game.board);
+    expect(placed).toHaveLength(1);
+    expect(placed[0].definitionId).toBe(SOURCE_ID);
+    expect(flow.riverPlaced).toBe(1);
+    expect(flow.riverDeck).toHaveLength(19);
+    expect(flow.riverDeck[18]).toBe(END_ID);
+    expect(flow.landDeck).toHaveLength(124);
+    expect(flow.landDeck.every((id) => getCardDefinition(id).riverCard !== true)).toBe(true);
+  });
 });

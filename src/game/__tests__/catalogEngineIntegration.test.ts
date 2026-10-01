@@ -12,8 +12,8 @@ const verifiedStart = GAME_CARD_CATALOG.find((card) => card.reviewRequired !== t
 const reviewCard = GAME_CARD_CATALOG.find((card) => card.reviewRequired === true);
 
 describe('card catalog adapter', () => {
-  it('converts the 143 runtime cards exactly without mutation', () => {
-    expect(GAME_CARD_CATALOG).toHaveLength(143);
+  it('converts the 144 runtime cards exactly without mutation', () => {
+    expect(GAME_CARD_CATALOG).toHaveLength(144);
 
     for (const card of GAME_CARD_CATALOG) {
       const before = JSON.stringify(card);
