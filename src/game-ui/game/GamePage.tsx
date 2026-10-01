@@ -1,6 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { getCardDefinition, getTileDefinition } from '../../game/cards/catalogApi';
-import { getTileDefinition } from '../../game/cards/catalogApi';
 import {
   RIVER_CARD_COUNT,
   canEndTurn,
@@ -88,6 +87,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
   const [meepleDialogOpen, setMeepleDialogOpen] = useState(false);
   const [placementFeedback, setPlacementFeedback] = useState<string | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const initialCameraFitDone = useRef(false);
   /** Клетки для ближайшего вызова fitContent (для «Показать ходы»). */
   const fitOverrideRef = useRef<{ x: number; y: number }[] | null>(null);
 
@@ -147,6 +147,12 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
     cellSize: CELL,
     originOffset: ORIGIN,
   });
+
+  useLayoutEffect(() => {
+    if (initialCameraFitDone.current || !viewportRef.current) return;
+    initialCameraFitDone.current = true;
+    camera.fitContent();
+  }, [camera.fitContent]);
 
   const placeAt = useCallback((position: { x: number; y: number }) => {
     const next = placeTurnTile(flow, position);
@@ -240,11 +246,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
                 aria-label={`Поставить карту: ${position.x}, ${position.y}`}
                 key={`${position.x},${position.y}`}
                 style={{ left: (position.x + ORIGIN) * CELL, top: (position.y + ORIGIN) * CELL }}
-                onClick={() => {
-                  // Размещение только по tap: после pan/pinch клик игнорируется.
-                  if (!camera.wasTapAtEnd()) return;
-                  placeAt(position);
-                }}
+                onClick={() => placeAt(position)}
               ><span>＋</span></button>
             ))}
             {heldId && flow.phase === 'TILE_POSITIONED' && flow.positionedAt && (
@@ -270,7 +272,7 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
               aria-label="Только что установленная карта"
               style={{ left: (flow.game.lastPlacedTile.position.x + ORIGIN) * CELL, top: (flow.game.lastPlacedTile.position.y + ORIGIN) * CELL }}
               onClick={() => {
-                if (!camera.wasTapAtEnd() || !meepleMode) return;
+                if (!meepleMode) return;
                 if (legalMeeples.length === 0) {
                   setPlacementFeedback('На этой карте нет доступных мест для человечка');
                   return;
@@ -337,21 +339,14 @@ export function GamePage({ config, onExit, onNewGame }: GamePageProps) {
       {meepleDialogOpen && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Выбор места человечка">
         <section className="game-menu-sheet meeple-dialog">
           <h2>{meepleDialogTitle(legalMeeples)}</h2>
-          {legalMeeples.map((target) => {
-          <h2>{legalMeeples.length === 1
-            ? `Поставить человечка ${legalMeeples[0].featureType === 'road' ? 'на дорогу' : legalMeeples[0].featureType === 'city' ? 'в город' : 'на монастырь'}?`
-            : 'Куда поставить человечка?'}</h2>
-          {legalMeeples.map((target) => {
-            const sameType = legalMeeples.filter((item) => item.featureType === target.featureType);
-            const number = sameType.length > 1 ? ` ${sameType.indexOf(target) + 1}` : '';
-            const label = target.featureType === 'road' ? 'Дорога' : target.featureType === 'city' ? 'Город' : 'Монастырь';
-            return <button type="button" key={key(target)} onClick={() => {
+          {legalMeeples.map((target) => (
+            <button type="button" key={key(target)} onClick={() => {
               setFlow((current) => selectTurnMeeple(current, target));
               setMeepleDialogOpen(false);
+              setMeepleMode(false);
               setPlacementFeedback(null);
-            }}>{legalMeeples.length === 1 ? 'Подтвердить' : meepleTargetLabel(legalMeeples, target)}</button>;
-            }}>{legalMeeples.length === 1 ? 'Подтвердить' : `${label}${number}`}</button>;
-          })}
+            }}>{legalMeeples.length === 1 ? 'Подтвердить' : meepleTargetLabel(legalMeeples, target)}</button>
+          ))}
           <button type="button" onClick={() => setMeepleDialogOpen(false)}>Отмена</button>
         </section>
       </div>}
