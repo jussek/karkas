@@ -29,7 +29,7 @@ import {
   seededFloat,
   type Point,
 } from '../tileGeometry';
-import { TILE_ASSETS } from '../tileAssets';
+import { RUNTIME_ASSET_SOURCE, TILE_ASSETS, tileAssetForCard } from '../tileAssets';
 
 const samePoint = (a: Point, b: Point) => a.x === b.x && a.y === b.y;
 
@@ -270,14 +270,19 @@ describe('renderer source guards', () => {
   });
 
   it('maps all 143 runtime card ids to local authoritative JPG assets', () => {
+    expect(RUNTIME_ASSET_SOURCE).toBe('src/a');
     expect(TILE_ASSETS).toHaveLength(143);
     TILE_ASSETS.forEach((asset) => {
       const number = Number(asset.cardId.slice(5));
-      expect(number).not.toBe(91);
+      expect(number).not.toBe(109);
       expect(asset.filename).toBe(`1 (${number}).jpg`);
       expect(asset.url).toBeTruthy();
     });
     expect(TILE_ASSETS.some((asset) => asset.filename === '1 (106).jpg')).toBe(true);
-    expect(TILE_ASSETS.find((asset) => asset.cardId === 'card-106')?.url).toMatch(/^data:image\/svg\+xml,/);
+    expect(TILE_ASSETS.find((asset) => asset.cardId === 'card-106')?.filename).toBe('1 (106).jpg');
+    expect(() => tileAssetForCard('card-109')).toThrow('Unknown tile artwork');
+    const loaderSource = readFileSync(join(tilesDir, 'tileAssets.ts'), 'utf8');
+    expect(loaderSource).toContain("../../a/*.jpg");
+    expect(loaderSource).not.toContain("../../game/cards/*.jpg");
   });
 });

@@ -247,8 +247,8 @@ describe('render model — verified real river cards', () => {
     const def = cardToTileDefinition(GAME_CARD_CATALOG.find((c) => c.id === 'card-106')!);
     const m = createTileRenderModel(def);
     expect(m.rivers).toHaveLength(1);
-    expect(groupKey(m.rivers[0].edges)).toBe('1');
-    expect(getRiverEdgesForCard('card-106')).toEqual([1]);
+    expect(groupKey(m.rivers[0].edges)).toBe('3');
+    expect(getRiverEdgesForCard('card-106')).toEqual([3]);
   });
 
   it('card-133 exposes river edge [2] (source)', () => {

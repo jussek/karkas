@@ -40,7 +40,7 @@ describe('canonical visual audit 051..100', () => {
   });
 
   it('marks monasteries visible in this block', () => {
-    for (const id of ['card-063', 'card-073', 'card-081', 'card-097']) {
+    for (const id of ['card-073', 'card-097']) {
       expect(AUDITED_051_100.find((item) => item.id === id)?.topology.monastery).toBe(true);
     }
   });

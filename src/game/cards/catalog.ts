@@ -1,7 +1,7 @@
 /**
  * Card Catalog — Stage 2.5
  *
- * 144 real project card assets (src/game/cards/1 (N).jpg), canonical
+ * legacy card records (runtime artwork resolves only from src/a/1 (N).jpg), canonical
  * orientation only (rotation is applied by rotateTile(), never stored here).
  *
  * Data source: pixel classification of the actual images via
@@ -830,13 +830,6 @@ export const CARD_CATALOG: readonly CardDefinition[] = [
   {
     id: 'card-108',
     asset: '1 (108).jpg',
-    edges: { north: 'field', east: 'field', south: 'field', west: 'city' },
-    topology: { roads: [], cities: [[3]] },
-    shields: 0,
-  },
-  {
-    id: 'card-109',
-    asset: '1 (109).jpg',
     edges: { north: 'field', east: 'field', south: 'field', west: 'city' },
     topology: { roads: [], cities: [[3]] },
     shields: 0,

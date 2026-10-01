@@ -12,6 +12,7 @@
  */
 
 import { TURN_PHASES, ROTATIONS } from '../../game/engine/turnFlow';
+import { GAME_CARD_CATALOG } from '../../game/cards/canonicalCatalog';
 import type { TurnPhase, TurnFlowState } from '../../game/engine/turnFlow';
 import type { TurnResolution } from '../../game/engine/turnResolution';
 import type { MeeplePlacement, Rotation, TilePosition } from '../../game/types/geometry';
@@ -279,6 +280,12 @@ function validateResolution(value: unknown): boolean {
   return true;
 }
 
+const PLAYABLE_CARD_IDS = new Set(GAME_CARD_CATALOG.map((card) => card.id));
+
+function isPlayableCardId(value: unknown): value is string {
+  return isNonEmptyString(value) && PLAYABLE_CARD_IDS.has(value);
+}
+
 function validateFlow(value: unknown): TurnFlowState | null {
   if (!isRecord(value)) return null;
   if (!isTurnPhase(value.phase)) return null;
@@ -288,8 +295,8 @@ function validateFlow(value: unknown): TurnFlowState | null {
   if (!Array.isArray(value.positionedRotations) || !value.positionedRotations.every(isRotation)) return null;
   if (value.selectedMeepleTarget !== null && !isMeeplePlacement(value.selectedMeepleTarget)) return null;
   if (!isFiniteNumber(value.riverPlaced)) return null;
-  if (!Array.isArray(value.riverDeck) || !value.riverDeck.every(isNonEmptyString)) return null;
-  if (!Array.isArray(value.landDeck) || !value.landDeck.every(isNonEmptyString)) return null;
+  if (!Array.isArray(value.riverDeck) || !value.riverDeck.every(isPlayableCardId)) return null;
+  if (!Array.isArray(value.landDeck) || !value.landDeck.every(isPlayableCardId)) return null;
   if (!Array.isArray(value.discardedTileIds) || !value.discardedTileIds.every(isNonEmptyString)) return null;
   if (!isFiniteNumber(value.seed)) return null;
   if (!validateResolution(value.lastResolution)) return null;
@@ -304,7 +311,7 @@ function validateFlow(value: unknown): TurnFlowState | null {
   if (!isRecord(game.board)) return null;
   for (const tile of Object.values(game.board)) {
     if (!isRecord(tile) || !isTilePosition(tile.position)) return null;
-    if (!isNonEmptyString(tile.definitionId) || !isRotation(tile.rotation)) return null;
+    if (!isPlayableCardId(tile.definitionId) || !isRotation(tile.rotation)) return null;
   }
   if (!isRecord(game.tileDeck) || !Array.isArray(game.tileDeck.remaining)) return null;
   if (!isFiniteNumber(game.currentPlayerIndex)) return null;
@@ -317,10 +324,10 @@ function validateFlow(value: unknown): TurnFlowState | null {
     if (m.placement !== null && !isMeeplePlacement(m.placement)) return null;
   }
   if (typeof game.gamePhase !== 'string') return null;
-  if (game.drawnTileDefinitionId !== null && !isNonEmptyString(game.drawnTileDefinitionId)) return null;
+  if (game.drawnTileDefinitionId !== null && !isPlayableCardId(game.drawnTileDefinitionId)) return null;
   if (game.lastPlacedTile !== null) {
     if (!isRecord(game.lastPlacedTile)) return null;
-    if (!isNonEmptyString(game.lastPlacedTile.definitionId)) return null;
+    if (!isPlayableCardId(game.lastPlacedTile.definitionId)) return null;
     if (!isRotation(game.lastPlacedTile.rotation)) return null;
     if (!isTilePosition(game.lastPlacedTile.position)) return null;
     if (!isNonEmptyString(game.lastPlacedTile.playerId)) return null;

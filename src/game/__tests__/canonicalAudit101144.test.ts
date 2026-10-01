@@ -6,32 +6,29 @@ import { AUDITED_CARD_IDS_101_144 } from '../cards/audited101144';
 
 describe('canonical visual audit 101-144', () => {
   it('audits every physical card in the final range including 106', () => {
-    expect(AUDITED_CARD_IDS_101_144).toHaveLength(44);
+    expect(AUDITED_CARD_IDS_101_144).toHaveLength(43);
     expect(AUDITED_CARD_IDS_101_144).toContain('card-105');
     expect(AUDITED_CARD_IDS_101_144).toContain('card-106');
     expect(AUDITED_CARD_IDS_101_144[AUDITED_CARD_IDS_101_144.length - 1]).toBe('card-144');
   });
 
-  it('keeps exactly 144 runtime cards and the derived 20-card river set', () => {
-    expect(GAME_CARD_CATALOG).toHaveLength(144);
-    expect(RUNTIME_CARD_CATALOG).toHaveLength(144);
-    expect(GAME_CARD_CATALOG.filter((card) => card.riverCard)).toHaveLength(20);
-    expect(RUNTIME_CARD_CATALOG.filter((card) => card.riverCard)).toHaveLength(20);
+  it('keeps exactly 143 runtime cards and the derived 19-card river set', () => {
+    expect(GAME_CARD_CATALOG).toHaveLength(143);
+    expect(RUNTIME_CARD_CATALOG).toHaveLength(143);
+    expect(GAME_CARD_CATALOG.filter((card) => card.riverCard)).toHaveLength(19);
+    expect(RUNTIME_CARD_CATALOG.filter((card) => card.riverCard)).toHaveLength(19);
     expect(RUNTIME_CARD_CATALOG.some((card) => card.id === 'card-091')).toBe(true);
     expect(RUNTIME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(true);
   });
 
-  it('encodes the verified source/final/fork river artwork', () => {
+  it('encodes the verified source/final river artwork and removal', () => {
     expect(getCardDefinition('card-106')).toMatchObject({
       edges: { north: 'field', east: 'field', south: 'field', west: 'river' },
       riverCard: true,
       riverKind: 'end',
     });
     expect(getCardDefinition('card-106').topology.riverEdges).toEqual([3]);
-    expect(getCardDefinition('card-109').topology.riverEdges).toEqual([0, 1, 3]);
-    expect(getCardDefinition('card-109').edges).toEqual({
-      north: 'river', east: 'river', south: 'field', west: 'river',
-    });
+    expect(() => getCardDefinition('card-109')).toThrow('Unknown card definition');
     expect(getCardDefinition('card-133').topology.riverEdges).toEqual([2]);
     expect(getCardDefinition('card-133').riverKind).toBe('start');
   });

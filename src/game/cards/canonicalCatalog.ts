@@ -1,4 +1,3 @@
-import { CARD_CATALOG } from './catalog';
 import { AUDITED_051_100 } from './audited051100';
 import { AUDITED_101_144 } from './audited101144';
 import type { CardDefinition } from './types';
@@ -29,7 +28,7 @@ const AUDITED_001_050: readonly CardDefinition[] = [
   { id:'card-015', asset:'1 (15).jpg', edges:{north:'city',east:'city',south:'city',west:'city'}, topology:{roads:[],cities:[[0,3],[1,2]],cityShields:[0,0]}, shields:0 },
   { id:'card-016', asset:'1 (16).jpg', edges:{north:'city',east:'city',south:'field',west:'field'}, topology:{roads:[],cities:[[0,1]],cityShields:[1]}, shields:1 },
   { id:'card-017', asset:'1 (17).jpg', edges:{north:'city',east:'field',south:'road',west:'road'}, topology:{roads:[[2,3]],cities:[[0]],cityShields:[0]}, shields:0 },
-  { id:'card-018', asset:'1 (18).jpg', edges:{north:'road',east:'road',south:'road',west:'road'}, topology:{roads:[[0],[1],[2],[3]],cities:[]}, shields:0 },
+  { id:'card-018', asset:'1 (18).jpg', edges:{north:'road',east:'road',south:'road',west:'field'}, topology:{roads:[[0],[1],[2]],cities:[]}, shields:0 },
   { id:'card-019', asset:'1 (19).jpg', edges:{north:'road',east:'field',south:'city',west:'road'}, topology:{roads:[[0,3]],cities:[[2]],cityShields:[0]}, shields:0 },
   { id:'card-020', asset:'1 (20).jpg', edges:{north:'field',east:'road',south:'road',west:'field'}, topology:{roads:[[1,2]],cities:[]}, shields:0 },
   { id:'card-021', asset:'1 (21).jpg', edges:{north:'city',east:'field',south:'field',west:'field'}, topology:{roads:[],cities:[[0]],cityShields:[0],monastery:true}, shields:0 },
@@ -37,7 +36,7 @@ const AUDITED_001_050: readonly CardDefinition[] = [
   { id:'card-023', asset:'1 (23).jpg', edges:{north:'road',east:'road',south:'city',west:'road'}, topology:{roads:[[1,3],[0]],cities:[[2]],cityShields:[0]}, shields:0 },
   { id:'card-024', asset:'1 (24).jpg', edges:{north:'field',east:'road',south:'field',west:'road'}, topology:{roads:[[1,3]],cities:[]}, shields:0 },
   { id:'card-025', asset:'1 (25).jpg', edges:{north:'city',east:'road',south:'city',west:'field'}, topology:{roads:[[1]],cities:[[0,2]],cityShields:[0]}, shields:0 },
-  { id:'card-026', asset:'1 (26).jpg', edges:{north:'city',east:'road',south:'road',west:'road'}, topology:{roads:[[1,3],[2]],cities:[[0]],cityShields:[0]}, shields:0 },
+  { id:'card-026', asset:'1 (26).jpg', edges:{north:'city',east:'field',south:'road',west:'road'}, topology:{roads:[[2,3]],cities:[[0]],cityShields:[0]}, shields:0 },
   { id:'card-027', asset:'1 (27).jpg', edges:{north:'city',east:'road',south:'city',west:'city'}, topology:{roads:[[1]],cities:[[0,2,3]],cityShields:[0]}, shields:0 },
   { id:'card-028', asset:'1 (28).jpg', edges:{north:'city',east:'city',south:'city',west:'city'}, topology:{roads:[],cities:[[0,1,2,3]],cityShields:[1]}, shields:1 },
   { id:'card-029', asset:'1 (29).jpg', edges:{north:'field',east:'city',south:'city',west:'field'}, topology:{roads:[],cities:[[1,2]],cityShields:[1]}, shields:1 },
@@ -54,10 +53,10 @@ const AUDITED_001_050: readonly CardDefinition[] = [
   { id:'card-040', asset:'1 (40).jpg', edges:{north:'city',east:'city',south:'city',west:'road'}, topology:{roads:[[3]],cities:[[0],[1,2]],cityShields:[0,0]}, shields:0 },
   { id:'card-041', asset:'1 (41).jpg', edges:{north:'field',east:'field',south:'field',west:'field'}, topology:{roads:[],cities:[],monastery:true}, shields:0 },
   { id:'card-042', asset:'1 (42).jpg', edges:{north:'city',east:'field',south:'city',west:'field'}, topology:{roads:[],cities:[[0],[2]],cityShields:[0,0]}, shields:0 },
-  { id:'card-043', asset:'1 (43).jpg', edges:{north:'city',east:'city',south:'city',west:'city'}, topology:{roads:[],cities:[[0,1,2,3]],cityShields:[1]}, shields:1 },
+  { id:'card-043', asset:'1 (43).jpg', edges:{north:'city',east:'field',south:'field',west:'field'}, topology:{roads:[],cities:[[0]],cityShields:[1]}, shields:1 },
   { id:'card-044', asset:'1 (44).jpg', edges:{north:'city',east:'field',south:'city',west:'field'}, topology:{roads:[],cities:[[0],[2]],cityShields:[0,0]}, shields:0 },
   { id:'card-045', asset:'1 (45).jpg', edges:{north:'city',east:'field',south:'field',west:'field'}, topology:{roads:[],cities:[[0]],cityShields:[0]}, shields:0 },
-  { id:'card-046', asset:'1 (46).jpg', edges:{north:'city',east:'field',south:'city',west:'city'}, topology:{roads:[],cities:[[0,2,3]],cityShields:[0]}, shields:0 },
+  { id:'card-046', asset:'1 (46).jpg', edges:{north:'field',east:'field',south:'field',west:'city'}, topology:{roads:[],cities:[[3]],cityShields:[0]}, shields:0 },
   { id:'card-047', asset:'1 (47).jpg', edges:{north:'city',east:'city',south:'city',west:'city'}, topology:{roads:[],cities:[[0,1,2,3]],cityShields:[0]}, shields:0 },
   { id:'card-048', asset:'1 (48).jpg', edges:{north:'city',east:'city',south:'city',west:'city'}, topology:{roads:[],cities:[[0,1,2,3]],cityShields:[0]}, shields:0 },
   { id:'card-049', asset:'1 (49).jpg', edges:{north:'field',east:'city',south:'field',west:'field'}, topology:{roads:[],cities:[[1]],cityShields:[0]}, shields:0 },
@@ -71,13 +70,11 @@ const AUDITED_BY_ID = new Map<string, CardDefinition>([
 ].map((card) => [card.id, card]));
 
 /**
- * Authoritative runtime catalog. Every physical JPG card 001..144 is present
+ * Authoritative runtime catalog. Every playable physical JPG card is present
  * exactly once. River semantics live in the audited definitions themselves:
  * card-133 is the pre-placed source, card-106 is the forced final river card,
- * card-091 is a real river middle, card-109 is the three-edge river fork, and
- * card-096 is land (its decorative pond does not reach a border).
+ * card-091 is a real river middle and card-096 is land (its decorative pond does not reach a border).
  */
-export const GAME_CARD_CATALOG: readonly CardDefinition[] = CARD_CATALOG
-  .map((legacy) => AUDITED_BY_ID.get(legacy.id) ?? legacy);
+export const GAME_CARD_CATALOG: readonly CardDefinition[] = [...AUDITED_BY_ID.values()];
 
 export const AUDITED_CARD_IDS_001_050: readonly string[] = AUDITED_001_050.map((card) => card.id);

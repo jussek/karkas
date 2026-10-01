@@ -1,18 +1,6 @@
-/**
- * Deterministic river planner.
- *
- * Product order:
- * - card-133 is already placed as the source;
- * - every middle river card is used exactly once in seeded priority order,
- *   with backtracking only when a priority choice cannot be completed;
- * - card-106 is reserved and is always the final river draw;
- * - river cards are never discarded.
- *
- * The real artwork contains card-109, a three-edge fork. Therefore a valid
- * river board may have more than one open river frontier. The planner groups
- * every exposed river edge by its target empty cell and checks candidates
- * against all required river edges for that cell plus the normal placement
- * rules. There is no separate or weakened edge-matching algorithm here.
+/** Deterministic single-frontier river planner.
+ * card-133 is preplaced, all 17 middle cards are used once, and card-106
+ * closes the sole frontier before the land deck begins.
  */
 
 import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
@@ -168,11 +156,9 @@ function solve(
   if (deadStates.has(stateKey)) return null;
 
   if (remainingIds.length === 0) {
-    // The verified artwork contains one three-way fork but only one forced
-    // final river-end tile. Consequently the graph can retain another open
-    // river branch after the final tile. The product contract is sequencing
-    // (106 is last), not an impossible "zero open edges" constraint.
-    const endCandidate = candidatesFor(board, endId)[0];
+    const endCandidate = candidatesFor(board, endId).find((candidate) =>
+      countOpenRiverEdges(withTile(board, endId, candidate)) === 0
+    );
     if (!endCandidate) {
       deadStates.add(stateKey);
       return null;
@@ -190,6 +176,7 @@ function solve(
     const rest = [...remainingIds.slice(0, index), ...remainingIds.slice(index + 1)];
     for (const candidate of candidatesFor(board, cardId)) {
       const nextBoard = withTile(board, cardId, candidate);
+      if (frontiersOf(nextBoard).length !== 1 || countOpenRiverEdges(nextBoard) !== 1) continue;
       const continuation = solve(nextBoard, rest, endId, deadStates);
       if (continuation) return [{ cardId, rotation: candidate.rotation, position: candidate.position }, ...continuation];
     }

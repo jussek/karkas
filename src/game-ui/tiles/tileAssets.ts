@@ -1,7 +1,9 @@
 import { GAME_CARD_CATALOG } from '../../game/cards/canonicalCatalog';
 
+export const RUNTIME_ASSET_SOURCE = 'src/a' as const;
+
 const importedAssets = import.meta.glob([
-  '../../game/cards/*.jpg',
+  '../../a/*.jpg',
 ], {
   eager: true,
   import: 'default',
@@ -15,7 +17,7 @@ export interface TileAssetEntry {
 }
 
 export const TILE_ASSETS: readonly TileAssetEntry[] = GAME_CARD_CATALOG.map((card) => {
-  const path = `../../game/cards/${card.asset}`;
+  const path = `../../a/${card.asset}`;
   const url = importedAssets[path];
   if (!url) throw new Error(`Missing tile artwork for ${card.id}: ${card.asset}`);
   return { cardId: card.id, filename: card.asset, url };

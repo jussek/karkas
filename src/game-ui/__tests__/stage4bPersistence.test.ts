@@ -85,7 +85,7 @@ describe('local game save: format & safety', () => {
     expect(saveLocalGameSave(config, flow)).toBe(true);
     const loaded = loadLocalGameSave();
     expect(loaded).not.toBeNull();
-    expect(loaded?.version).toBe(1);
+    expect(loaded?.version).toBe(2);
     expect(loaded?.config.gameId).toBe(config.gameId);
     // board / decks / player / turn / scores / meeples / drawn tile
     expect(loaded?.flow.game.board).toEqual(flow.game.board);
@@ -116,6 +116,15 @@ describe('local game save: format & safety', () => {
       LOCAL_GAME_SAVE_KEY,
       JSON.stringify({ version: 1, savedAt: 'x', config, flow: { phase: 'NOT_A_PHASE' } }),
     );
+    expect(loadLocalGameSave()).toBeNull();
+    expect(window.localStorage.getItem(LOCAL_GAME_SAVE_KEY)).toBeNull();
+  });
+
+  it('rejects and clears a stale save containing removed card-109', () => {
+    expect(saveLocalGameSave(config, makeFlow())).toBe(true);
+    const raw = JSON.parse(window.localStorage.getItem(LOCAL_GAME_SAVE_KEY)!);
+    raw.flow.riverDeck[0] = 'card-109';
+    window.localStorage.setItem(LOCAL_GAME_SAVE_KEY, JSON.stringify(raw));
     expect(loadLocalGameSave()).toBeNull();
     expect(window.localStorage.getItem(LOCAL_GAME_SAVE_KEY)).toBeNull();
   });
