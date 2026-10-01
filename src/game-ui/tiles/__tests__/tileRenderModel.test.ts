@@ -243,15 +243,15 @@ describe('render model — rotation contract', () => {
 /* ------------------------------------------------------------------ */
 
 describe('render model — verified real river cards', () => {
-  it('card-091 exposes river edge [2] (source)', () => {
-    const def = cardToTileDefinition(GAME_CARD_CATALOG.find((c) => c.id === 'card-091')!);
+  it('card-106 exposes its single closing river edge', () => {
+    const def = cardToTileDefinition(GAME_CARD_CATALOG.find((c) => c.id === 'card-106')!);
     const m = createTileRenderModel(def);
     expect(m.rivers).toHaveLength(1);
-    expect(groupKey(m.rivers[0].edges)).toBe('2');
-    expect(getRiverEdgesForCard('card-091')).toEqual([2]);
+    expect(groupKey(m.rivers[0].edges)).toBe('1');
+    expect(getRiverEdgesForCard('card-106')).toEqual([1]);
   });
 
-  it('card-133 exposes river edge [2] (end)', () => {
+  it('card-133 exposes river edge [2] (source)', () => {
     const def = cardToTileDefinition(GAME_CARD_CATALOG.find((c) => c.id === 'card-133')!);
     const m = createTileRenderModel(def);
     expect(m.rivers).toHaveLength(1);

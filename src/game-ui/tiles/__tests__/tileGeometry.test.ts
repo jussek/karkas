@@ -273,10 +273,11 @@ describe('renderer source guards', () => {
     expect(TILE_ASSETS).toHaveLength(143);
     TILE_ASSETS.forEach((asset) => {
       const number = Number(asset.cardId.slice(5));
-      expect(number).not.toBe(106);
+      expect(number).not.toBe(91);
       expect(asset.filename).toBe(`1 (${number}).jpg`);
       expect(asset.url).toBeTruthy();
     });
-    expect(TILE_ASSETS.some((asset) => asset.filename === '1 (106).jpg')).toBe(false);
+    expect(TILE_ASSETS.some((asset) => asset.filename === '1 (106).jpg')).toBe(true);
+    expect(TILE_ASSETS.find((asset) => asset.cardId === 'card-106')?.url).toMatch(/^data:image\/svg\+xml,/);
   });
 });

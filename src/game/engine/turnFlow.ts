@@ -52,7 +52,7 @@ export interface TurnFlowState {
    */
   legalPlacements: TilePosition[];
   /**
-   * Позиция tile, ожидающая подтверждения ориентации (после drop).
+   * Позиция tile, ожидающая подтверждения ориентации (после выбора клетки).
    * Null вне TILE_POSITIONED.
    */
   positionedAt: TilePosition | null;
@@ -539,7 +539,8 @@ function finalizeGame(state: TurnFlowState): TurnFlowState {
  * Draw policy разделена явно: RIVER PHASE и LAND PHASE.
  * River: никаких discard, карта выбирается через pickRiverDraw от ФАКТИЧЕСКОЙ
  * доски так, чтобы гарантированно существовал completion path.
- * Land: прежняя discard-логика сохранена без изменений.
+ * Land: берётся строго head колоды; unplayable-карта остаётся в руке до
+ * отдельного пользовательского действия «Заменить».
  */
 export function drawTurnTile(state: TurnFlowState): TurnFlowState {
   if (state.phase !== 'AWAITING_DRAW') return state;
@@ -579,29 +580,10 @@ function drawRiverTile(state: TurnFlowState): TurnFlowState {
 
 function drawLandTile(state: TurnFlowState): TurnFlowState {
   const deck = state.landDeck;
-  const discarded = [...state.discardedTileIds];
-  let index = 0;
-  let rotation: Rotation | null = null;
-  while (index < deck.length && rotation === null) {
-    rotation = playableRotation(state, deck[index]);
-    if (rotation === null) discarded.push(deck[index]);
-    else break;
-    index += 1;
-  }
-  if (rotation === null) {
-    const exhausted: TurnFlowState = {
-      ...state,
-      discardedTileIds: discarded,
-      landDeck: [],
-    };
-    // Ложный GAME_OVER запрещён: если river ещё не достроена или другой deck
-    // непуст — это blocked (non-terminal) состояние, а не конец игры.
-    if (isTerminalDeckExhaustion(exhausted.riverPlaced, exhausted.riverDeck, exhausted.landDeck)) {
-      return finalizeGame(exhausted);
-    }
-    return { ...exhausted, phase: 'AWAITING_DRAW' };
-  }
-  const id = deck[index];
+  const id = deck[0];
+  if (id === undefined) return isTerminalDeckExhaustion(state.riverPlaced, state.riverDeck, deck)
+    ? finalizeGame(state)
+    : state;
   const game = { ...state.game, tileDeck: { remaining: [id] }, gamePhase: 'drawTile' as const };
   const playerId = game.players[game.currentPlayerIndex]?.id ?? '';
   const result = applyAction(game, { type: 'DRAW_TILE', playerId }, getTileDefinition);
@@ -609,13 +591,12 @@ function drawLandTile(state: TurnFlowState): TurnFlowState {
   // Единый authoritative draw-lifecycle (общие post-draw поля flow-состояния).
   return {
     ...afterDrawFlowFields(state, result.state, id),
-    discardedTileIds: discarded,
-    landDeck: deck.slice(index + 1),
+    landDeck: deck.slice(1),
   };
 }
 
 /**
- * Post-drop ориентация из authoritative legal-списка клетки: следующий
+ * Ориентация preview из authoritative legal-списка клетки: следующий
  * rotation по циклу (детерминированный). Вне TILE_POSITIONED — no-op.
  * Board GameState НЕ мутируется: tile ещё не placed, скоринг не запускается.
  */
@@ -651,7 +632,7 @@ export function confirmTurnTilePlacement(state: TurnFlowState): TurnFlowState {
 }
 
 /**
- * Drop карты на клетку. Клетка без legal rotations — строгий no-op
+ * Выбор клетки для карты. Клетка без legal rotations — строгий no-op
  * (engine state не меняется, карта остаётся в hand). Для legal клетки
  * выбирается deterministic first legal rotation (стабильный порядок 0,90,180,270).
  * Фаза TILE_POSITIONED: ориентацию можно.cycle'ить до подтверждения.
@@ -671,27 +652,19 @@ export function placeTurnTile(state: TurnFlowState, position: TilePosition): Tur
 }
 
 /**
- * Отмена неподтверждённого drop: карта возвращается в hand, board не менялся.
+ * Отмена неподтверждённого размещения: карта возвращается в hand, board не менялся.
  */
 export function cancelPositionedTurnTile(state: TurnFlowState): TurnFlowState {
   if (state.phase !== 'TILE_POSITIONED') return state;
   return { ...state, phase: 'TILE_IN_HAND', rotation: 0, positionedAt: null, positionedRotations: [] };
 }
 
-/**
- * Legacy-совместимость с существующими autoplay-тестами: «повернуть» теперь
- * cicly'ит ориентацию positioned tile; вне TILE_POSITIONED — строгий no-op
- * (hand-tile всегда ожидает с rotation 0 и подсветкой всех legal клеток).
- */
-export function rotateTurnTile(state: TurnFlowState): TurnFlowState {
-  if (state.phase !== 'TILE_POSITIONED') return state;
-  return rotatePositionedTurnTile(state);
-}
-
 export function selectTurnMeeple(state: TurnFlowState, target: MeeplePlacement | null): TurnFlowState {
   if (state.phase !== 'TILE_PLACED' && state.phase !== 'MEEPLE_SELECTION') return state;
   // Отмена выбора: возвращаемся в TILE_PLACED.
-  if (target === null) return { ...state, phase: 'TILE_PLACED', selectedMeepleTarget: null };
+  if (target === null) return state.game.gamePhase === 'placeMeeple'
+    ? { ...state, phase: 'TILE_PLACED', selectedMeepleTarget: null }
+    : state;
   // Authoritative проверка: цель берётся из того же источника, что и UI/engine.
   const legal = getLegalMeeplePlacements(state.game, getTileDefinition);
   const key = placementKey(target);
@@ -699,7 +672,14 @@ export function selectTurnMeeple(state: TurnFlowState, target: MeeplePlacement |
     // Нелегальная цель — strict no-op: flow не зависает в MEEPLE_SELECTION.
     return state;
   }
-  return { ...state, phase: 'MEEPLE_SELECTION', selectedMeepleTarget: target };
+  const last = state.game.lastPlacedTile;
+  const playerId = state.game.players[state.game.currentPlayerIndex]?.id ?? '';
+  if (!last) return state;
+  const result = applyAction(state.game, {
+    type: 'PLACE_MEEPLE', playerId, position: last.position, ...target,
+  }, getTileDefinition);
+  if (!result.ok) return state;
+  return { ...state, game: result.state, phase: 'MEEPLE_SELECTION', selectedMeepleTarget: target };
 }
 
 export function endTurn(state: TurnFlowState): TurnFlowState {
@@ -707,19 +687,11 @@ export function endTurn(state: TurnFlowState): TurnFlowState {
   const previousPlayerId = state.game.players[state.game.currentPlayerIndex]?.id ?? '';
   const last = state.game.lastPlacedTile;
   if (!last) return state;
-  let decisionState = state;
-  if (state.selectedMeepleTarget) {
-    // Defensive re-validation: stale/corrupted selection must not hang the flow
-    // in MEEPLE_SELECTION forever via a silent PLACE_MEEPLE rejection.
-    const legal = getLegalMeeplePlacements(state.game, getTileDefinition);
-    const key = placementKey(state.selectedMeepleTarget);
-    if (!legal.some((placement) => placementKey(placement) === key)) {
-      decisionState = { ...state, selectedMeepleTarget: null, phase: 'TILE_PLACED' };
-    }
-  }
-  const decision = decisionState.selectedMeepleTarget
-    ? applyAction(decisionState.game, { type: 'PLACE_MEEPLE', playerId: previousPlayerId, position: last.position, ...decisionState.selectedMeepleTarget }, getTileDefinition)
-    : applyAction(decisionState.game, { type: 'SKIP_MEEPLE', playerId: previousPlayerId }, getTileDefinition);
+  // PLACE_MEEPLE уже выполнен при выборе authoritative target. Если игрок
+  // никого не поставил, только тогда фиксируем SKIP_MEEPLE перед scoring.
+  const decision = state.game.gamePhase === 'placeMeeple'
+    ? applyAction(state.game, { type: 'SKIP_MEEPLE', playerId: previousPlayerId }, getTileDefinition)
+    : { ok: true as const, state: state.game };
   if (!decision.ok) return state;
 
   // COMPLETE_TURN решает между обычным переходом и финальным подсчётом по

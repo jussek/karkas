@@ -1,33 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
-import { applyAction, createGame } from '../engine/gameEngine';
 import { buildTurnResolution, emptyTurnResolution } from '../engine/turnResolution';
-import type { Player } from '../types/state';
-
-const players: Player[] = [
-  { id: 'p1', name: 'Игрок 1', color: 'blue', score: 0 },
-  { id: 'p2', name: 'Игрок 2', color: 'red', score: 0 },
-];
 
 describe('Stage 4A authoritative TurnResolution (single scoring pass)', () => {
-  it('real End Turn through the engine produces a road event and returns its meeple', () => {
-    // Прямая N-S дорога поверх стартового T-C-CCCC: нижний конец дороги упирается
-    // в город стартового → segment остаётся открытым. Замыкаем её вторым тайлом,
-    // после чего COMPLETE_TURN обязан выдать РОВНО ОДНО road-событие и вернуть meeple.
-    let state = createGame({ gameId: 'res-road', players, deck: ['card-091'], getDefinition: getTileDefinition });
-    const drawn = applyAction(state, { type: 'DRAW_TILE', playerId: 'p1' }, getTileDefinition);
-    if (!drawn.ok) throw new Error(drawn.error.message);
-    // Fixture rotation selected through authoritative placement legality.
-    const placed = applyAction(drawn.state, { type: 'PLACE_TILE', playerId: 'p1', tileDefinitionId: 'card-091', position: { x: 0, y: 1 }, rotation: 180 }, getTileDefinition);
-    expect(placed.ok).toBe(true);
-    if (!placed.ok) return;
-    state = placed.state;
-    expect(getCardDefinition('card-091').riverCard).toBe(true);
-    // Река не даёт дорог — проверяем контракт на синтетическом award-входе ниже;
-    // реальный же road/city/monastery путь покрыт monasteryEndTurn + stage3h тестами.
-    expect(state.lastPlacedTile?.position).toEqual({ x: 0, y: 1 });
-  });
-
   it('builds road/city/monastery events directly from an award list without re-scoring', () => {
     const resolution = buildTurnResolution({
       previousPlayerId: 'p1',

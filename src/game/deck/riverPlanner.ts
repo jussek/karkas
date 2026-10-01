@@ -2,9 +2,9 @@
  * River planner (Stage 4A Repair 2B, OPTION_A).
  *
  * Гарантирует детерминированную, разрешимую последовательность river-карт:
- * - source card-091 всегда первой;
+ * - source card-133 всегда первой;
  * - ВСЕ 17 middle карт используются ровно один раз, без discard и skip;
- * - end card-133 всегда последняя (19-я river tile);
+ * - end card-106 всегда последняя (19-я river tile);
  * - порядок детерминирован от seed (тот же seed + та же доска => тот же план);
  * - legality проверяется существующими authoritative правилами
  *   (getLegalTilePlacements / isLegalTilePlacement) — правила НЕ ослабляются.

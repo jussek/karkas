@@ -139,6 +139,39 @@ describe('Stage 4A — authoritative legal options', () => {
 });
 
 describe('Stage 4A — replaceUnplayableTurnTile', () => {
+  it('draws exactly an unplayable land head into the hand without auto-discard', () => {
+    const board = ringBoard();
+    const [impossible] = unplayableLandIds(board);
+    const playable = playableLandId(board);
+    const hand = handState(impossible, { landDeck: [impossible, playable] });
+    const awaiting: TurnFlowState = {
+      ...hand,
+      phase: 'AWAITING_DRAW',
+      game: { ...hand.game, drawnTileDefinitionId: null, gamePhase: 'drawTile' },
+    };
+    const drawn = drawTurnTile(awaiting);
+    expect(drawn.phase).toBe('TILE_IN_HAND');
+    expect(drawn.game.drawnTileDefinitionId).toBe(impossible);
+    expect(drawn.landDeck).toEqual([playable]);
+    expect(drawn.discardedTileIds).toEqual([]);
+    expect(hasAnyLegalTilePlacement(drawn)).toBe(false);
+  });
+
+  it('draws a playable land head without discarding it', () => {
+    const board = ringBoard();
+    const playable = playableLandId(board);
+    const hand = handState(playable, { landDeck: [playable] });
+    const awaiting: TurnFlowState = {
+      ...hand,
+      phase: 'AWAITING_DRAW',
+      game: { ...hand.game, drawnTileDefinitionId: null, gamePhase: 'drawTile' },
+    };
+    const drawn = drawTurnTile(awaiting);
+    expect(drawn.game.drawnTileDefinitionId).toBe(playable);
+    expect(drawn.discardedTileIds).toEqual([]);
+    expect(hasAnyLegalTilePlacement(drawn)).toBe(true);
+  });
+
   it('test 2: playable land tile — strict no-op (identity)', () => {
     const board = ringBoard();
     const playableId = playableLandId(board);

@@ -5,15 +5,15 @@ import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
 import { getCardDefinition } from '../cards/catalogApi';
 
 describe('Stage 3H canonical visual audit 001-050', () => {
-  it('contains 143 playable cards, restores 105, and permanently excludes user-confirmed card-106', () => {
+  it('contains the 143 playable cards and restores river end card-106', () => {
     expect(GAME_CARD_CATALOG).toHaveLength(143);
     expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-105')).toBe(true);
-    expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(false);
+    expect(GAME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(true);
     expect(RUNTIME_CARD_CATALOG).toHaveLength(143);
     expect(RUNTIME_CARD_CATALOG.some((card) => card.id === 'card-105')).toBe(true);
-    expect(RUNTIME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(false);
+    expect(RUNTIME_CARD_CATALOG.some((card) => card.id === 'card-106')).toBe(true);
     expect(getCardDefinition('card-105').asset).toBe('1 (105).jpg');
-    expect(() => getCardDefinition('card-106')).toThrow();
+    expect(getCardDefinition('card-106').riverKind).toBe('end');
   });
 
   it('marks the complete first audit batch', () => {

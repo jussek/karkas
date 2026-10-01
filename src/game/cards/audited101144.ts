@@ -37,7 +37,7 @@ export const AUDITED_101_144: readonly CardDefinition[] = [
   { id:'card-130', asset:'1 (130).jpg', edges:{north:'field',east:'city',south:'field',west:'city'}, topology:{roads:[],cities:[[1],[3]],cityShields:[0,0]}, shields:0 },
   { id:'card-131', asset:'1 (131).jpg', edges:{north:'road',east:'city',south:'city',west:'road'}, topology:{roads:[[0,3]],cities:[[1,2]],cityShields:[0]}, shields:0 },
   { id:'card-132', asset:'1 (132).jpg', edges:{north:'field',east:'road',south:'road',west:'field'}, topology:{roads:[[1,2]],cities:[]}, shields:0 },
-  { id:'card-133', asset:'1 (133).jpg', edges:{north:'field',east:'field',south:'river',west:'field'}, topology:{roads:[],cities:[],riverEdges:[2]}, shields:0, riverCard:true, riverKind:'end' },
+  { id:'card-133', asset:'1 (133).jpg', edges:{north:'field',east:'field',south:'river',west:'field'}, topology:{roads:[],cities:[],riverEdges:[2]}, shields:0, riverCard:true, riverKind:'start' },
   { id:'card-134', asset:'1 (134).jpg', edges:{north:'city',east:'city',south:'city',west:'field'}, topology:{roads:[],cities:[[0,1,2]],cityShields:[0]}, shields:0 },
   { id:'card-135', asset:'1 (135).jpg', edges:{north:'road',east:'field',south:'city',west:'city'}, topology:{roads:[[0]],cities:[[2,3]],cityShields:[0]}, shields:0 },
   { id:'card-136', asset:'1 (136).jpg', edges:{north:'city',east:'city',south:'road',west:'road'}, topology:{roads:[[2,3]],cities:[[0,1]],cityShields:[1]}, shields:1 },
