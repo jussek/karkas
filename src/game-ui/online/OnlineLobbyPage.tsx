@@ -3,19 +3,23 @@ import { ensureOnlineIdentity } from '../../online/auth';
 import { listLobbyMessages, mergeLobbyMessages, sendLobbyMessage } from '../../online/chatApi';
 import { getLobby, leaveLobby, setReady, startLobby, updateLobbySettings } from '../../online/lobbyApi';
 import { subscribeToLobby, subscribeToLobbyMessages } from '../../online/realtime';
+import { getMatchByLobby, startOnlineMatch } from '../../online/matchApi';
+import type { OnlineMatch } from '../../online/matchTypes';
 import type { OnlineLobbyMessage, OnlineLobbySnapshot, OnlineTurnTimerSeconds } from '../../online/types';
 import { OnlineIcon } from './OnlineIcon';
 import { CREATE_PLAYER_OPTIONS, CREATE_TIMER_OPTIONS, SEAT_COLORS, currentLobbyPlayer, isLobbyHost, startBlockReason, timerLabel, validateChatBody } from './onlineLobbyModel';
 import { lobbyDisplayName } from './lobbyBrowserModel';
 import './onlineLobby.css';
 
-export function OnlineLobbyPage({ lobbyId, initialLobby, onExit }: { lobbyId:string; initialLobby:OnlineLobbySnapshot; onExit:()=>void }) {
+export function OnlineLobbyPage({ lobbyId, initialLobby, onExit, onMatch }: { lobbyId:string; initialLobby:OnlineLobbySnapshot; onExit:()=>void; onMatch:(match:OnlineMatch)=>void }) {
   const [lobby,setLobby]=useState(initialLobby); const [userId,setUserId]=useState(''); const [messages,setMessages]=useState<OnlineLobbyMessage[]>([]);
   const [body,setBody]=useState(''); const [error,setError]=useState(''); const [busy,setBusy]=useState(false); const [copied,setCopied]=useState(false);
   const chatRef=useRef<HTMLDivElement>(null); const nearBottom=useRef(true);
+  const materializing=useRef(false);
   useEffect(()=>{let active=true; let stopLobby=()=>{}; let stopChat=()=>{};(async()=>{try{const id=await ensureOnlineIdentity();const fresh=await getLobby(lobbyId);const initial=await listLobbyMessages(lobbyId);if(!active)return;setUserId(id);setLobby(fresh);setMessages(initial);stopLobby=subscribeToLobby(lobbyId,(next,reason)=>{if(next)setLobby(next);if(reason)setError('Связь с лобби прервана.');});stopChat=subscribeToLobbyMessages(lobbyId,(next,reason)=>{if(!reason)setMessages(current=>mergeLobbyMessages(current,next));});}catch(reason){console.error(reason);if(active)setError('Не удалось подключиться к лобби.');}})();return()=>{active=false;stopLobby();stopChat();};},[lobbyId]);
   useEffect(()=>{if(nearBottom.current)chatRef.current?.scrollTo({top:chatRef.current.scrollHeight,behavior:'smooth'});},[messages]);
   const me=currentLobbyPlayer(lobby,userId); const host=isLobbyHost(lobby,userId); const startReason=startBlockReason(lobby,userId);
+  useEffect(()=>{if(materializing.current)return;if(lobby.status==='starting'&&host){materializing.current=true;void startOnlineMatch(lobbyId).then(onMatch).catch(reason=>{console.error(reason);setError('Не удалось создать сетевую партию.');materializing.current=false;});}else if(lobby.status==='in_game'){materializing.current=true;void getMatchByLobby(lobbyId).then(onMatch).catch(reason=>{console.error(reason);setError('Не удалось открыть сетевую партию.');materializing.current=false;});}},[host,lobby.status,lobbyId,onMatch]);
   const mutate=async(task:()=>Promise<unknown>)=>{setBusy(true);setError('');try{await task();}catch(reason){console.error(reason);setError('Не удалось выполнить действие. Попробуйте ещё раз.');}finally{setBusy(false)}};
   const leave=()=>mutate(async()=>{await leaveLobby(lobbyId);onExit();});
   const settings=(patch:Parameters<typeof updateLobbySettings>[1])=>mutate(async()=>{setLobby(await updateLobbySettings(lobbyId,patch));});

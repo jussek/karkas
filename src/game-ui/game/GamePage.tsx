@@ -3,6 +3,7 @@ import { getCardDefinition, getTileDefinition } from '../../game/cards/catalogAp
 import {
   RIVER_CARD_COUNT,
   canEndTurn,
+  cancelPositionedTurnTile,
   confirmTurnTilePlacement,
   drawTurnTile,
   endTurn,
@@ -39,6 +40,7 @@ import {
   turnKeyOf,
 } from './matchTimer';
 import type { MatchTimerState } from './matchTimer';
+import { localHandVisible } from './draftVisibility';
 import './gamePage.css';
 
 const CELL = 92;
@@ -110,6 +112,8 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
   });
   const [paused, setPaused] = useState<boolean>(initialUiMatchState?.paused ?? false);
   const [meepleMode, setMeepleMode] = useState(false);
+  const [meepleDraft, setMeepleDraft] = useState<MeeplePlacement | null>(null);
+  const [skipMeepleConfirm, setSkipMeepleConfirm] = useState(false);
   const [feedbackTick, setFeedbackTick] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -290,6 +294,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
   const endTurnAction = () => {
     setFlow((current) => endTurn(current));
     setMeepleMode(false);
+    setMeepleDraft(null);
     setMeepleDialogOpen(false);
     setFeedbackTick((tick) => tick + 1);
   };
@@ -362,6 +367,11 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
                 }}
               ><MeepleIcon fill={owner?.color ?? '#b8332b'} size={30} /></svg>;
             })}
+            {meepleDraft && flow.game.lastPlacedTile && (() => {
+              const anchor = anchorForPlacement(meepleDraft);
+              const position = flow.game.lastPlacedTile.position;
+              return <svg className="board-meeple meeple-draft-preview" viewBox="0 0 100 100" aria-label="Предпросмотр человечка" style={{ left: (position.x + boardProjection.originX) * CELL + (anchor.x * CELL) / 100, top: (position.y + boardProjection.originY) * CELL + (anchor.y * CELL) / 100 }}><MeepleIcon fill={player?.color ?? '#2f6fd6'} size={30} /></svg>;
+            })()}
             {flow.legalPlacements.map((position) => (
               <button
                 className="legal-cell"
@@ -484,7 +494,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
               type="button"
               key={key(target)}
               onClick={() => {
-                setFlow((current) => selectTurnMeeple(current, target));
+                setMeepleDraft(target);
                 setMeepleDialogOpen(false);
                 setMeepleMode(false);
                 setPlacementFeedback(null);
@@ -497,8 +507,10 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
         </section>
       </div>}
 
+      {skipMeepleConfirm && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Подтверждение пропуска человечка"><section className="game-menu-sheet"><h2>Закончить ход без человечка?</h2><button type="button" onClick={() => setSkipMeepleConfirm(false)}>Отмена</button><button type="button" onClick={() => { setSkipMeepleConfirm(false); endTurnAction(); }}>Закончить</button></section></div>}
+
       <section className={`turn-controls${paused ? ' is-paused' : ''}`} aria-label="Действия хода" aria-hidden={paused} inert={paused}>
-        {heldId && <div
+        {heldId && localHandVisible(flow.phase) && <div
           className={`held-tile${unplayableTile ? ' is-unplayable' : ''}`}
         >{unplayableTile && <button
           type="button"
@@ -510,26 +522,29 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
             setFlow((current) => replaceUnplayableTurnTile(current));
           }}
         >↺ <span>Заменить</span></button>}<TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={86} /><span>{flow.rotation}°</span></div>}
-        <button type="button" className="draw-action" disabled={flow.phase !== 'AWAITING_DRAW' || paused} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>
-        <button type="button" className="confirm-placement" aria-label="Подтвердить размещение карты" disabled={flow.phase !== 'TILE_POSITIONED' || paused} onClick={() => setFlow(confirmTurnTilePlacement)}>✓ <span>Поставить</span></button>
-        <button
+        {flow.phase === 'AWAITING_DRAW' && <button type="button" className="draw-action" disabled={paused} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>}
+        {flow.phase === 'TILE_POSITIONED' && <><button type="button" className="cancel-placement" disabled={paused} onClick={() => setFlow((current) => cancelPositionedTurnTile(current))}>Отмена</button><button type="button" className="confirm-placement" aria-label="Подтвердить размещение карты" disabled={paused} onClick={() => setFlow(confirmTurnTilePlacement)}>✓ <span>Установить карту</span></button></>}
+        {meepleDraft ? <><button type="button" disabled={paused} onClick={() => setMeepleDraft(null)}>Отмена</button><button type="button" className="confirm-meeple" disabled={paused} onClick={() => { setFlow((current) => selectTurnMeeple(current, meepleDraft)); setMeepleDraft(null); }}>Поставить человечка</button></> : ['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) && <button
           type="button"
           aria-pressed={meepleMode}
           disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) || available === 0 || paused}
           onClick={() => {
             if (meepleMode) {
-              setFlow((current) => selectTurnMeeple(current, null));
               setMeepleDialogOpen(false);
             }
             setMeepleMode((value) => !value);
           }}
-        >👤 <span>{meepleMode ? 'Отменить' : `Подданный (${available})`}</span></button>
-        <button
+        >👤 <span>{meepleMode ? 'Отменить' : `Подданный (${available})`}</span></button>}
+        {canEndTurn(flow) && <button
           type="button"
           className="end-turn"
           disabled={!canEndTurn(flow) || paused}
-          onClick={endTurnAction}
-        ><b>✓</b><span>Закончить ход</span></button>
+          onClick={() => {
+            if (meepleDraft) { setPlacementFeedback('Сначала поставьте человечка или отмените выбор'); return; }
+            if (legalMeeples.length > 0 && available > 0 && flow.phase === 'TILE_PLACED') { setSkipMeepleConfirm(true); return; }
+            endTurnAction();
+          }}
+        ><b>✓</b><span>Закончить ход</span></button>}
       </section>
     </main>
   );
