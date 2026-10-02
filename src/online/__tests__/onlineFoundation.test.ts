@@ -58,6 +58,12 @@ describe('architecture and migration regression', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps the service-role admin module out of all browser source', () => {
+    const offenders = filesBelow(join(process.cwd(), 'src')).filter((path) => /(?:from\s+|import\s*\()['"][^'"]*api\/_lib\/supabaseAdmin/.test(readFileSync(path, 'utf8')));
+    expect(offenders).toEqual([]);
+    expect(readFileSync(join(process.cwd(), '.env.example'), 'utf8')).not.toContain('VITE_SUPABASE_SERVICE_ROLE_KEY');
+  });
+
   it('migration has hardened schemas, invoker wrappers, grants, and join invariants', () => {
     const sql = readFileSync(join(process.cwd(), 'supabase/migrations/20261001131523_stage5a_online_lobbies.sql'), 'utf8');
     const publicFunctions = [...sql.matchAll(/create function public\.[\s\S]*?(?=create function|revoke all on function)/g)].map(([definition]) => definition);
