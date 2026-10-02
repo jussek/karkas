@@ -1,6 +1,6 @@
-import type { GlobalFeatureContext, ResolvedGlobalFeature } from './globalFeatures';
-import { getGlobalFeatures, resolveGlobalFeature } from './globalFeatures';
-import { getFeatureMajorityPlayers } from './scoring';
+import type { GlobalFeatureContext, ResolvedGlobalFeature } from './globalFeatures.js';
+import { getGlobalFeatures, resolveGlobalFeature } from './globalFeatures.js';
+import { getFeatureMajorityPlayers } from './scoring.js';
 
 export interface FinalFeatureScoreAward {
   featureId: string;

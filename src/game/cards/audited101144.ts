@@ -1,4 +1,4 @@
-import type { CardDefinition } from './types';
+import type { CardDefinition } from './types.js';
 
 /** Manual visual audit of the user-supplied archive, cards 101..144.
  * Topology edge order: N=0, E=1, S=2, W=3.

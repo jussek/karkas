@@ -10,7 +10,7 @@
  * Одинаковый id у двух сторон = стороны соединены внутри плитки.
  */
 
-import type { EdgeType, TileDefinition } from '../types/geometry';
+import type { EdgeType, TileDefinition } from '../types/geometry.js';
 
 /** Вспомогательный конструктор «простой» плитки из sides + пар связей. */
 function makeTile(

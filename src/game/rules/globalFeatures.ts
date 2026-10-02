@@ -1,14 +1,14 @@
-import { edgeOffset, getAllNeighborhoodPositions, oppositeEdge, rotateEdge } from '../engine/geometry';
+import { edgeOffset, getAllNeighborhoodPositions, oppositeEdge, rotateEdge } from '../engine/geometry.js';
 import type {
   EdgeIndex,
   MeeplePlacement,
   Rotation,
   TileDefinition,
   TilePosition,
-} from '../types/geometry';
-import { EDGES } from '../types/geometry';
-import type { Board, FeaturePart, Meeple } from '../types/state';
-import { posKey } from '../types/state';
+} from '../types/geometry.js';
+import { EDGES } from '../types/geometry.js';
+import type { Board, FeaturePart, Meeple } from '../types/state.js';
+import { posKey } from '../types/state.js';
 
 export interface GlobalFeatureContext {
   board: Board;

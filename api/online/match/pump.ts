@@ -1,0 +1,24 @@
+import { getSupabaseAdmin, authenticateBearer } from '../../_lib/supabaseAdmin.js';
+import { type ApiRequest,type ApiResponse,requirePost,sendError } from '../../_lib/http.js';
+import { pumpAuthoritativeMatch } from '../../_lib/matchAutomation.js';
+
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export default async function handler(request:ApiRequest,response:ApiResponse):Promise<void>{
+  try{
+    requirePost(request);const admin=getSupabaseAdmin();const body=request.body as {matchId?:unknown}|null;
+    const schedulerSecret=typeof request.headers['x-karkas-automation-secret']==='string'?request.headers['x-karkas-automation-secret']:undefined;
+    const scheduler=!!process.env.MATCH_AUTOMATION_SECRET&&schedulerSecret===process.env.MATCH_AUTOMATION_SECRET;
+    if(scheduler){
+      if(typeof body?.matchId==='string'&&uuid.test(body.matchId)){response.status(200).json(await pumpAuthoritativeMatch(admin,body.matchId));return;}
+      const due=await admin.rpc('list_due_online_matches_server',{p_limit:20});if(due.error)throw due.error;
+      const results=[];for(const row of due.data as Array<{match_id:string}>)results.push(await pumpAuthoritativeMatch(admin,row.match_id));
+      response.status(200).json({processed:results.filter(result=>result.processed).length});return;
+    }
+    const actor=await authenticateBearer(typeof request.headers.authorization==='string'?request.headers.authorization:undefined);
+    if(typeof body?.matchId!=='string'||!uuid.test(body.matchId))throw Object.assign(new Error('Invalid request body.'),{status:400,code:'INVALID_BODY'});
+    const member=await admin.from('online_match_players').select('match_id').eq('match_id',body.matchId).eq('user_id',actor).eq('is_bot',false).maybeSingle();
+    if(member.error)throw member.error;if(!member.data)throw Object.assign(new Error('Actor is not a match participant.'),{status:403,code:'FORBIDDEN'});
+    response.status(200).json(await pumpAuthoritativeMatch(admin,body.matchId));
+  }catch(error){sendError(response,error);}
+}

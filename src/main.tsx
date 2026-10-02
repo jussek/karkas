@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
@@ -7,6 +7,17 @@ import { GamePage } from "./game-ui/game/GamePage";
 import { GameSetupPage } from "./game-ui/setup/GameSetupPage";
 import { LocalLobby } from "./game-ui/setup/LocalLobby";
 import { MainMenu } from "./game-ui/menu/MainMenu";
+import { FindGamePage } from "./game-ui/online/FindGamePage";
+import { OnlineCreatePage } from "./game-ui/online/OnlineCreatePage";
+import { OnlineLobbyPage } from "./game-ui/online/OnlineLobbyPage";
+import { OnlineGamePage } from "./game-ui/online/OnlineGamePage";
+import { GameLoadingScreen } from "./game-ui/loading/GameLoadingScreen";
+import { onlineNavigationTarget } from "./game-ui/online/onlineNavigation";
+import type { OnlineLobbySnapshot } from "./online/types";
+import type { OnlineMatch } from "./online/matchTypes";
+import { findMyActiveMatch, getMatch } from "./online/matchApi";
+import { clearActiveMatch, loadActiveMatch, saveActiveMatch } from "./online/activeMatchPersistence";
+import { getSupabaseClient } from "./online/supabaseClient";
 import type { LocalGameConfig } from "./game/session";
 import { DEFAULT_MATCH_OPTIONS, createLocalGameConfig } from "./game/session";
 import type { TurnFlowState } from "./game/engine/turnFlow";
@@ -34,7 +45,9 @@ function browserSeed(): number {
   return Date.now() >>> 0;
 }
 
-type Screen = "menu" | "setup" | "lobby" | "game";
+function onlineCriticalCards(match:OnlineMatch):string[]{return [...Object.values(match.snapshot.game.board).map(tile=>tile.definitionId),match.snapshot.game.drawnTileDefinitionId].filter((id):id is string=>Boolean(id));}
+
+export type Screen = "menu" | "setup" | "lobby" | "game" | "online-browser" | "online-create" | "online-lobby" | "online-game" | "loading";
 
 /**
  * Stage 4C: rematch-конфиг генерируется в App/browser layer (не внутри игры):
@@ -53,15 +66,6 @@ export function buildRematchConfig(
   };
 }
 
-const RULES_STEPS = [
-  "Возьмите карту.",
-  "Выберите подсвеченное место.",
-  "Если доступно несколько поворотов — выберите нужный.",
-  "Подтвердите карту.",
-  "При желании поставьте человечка.",
-  "Закончите ход.",
-];
-
 export function App() {
   // Stage 4B: локальная партия сохраняется автоматически; из меню её
   // можно продолжить. Engine/scoring/river — нетронутые, UI-слой только
@@ -70,11 +74,36 @@ export function App() {
   const [config, setConfig] = useState<LocalGameConfig | null>(null);
   const [restoredFlow, setRestoredFlow] = useState<TurnFlowState | null>(null);
   const [restoredUiMatchState, setRestoredUiMatchState] = useState<UiMatchState | undefined>(undefined);
-  const [rulesOpen, setRulesOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmNewGame, setConfirmNewGame] = useState(false);
   const [hasSavedGame, setHasSavedGame] = useState(() => loadLocalGameSave() !== null);
   const [settings, setSettings] = useState<LocalSettings>(() => loadSettings());
+  const [onlineLobby, setOnlineLobby] = useState<OnlineLobbySnapshot | null>(null);
+  const [onlineMatch, setOnlineMatch] = useState<OnlineMatch | null>(null);
+  const [loadingTarget,setLoadingTarget]=useState<'game'|'online-game'>('game');
+  const [loadingCards,setLoadingCards]=useState<string[]>(['card-133']);
+  const [loadingVariant,setLoadingVariant]=useState<'game'|'reconnect'>('game');
+
+  const beginLoading=useCallback((target:'game'|'online-game',cardIds:string[],variant:'game'|'reconnect'='game')=>{setLoadingTarget(target);setLoadingCards(cardIds.length?cardIds:['card-133']);setLoadingVariant(variant);setScreen('loading');},[]);
+  const finishLoading=useCallback(()=>setScreen(loadingTarget),[loadingTarget]);
+
+  useEffect(() => {
+    let cancelled=false;
+    void (async()=>{
+      const client=getSupabaseClient();if(!client)return;
+      const {data}=await client.auth.getSession();if(!data.session)return;
+      const saved=loadActiveMatch();
+      try{
+        const match=saved?await getMatch(saved.activeMatchId):await findMyActiveMatch();
+        if(cancelled)return;
+        if(match){setOnlineMatch(match);saveActiveMatch({activeMatchId:match.id,lobbyId:match.lobbyId});beginLoading('online-game',onlineCriticalCards(match),'reconnect');}
+        else if(saved)clearActiveMatch();
+      }catch{if(saved)clearActiveMatch();}
+    })();
+    return()=>{cancelled=true;};
+  },[beginLoading]);
+
+  const acceptOnlineMatch=(match:OnlineMatch)=>{setOnlineMatch(match);saveActiveMatch({activeMatchId:match.id,lobbyId:match.lobbyId});beginLoading('online-game',onlineCriticalCards(match));};
+  const returnToOnlineGame=()=>{if(onlineMatch)beginLoading('online-game',onlineCriticalCards(onlineMatch),'reconnect');};
 
   const updateSetting = (patch: Partial<LocalSettings>) => {
     setSettings((current) => {
@@ -110,7 +139,7 @@ export function App() {
     setConfig(next);
     setRestoredFlow(null);
     setRestoredUiMatchState(undefined);
-    setScreen("game");
+    beginLoading('game',['card-133']);
   };
 
   const continueGame = () => {
@@ -122,7 +151,7 @@ export function App() {
     setConfig(save.config);
     setRestoredFlow(save.flow);
     setRestoredUiMatchState(save.uiMatchState);
-    setScreen("game");
+    beginLoading('game',[save.flow.game.drawnTileDefinitionId,...Object.values(save.flow.game.board).map(tile=>tile.definitionId)].filter((id):id is string=>Boolean(id)),'reconnect');
   };
 
   /** Stage 4C rematch: те же игроки/опции, новые id/seed; старое сохранение заменяется. */
@@ -134,7 +163,7 @@ export function App() {
     setRestoredFlow(null);
     setRestoredUiMatchState(undefined);
     setHasSavedGame(true);
-    setScreen("game");
+    beginLoading('game',['card-133']);
   };
 
   const prepare = (next: LocalGameConfig) => {
@@ -153,40 +182,12 @@ export function App() {
           onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })}
           onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })}
           onContinueGame={hasSavedGame ? continueGame : undefined}
-          onCreateGame={() => guardDestructive(() => setScreen("setup"))}
+          onReturnToOnlineGame={onlineMatch?.status==='playing'?returnToOnlineGame:undefined}
+          onCreateGame={() => setScreen(onlineNavigationTarget("create"))}
           onQuickGame={() => guardDestructive(quickGame)}
-          onRules={() => setRulesOpen(true)}
-          onSettings={() => setSettingsOpen(true)}
+          onFindGame={() => setScreen(onlineNavigationTarget("find"))}
+          onExit={() => { if (typeof window !== "undefined" && window.history.length > 1) window.history.back(); }}
         />
-        {rulesOpen && (
-          <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="rules-title">
-            <section className="rules-card">
-              <button type="button" className="rules-close" aria-label="Закрыть правила" onClick={() => setRulesOpen(false)}>×</button>
-              <h2 id="rules-title">Как играть</h2>
-              <ol>
-                {RULES_STEPS.map((step) => <li key={step}>{step}</li>)}
-              </ol>
-              <p>Река строится первой — пока все речные карты не размещены, сдаются только они.</p>
-              <p>Человечки ставятся только на дорогу, город или монастырь. Поля и сады игровыми целями не являются.</p>
-            </section>
-          </div>
-        )}
-        {settingsOpen && (
-          <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-            <section className="rules-card">
-              <button type="button" className="rules-close" aria-label="Закрыть настройки" onClick={() => setSettingsOpen(false)}>×</button>
-              <h2 id="settings-title">Настройки</h2>
-              <div className="settings-row">
-                <button type="button" aria-pressed={settings.soundEnabled} onClick={() => updateSetting({ soundEnabled: !settings.soundEnabled })}>
-                  Звук: {settings.soundEnabled ? "вкл" : "выкл"}
-                </button>
-                <button type="button" aria-pressed={settings.musicEnabled} onClick={() => updateSetting({ musicEnabled: !settings.musicEnabled })}>
-                  Музыка: {settings.musicEnabled ? "вкл" : "выкл"}
-                </button>
-              </div>
-            </section>
-          </div>
-        )}
         {confirmNewGame && (
           <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="newgame-title">
             <section className="rules-card">
@@ -203,6 +204,13 @@ export function App() {
     );
   }
 
+  if(screen==='loading')return <GameLoadingScreen cardIds={loadingCards} variant={loadingVariant} onReady={finishLoading}/>;
+
+  if (screen === "online-browser") return <FindGamePage onBack={() => setScreen(onlineNavigationTarget("back"))} onCreate={() => setScreen(onlineNavigationTarget("create"))} onJoined={(lobby) => { setOnlineLobby(lobby); setScreen(onlineNavigationTarget("joined")); }} />;
+  if (screen === "online-create") return <OnlineCreatePage onBack={() => setScreen("menu")} onCreated={(lobby) => { setOnlineLobby(lobby); setScreen("online-lobby"); }} />;
+  if (screen === "online-lobby" && onlineLobby) return <OnlineLobbyPage lobbyId={onlineLobby.id} initialLobby={onlineLobby} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} onMatch={acceptOnlineMatch} />;
+  if (screen === "online-game" && onlineMatch) return <OnlineGamePage initialMatch={onlineMatch} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} />;
+
   if (screen === "setup") {
     return (
       <GameSetupPage
@@ -218,7 +226,7 @@ export function App() {
     return (
       <LocalLobby
         config={config}
-        onStart={() => setScreen("game")}
+        onStart={() => beginLoading('game',['card-133'])}
         onBack={() => setScreen("setup")}
       />
     );
@@ -253,10 +261,10 @@ export function App() {
       onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })}
       onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })}
       onContinueGame={hasSavedGame ? continueGame : undefined}
-      onCreateGame={() => guardDestructive(() => setScreen("setup"))}
+      onReturnToOnlineGame={onlineMatch?.status==='playing'?returnToOnlineGame:undefined}
+      onCreateGame={() => setScreen(onlineNavigationTarget("create"))}
       onQuickGame={() => guardDestructive(quickGame)}
-      onRules={() => setRulesOpen(true)}
-      onSettings={() => setSettingsOpen(true)}
+      onFindGame={() => setScreen(onlineNavigationTarget("find"))}
     />
   );
 }

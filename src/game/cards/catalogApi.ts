@@ -1,7 +1,7 @@
-import { GAME_CARD_CATALOG } from './canonicalCatalog';
-import type { CardDefinition } from './types';
-import type { TileDefinition } from '../types/geometry';
-import { cardToTileDefinition } from './toTileDefinition';
+import { GAME_CARD_CATALOG } from './canonicalCatalog.js';
+import type { CardDefinition } from './types.js';
+import type { TileDefinition } from '../types/geometry.js';
+import { cardToTileDefinition } from './toTileDefinition.js';
 
 const CARD_BY_ID: ReadonlyMap<string, CardDefinition> = new Map(
   GAME_CARD_CATALOG.map((card) => [card.id, card]),

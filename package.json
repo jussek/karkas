@@ -5,9 +5,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "vitest run && tsc -b && vite build",
+    "build": "vitest run && npm run typecheck && npm run check:api-runtime && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && npm run typecheck:api",
+    "typecheck:api": "tsc -p tsconfig.api.json",
+    "check:api-runtime": "rm -rf .api-build && tsc -p tsconfig.api.build.json && node scripts/check-server-runtime.mjs .api-build && rm -rf .api-build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -26,5 +28,8 @@
     "vitest": "^4.1.11"
   },
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "2.58.0"
+  }
 }

@@ -3,13 +3,13 @@
  * closes the sole frontier before the land deck begins.
  */
 
-import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
-import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
-import { areEdgesCompatible, edgeOffset, getTileEdges, oppositeEdge, rotateEdge } from '../engine/geometry';
-import { getLegalTilePlacements } from '../rules/placement';
-import { posKey, type Board } from '../types/state';
-import type { EdgeIndex, EdgeType, Rotation, TilePosition } from '../types/geometry';
-import { seededShuffle } from './seededShuffle';
+import { getCardDefinition, getTileDefinition } from '../cards/catalogApi.js';
+import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog.js';
+import { areEdgesCompatible, edgeOffset, getTileEdges, oppositeEdge, rotateEdge } from '../engine/geometry.js';
+import { getLegalTilePlacements } from '../rules/placement.js';
+import { posKey, type Board } from '../types/state.js';
+import type { EdgeIndex, EdgeType, Rotation, TilePosition } from '../types/geometry.js';
+import { seededShuffle } from './seededShuffle.js';
 
 export interface RiverPlanStep {
   cardId: string;

@@ -1,12 +1,12 @@
-import { getAllNeighborhoodPositions, rotateEdge } from '../engine/geometry';
-import type { TilePosition } from '../types/geometry';
-import { EDGES } from '../types/geometry';
-import { posKey } from '../types/state';
+import { getAllNeighborhoodPositions, rotateEdge } from '../engine/geometry.js';
+import type { TilePosition } from '../types/geometry.js';
+import { EDGES } from '../types/geometry.js';
+import { posKey } from '../types/state.js';
 import {
   resolveGlobalFeature,
   type GlobalFeatureContext,
   type ResolvedGlobalFeature,
-} from './globalFeatures';
+} from './globalFeatures.js';
 
 export type FeatureScoreType = 'road' | 'city' | 'monastery';
 

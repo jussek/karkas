@@ -1,0 +1,11 @@
+import { useEffect,useMemo,useState } from 'react';
+import { tileAssetForCard } from '../tiles/tileAssets';
+import { LOADING_STAGES,loadingTip } from './loadingModel';
+import './gameLoadingScreen.css';
+
+function preload(cardIds:readonly string[]):Promise<void>{return Promise.all([...new Set(cardIds)].map(id=>new Promise<void>(resolve=>{const image=new Image();image.onload=image.onerror=()=>resolve();image.src=tileAssetForCard(id).url;}))).then(()=>undefined);}
+export function GameLoadingScreen({cardIds,variant='game',onReady}:{cardIds:readonly string[];variant?:'game'|'reconnect';onReady:()=>void}){
+ const [progress,setProgress]=useState<number>(LOADING_STAGES.shell),tip=useMemo(()=>loadingTip(cardIds.join(':')||variant),[cardIds,variant]),sceneCards=useMemo(()=>[...new Set([...cardIds,'card-133','card-017','card-106','card-001','card-002'])].slice(0,5),[cardIds]);
+ useEffect(()=>{let cancelled=false;const started=performance.now();void(async()=>{setProgress(LOADING_STAGES.catalog);await Promise.resolve();if(cancelled)return;setProgress(LOADING_STAGES.players);await Promise.resolve();setProgress(LOADING_STAGES.state);await preload(cardIds.slice(0,12));if(cancelled)return;setProgress(LOADING_STAGES.artwork);await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));setProgress(LOADING_STAGES.renderer);await new Promise(resolve=>setTimeout(resolve,Math.max(0,(variant==='reconnect'?90:160)-(performance.now()-started))));if(cancelled)return;setProgress(LOADING_STAGES.ready);requestAnimationFrame(onReady);})();return()=>{cancelled=true;};},[cardIds,onReady,variant]);
+ return <main className="game-loading" aria-label="Загрузка игры"><div className="game-loading__scene" aria-hidden="true">{sceneCards.map(id=><img key={id} src={tileAssetForCard(id).url} alt=""/>)}</div><section className="game-loading__content"><p className="game-loading__eyebrow">Настольная игра</p><h1>Каркассон</h1><div className="game-loading__bar" role="progressbar" aria-label="Прогресс загрузки" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{width:`${progress}%`}}/></div><b>{progress}%</b><p>Загружаем игру…</p><aside><span>Совет</span>{tip}</aside></section></main>;
+}
