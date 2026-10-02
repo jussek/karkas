@@ -10,8 +10,10 @@ import { MainMenu } from "./game-ui/menu/MainMenu";
 import { FindGamePage } from "./game-ui/online/FindGamePage";
 import { OnlineCreatePage } from "./game-ui/online/OnlineCreatePage";
 import { OnlineLobbyPage } from "./game-ui/online/OnlineLobbyPage";
+import { OnlineGamePage } from "./game-ui/online/OnlineGamePage";
 import { onlineNavigationTarget } from "./game-ui/online/onlineNavigation";
 import type { OnlineLobbySnapshot } from "./online/types";
+import type { OnlineMatch } from "./online/matchTypes";
 import type { LocalGameConfig } from "./game/session";
 import { DEFAULT_MATCH_OPTIONS, createLocalGameConfig } from "./game/session";
 import type { TurnFlowState } from "./game/engine/turnFlow";
@@ -39,7 +41,7 @@ function browserSeed(): number {
   return Date.now() >>> 0;
 }
 
-export type Screen = "menu" | "setup" | "lobby" | "game" | "online-browser" | "online-create" | "online-lobby";
+export type Screen = "menu" | "setup" | "lobby" | "game" | "online-browser" | "online-create" | "online-lobby" | "online-game";
 
 /**
  * Stage 4C: rematch-конфиг генерируется в App/browser layer (не внутри игры):
@@ -70,6 +72,7 @@ export function App() {
   const [hasSavedGame, setHasSavedGame] = useState(() => loadLocalGameSave() !== null);
   const [settings, setSettings] = useState<LocalSettings>(() => loadSettings());
   const [onlineLobby, setOnlineLobby] = useState<OnlineLobbySnapshot | null>(null);
+  const [onlineMatch, setOnlineMatch] = useState<OnlineMatch | null>(null);
 
   const updateSetting = (patch: Partial<LocalSettings>) => {
     setSettings((current) => {
@@ -171,7 +174,8 @@ export function App() {
 
   if (screen === "online-browser") return <FindGamePage onBack={() => setScreen(onlineNavigationTarget("back"))} onCreate={() => setScreen(onlineNavigationTarget("create"))} onJoined={(lobby) => { setOnlineLobby(lobby); setScreen(onlineNavigationTarget("joined")); }} />;
   if (screen === "online-create") return <OnlineCreatePage onBack={() => setScreen("menu")} onCreated={(lobby) => { setOnlineLobby(lobby); setScreen("online-lobby"); }} />;
-  if (screen === "online-lobby" && onlineLobby) return <OnlineLobbyPage lobbyId={onlineLobby.id} initialLobby={onlineLobby} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} />;
+  if (screen === "online-lobby" && onlineLobby) return <OnlineLobbyPage lobbyId={onlineLobby.id} initialLobby={onlineLobby} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} onMatch={(match) => { setOnlineMatch(match); setScreen("online-game"); }} />;
+  if (screen === "online-game" && onlineMatch) return <OnlineGamePage initialMatch={onlineMatch} onExit={() => { setOnlineMatch(null); setOnlineLobby(null); setScreen("menu"); }} />;
 
   if (screen === "setup") {
     return (
