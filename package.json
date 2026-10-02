@@ -11,7 +11,8 @@
     "typecheck:api": "tsc -p tsconfig.api.json",
     "check:api-runtime": "rm -rf .api-build && tsc -p tsconfig.api.build.json && node scripts/check-server-runtime.mjs .api-build && rm -rf .api-build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e:production": "node tools/production-e2e.mjs"
   },
   "keywords": [],
   "author": "",

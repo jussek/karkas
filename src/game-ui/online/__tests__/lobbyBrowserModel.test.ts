@@ -12,6 +12,7 @@ describe('online lobby browser model', () => {
   const lobbies = [lobby(0), lobby(15), lobby(30), lobby(60)];
   it('FILTER_ANY', () => expect(filterLobbies(lobbies, 'any')).toEqual(lobbies));
   it.each([0, 15, 30, 60] as const)('filters timer %s', (timer) => expect(filterLobbies(lobbies, timer)).toEqual([lobby(timer)]));
+  it('removes stale non-waiting lobbies from cached results',()=>expect(filterLobbies([lobby(15),lobby(15,{id:'stale',status:'in_game'})],'any')).toEqual([lobby(15)]));
   it('uses lobby code when name is null', () => expect(lobbyDisplayName(lobby(0, { name: null, code: '2458AB' }))).toBe('Лобби #2458AB'));
   it('formats timer labels', () => {
     expect([0, 15, 30, 60].map((value) => formatLobbyTimer(value as 0 | 15 | 30 | 60))).toEqual(['Без таймера', 'Ход: 15 сек', 'Ход: 30 сек', 'Ход: 60 сек']);

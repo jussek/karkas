@@ -28,6 +28,7 @@ import {
   saveSettings,
 } from "./game-ui/persistence/localGamePersistence";
 import type { LocalSettings, UiMatchState } from "./game-ui/persistence/localGamePersistence";
+import { configureAudio,installAudioGestureUnlock } from "./audio/gameAudio";
 
 function browserGameId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -82,6 +83,8 @@ export function App() {
   const [loadingTarget,setLoadingTarget]=useState<'game'|'online-game'>('game');
   const [loadingCards,setLoadingCards]=useState<string[]>(['card-133']);
   const [loadingVariant,setLoadingVariant]=useState<'game'|'reconnect'>('game');
+
+  useEffect(()=>{configureAudio(settings);return installAudioGestureUnlock();},[settings]);
 
   const beginLoading=useCallback((target:'game'|'online-game',cardIds:string[],variant:'game'|'reconnect'='game')=>{setLoadingTarget(target);setLoadingCards(cardIds.length?cardIds:['card-133']);setLoadingVariant(variant);setScreen('loading');},[]);
   const finishLoading=useCallback(()=>setScreen(loadingTarget),[loadingTarget]);
@@ -204,7 +207,7 @@ export function App() {
     );
   }
 
-  if(screen==='loading')return <GameLoadingScreen cardIds={loadingCards} variant={loadingVariant} onReady={finishLoading}/>;
+  if(screen==='loading')return <GameLoadingScreen cardIds={loadingCards} variant={loadingVariant} onReady={finishLoading} onExit={()=>setScreen('menu')}/>;
 
   if (screen === "online-browser") return <FindGamePage onBack={() => setScreen(onlineNavigationTarget("back"))} onCreate={() => setScreen(onlineNavigationTarget("create"))} onJoined={(lobby) => { setOnlineLobby(lobby); setScreen(onlineNavigationTarget("joined")); }} />;
   if (screen === "online-create") return <OnlineCreatePage onBack={() => setScreen("menu")} onCreated={(lobby) => { setOnlineLobby(lobby); setScreen("online-lobby"); }} />;

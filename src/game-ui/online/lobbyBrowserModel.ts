@@ -4,7 +4,7 @@ export type LobbyTimerFilter = 'any' | OnlineTurnTimerSeconds;
 export function onlineBrowserAvailability(client: unknown): 'available' | 'unavailable' { return client ? 'available' : 'unavailable'; }
 
 export function filterLobbies(lobbies: readonly OnlineLobbySnapshot[], filter: LobbyTimerFilter): OnlineLobbySnapshot[] {
-  return lobbies.filter((lobby) => filter === 'any' || lobby.turnTimerSeconds === filter);
+  return lobbies.filter((lobby) => lobby.status === 'waiting' && (filter === 'any' || lobby.turnTimerSeconds === filter));
 }
 
 export function formatLobbyTimer(seconds: OnlineTurnTimerSeconds): string {

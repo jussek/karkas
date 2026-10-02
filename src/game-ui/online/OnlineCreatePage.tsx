@@ -9,7 +9,7 @@ export function OnlineCreatePage({ onBack, onCreated }: { onBack:()=>void; onCre
   const [name,setName]=useState(''); const [maxPlayers,setMaxPlayers]=useState<number>(DEFAULT_ONLINE_LOBBY.maxPlayers);
   const [timer,setTimer]=useState<OnlineTurnTimerSeconds>(0); const [botFill,setBotFill]=useState(false); const [visibility,setVisibility]=useState<LobbyVisibility>('public');
   const [pending,setPending]=useState(false); const [error,setError]=useState(false);
-  const submit=async()=>{setPending(true);setError(false);try{onCreated(await createLobby({name,visibility,maxPlayers,turnTimerSeconds:timer,botFillEnabled:botFill}));}catch(reason){console.error('Не удалось создать лобби',reason);setError(true);}finally{setPending(false)}};
+  const submit=async()=>{setPending(true);setError(false);try{onCreated(await createLobby({name,visibility,maxPlayers,turnTimerSeconds:timer,botFillEnabled:botFill}));}catch(reason){if(import.meta.env.DEV)console.error('Не удалось создать лобби',reason);setError(true);}finally{setPending(false)}};
   return <main className="online-room"><div className="online-room__shell">
     <header className="online-room__header"><button aria-label="Назад" onClick={onBack}><OnlineIcon name="back"/></button><h1>Создать игру</h1><button aria-label="Закрыть" onClick={onBack}><OnlineIcon name="close"/></button></header>
     <section className="room-panel create-form"><label>Название лобби <input value={name} maxLength={80} placeholder="Лобби #CODE" onChange={(e)=>setName(e.target.value)}/></label>
