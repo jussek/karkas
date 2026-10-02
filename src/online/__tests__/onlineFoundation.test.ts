@@ -81,8 +81,27 @@ describe('architecture and migration regression', () => {
     for (const contract of ['anon cannot execute application RPC', 'creator is host', 'private lobby cannot be joined by UUID', 'private lobby can be joined with code', 'repeated join is idempotent even when full', 'bot fill does not reserve waiting seats', 'failed settings update rolls back both values', 'closed lobby rejects joins']) expect(sql).toContain(contract);
   });
 
-  it('setReady narrows its update to lobby and authenticated user', () => {
+  it('setReady uses the serialized member-only RPC instead of a direct table update', () => {
     const source = readFileSync(join(process.cwd(), 'src/online/lobbyApi.ts'), 'utf8');
-    expect(source).toMatch(/setReady[\s\S]+?const userId = await ensureOnlineIdentity\(\)[\s\S]+?\.eq\('lobby_id', lobbyId\)\s*\.eq\('user_id', userId\)/);
+    const implementation = source.match(/export async function setReady[\s\S]*?\n}/)?.[0] ?? '';
+    expect(implementation).toContain("rpc('set_online_lobby_ready'");
+    expect(implementation).toContain('p_lobby_id: lobbyId');
+    expect(implementation).toContain('p_ready: ready');
+    expect(implementation).not.toContain("from('online_lobby_players')");
+    expect(implementation).not.toContain('.update(');
+  });
+
+  it('keeps the deployed 5C.1 consistency and serialization contract', () => {
+    const sql = readFileSync(join(process.cwd(), 'supabase/migrations/20261001143823_stage5c1_lobby_consistency.sql'), 'utf8');
+    expect(sql).toContain('coalesce(max(seat_index), -1)');
+    expect(sql).toContain('v_humans > v_max or v_max_seat >= v_max');
+    expect(sql).toContain("raise exception 'configured capacity exceeded'");
+    expect(sql).toMatch(/from public\.online_lobbies[\s\S]*?where id=p_lobby_id[\s\S]*?for update;[\s\S]*?if not found or v_status <> 'waiting'/);
+    expect(sql).toContain('private.set_online_lobby_ready_impl');
+    expect(sql).toContain("and status='waiting'\n  for update");
+    expect(sql).toContain('and user_id=auth.uid()');
+    expect(sql).toContain('from public,anon');
+    expect(sql).toContain('to authenticated');
+    expect(sql).not.toMatch(/revoke\s+update\s*\(ready\)/i);
   });
 });

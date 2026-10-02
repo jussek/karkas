@@ -31,10 +31,14 @@ describe('online lobby browser model', () => {
     expect(lobbyThumbnailSeed('ABC')).not.toBe(lobbyThumbnailSeed('ABD'));
   });
   it('keeps local migration filenames synchronized with hosted history', () => {
-    const files = readdirSync(join(process.cwd(), 'supabase/migrations'));
-    expect(files).toContain('20261001131523_stage5a_online_lobbies.sql');
-    expect(files).toContain('20261001132230_stage5a_lobby_performance.sql');
-    expect(files).not.toContain('20261001000000_stage5a_online_lobbies.sql');
+    const files = readdirSync(join(process.cwd(), 'supabase/migrations')).sort();
+    expect(files).toEqual([
+      '20261001131523_stage5a_online_lobbies.sql',
+      '20261001132230_stage5a_lobby_performance.sql',
+      '20261001143130_stage5c_real_online_lobby.sql',
+      '20261001143823_stage5c1_lobby_consistency.sql',
+    ]);
+    expect(files).not.toContain('20261001150000_stage5c_real_online_lobby.sql');
   });
   it('maps menu, back, create, and successful join navigation', () => {
     expect(onlineNavigationTarget('find')).toBe('online-browser');
