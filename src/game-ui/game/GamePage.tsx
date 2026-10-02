@@ -40,6 +40,7 @@ import {
   turnKeyOf,
 } from './matchTimer';
 import type { MatchTimerState } from './matchTimer';
+import { localHandVisible } from './draftVisibility';
 import './gamePage.css';
 
 const CELL = 92;
@@ -509,7 +510,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
       {skipMeepleConfirm && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Подтверждение пропуска человечка"><section className="game-menu-sheet"><h2>Закончить ход без человечка?</h2><button type="button" onClick={() => setSkipMeepleConfirm(false)}>Отмена</button><button type="button" onClick={() => { setSkipMeepleConfirm(false); endTurnAction(); }}>Закончить</button></section></div>}
 
       <section className={`turn-controls${paused ? ' is-paused' : ''}`} aria-label="Действия хода" aria-hidden={paused} inert={paused}>
-        {heldId && <div
+        {heldId && localHandVisible(flow.phase) && <div
           className={`held-tile${unplayableTile ? ' is-unplayable' : ''}`}
         >{unplayableTile && <button
           type="button"
