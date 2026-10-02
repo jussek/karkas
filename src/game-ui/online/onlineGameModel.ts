@@ -13,3 +13,5 @@ export function availableMeeples(match:OnlineMatch,userId:string):number{return 
 export function tileIntent(draft:TilePlacementDraft):OnlineMatchIntent{return {type:'PLACE_TILE',position:draft.position,rotation:draft.rotation};}
 export function isServerUndoIntent(intent:OnlineMatchIntent):boolean{return !['PLACE_TILE','PLACE_MEEPLE','END_TURN'].includes(intent.type);}
 export class LogicalIntentAttempt { readonly intentId:string; constructor(readonly intent:OnlineMatchIntent,makeId:()=>string){this.intentId=makeId();} }
+export function attemptAfterTileDraftChange(attempt:LogicalIntentAttempt|null,current:TilePlacementDraft|null,next:TilePlacementDraft|null):LogicalIntentAttempt|null{return current?.position.x===next?.position.x&&current?.position.y===next?.position.y&&current?.rotation===next?.rotation?attempt:null;}
+export function attemptAfterMeepleDraftChange(attempt:LogicalIntentAttempt|null,current:MeeplePlacement|null,next:MeeplePlacement|null):LogicalIntentAttempt|null{return current?.featureType===next?.featureType&&current?.edge===next?.edge?attempt:null;}
