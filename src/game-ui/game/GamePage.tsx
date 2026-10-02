@@ -401,7 +401,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
                 >↻</button>}
               </div>
             )}
-            {meepleMode&&flow.game.lastPlacedTile&&legalMeeples.map(target=>{const anchor=anchorForPlacement(target),position=flow.game.lastPlacedTile!.position;return <button type="button" disabled={paused} className="feature-meeple-target" aria-label={`Выбрать место: ${meepleTargetLabel(legalMeeples,target)}`} key={key(target)} style={{left:(position.x+boardProjection.originX)*CELL+(anchor.x*CELL)/100,top:(position.y+boardProjection.originY)*CELL+(anchor.y*CELL)/100}} onClick={()=>{setMeepleDraft(target);setMeepleMode(false);setPlacementFeedback(null);}}><MeepleIcon fill="none" size={27}/></button>;})}
+            {meepleMode&&flow.game.lastPlacedTile&&legalMeeples.map(target=>{const anchor=anchorForPlacement(target),position=flow.game.lastPlacedTile!.position;return <button type="button" disabled={paused} className="feature-meeple-target" aria-label={`Выбрать место: ${meepleTargetLabel(legalMeeples,target)}`} key={key(target)} style={{left:(position.x+boardProjection.originX)*CELL+(anchor.x*CELL)/100,top:(position.y+boardProjection.originY)*CELL+(anchor.y*CELL)/100}} onClick={()=>{setMeepleDraft(target);setMeepleMode(false);setPlacementFeedback(null);}}><svg viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><MeepleIcon fill="transparent" size={28}/></svg></button>;})}
           </div>
         </div>
 
