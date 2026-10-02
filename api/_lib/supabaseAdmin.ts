@@ -1,0 +1,4 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+let admin:SupabaseClient|undefined;
+export function getSupabaseAdmin():SupabaseClient{const url=process.env.SUPABASE_URL?.trim();const key=process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();if(!url||!key)throw new Error('Server Supabase configuration is missing.');return admin??=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});}
+export async function authenticateBearer(header:string|undefined):Promise<string>{const token=header?.match(/^Bearer\s+(.+)$/i)?.[1];if(!token)throw Object.assign(new Error('Authorization required.'),{status:401,code:'UNAUTHORIZED'});const {data,error}=await getSupabaseAdmin().auth.getUser(token);if(error||!data.user)throw Object.assign(new Error('Invalid access token.'),{status:401,code:'UNAUTHORIZED'});return data.user.id;}

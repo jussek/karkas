@@ -1,0 +1,4 @@
+export interface ApiRequest {method?:string;headers:Record<string,string|string[]|undefined>;body?:unknown}
+export interface ApiResponse {status:(status:number)=>ApiResponse;json:(body:unknown)=>void;setHeader?:(name:string,value:string)=>void}
+export function sendError(response:ApiResponse,error:unknown):void{const value=error as {status?:number;code?:string};const status=typeof value?.status==='number'?value.status:500;response.status(status).json({code:value?.code??(status===500?'INTERNAL_ERROR':'REQUEST_FAILED'),message:status===500?'Online match request failed.':error instanceof Error?error.message:'Request failed.'});}
+export function requirePost(request:ApiRequest):void{if(request.method!=='POST')throw Object.assign(new Error('Method not allowed.'),{status:405,code:'METHOD_NOT_ALLOWED'});}
