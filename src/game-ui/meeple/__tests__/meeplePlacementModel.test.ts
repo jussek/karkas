@@ -1,6 +1,4 @@
-// @ts-expect-error -- Node builtins are available to Vitest but excluded from the browser tsconfig.
 import { readFileSync } from 'node:fs';
-// @ts-expect-error -- Node builtins are available to Vitest but excluded from the browser tsconfig.
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { TileDefinition } from '../../../game/types/geometry';
