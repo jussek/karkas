@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
@@ -7,6 +7,16 @@ import { GamePage } from "./game-ui/game/GamePage";
 import { GameSetupPage } from "./game-ui/setup/GameSetupPage";
 import { LocalLobby } from "./game-ui/setup/LocalLobby";
 import { MainMenu } from "./game-ui/menu/MainMenu";
+import { FindGamePage } from "./game-ui/online/FindGamePage";
+import { OnlineCreatePage } from "./game-ui/online/OnlineCreatePage";
+import { OnlineLobbyPage } from "./game-ui/online/OnlineLobbyPage";
+import { OnlineGamePage } from "./game-ui/online/OnlineGamePage";
+import { onlineNavigationTarget } from "./game-ui/online/onlineNavigation";
+import type { OnlineLobbySnapshot } from "./online/types";
+import type { OnlineMatch } from "./online/matchTypes";
+import { findMyActiveMatch, getMatch } from "./online/matchApi";
+import { clearActiveMatch, loadActiveMatch, saveActiveMatch } from "./online/activeMatchPersistence";
+import { getSupabaseClient } from "./online/supabaseClient";
 import type { LocalGameConfig } from "./game/session";
 import { DEFAULT_MATCH_OPTIONS, createLocalGameConfig } from "./game/session";
 import type { TurnFlowState } from "./game/engine/turnFlow";
@@ -34,7 +44,7 @@ function browserSeed(): number {
   return Date.now() >>> 0;
 }
 
-type Screen = "menu" | "setup" | "lobby" | "game";
+export type Screen = "menu" | "setup" | "lobby" | "game" | "online-browser" | "online-create" | "online-lobby" | "online-game";
 
 /**
  * Stage 4C: rematch-конфиг генерируется в App/browser layer (не внутри игры):
@@ -53,15 +63,6 @@ export function buildRematchConfig(
   };
 }
 
-const RULES_STEPS = [
-  "Возьмите карту.",
-  "Выберите подсвеченное место.",
-  "Если доступно несколько поворотов — выберите нужный.",
-  "Подтвердите карту.",
-  "При желании поставьте человечка.",
-  "Закончите ход.",
-];
-
 export function App() {
   // Stage 4B: локальная партия сохраняется автоматически; из меню её
   // можно продолжить. Engine/scoring/river — нетронутые, UI-слой только
@@ -70,11 +71,29 @@ export function App() {
   const [config, setConfig] = useState<LocalGameConfig | null>(null);
   const [restoredFlow, setRestoredFlow] = useState<TurnFlowState | null>(null);
   const [restoredUiMatchState, setRestoredUiMatchState] = useState<UiMatchState | undefined>(undefined);
-  const [rulesOpen, setRulesOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmNewGame, setConfirmNewGame] = useState(false);
   const [hasSavedGame, setHasSavedGame] = useState(() => loadLocalGameSave() !== null);
   const [settings, setSettings] = useState<LocalSettings>(() => loadSettings());
+  const [onlineLobby, setOnlineLobby] = useState<OnlineLobbySnapshot | null>(null);
+  const [onlineMatch, setOnlineMatch] = useState<OnlineMatch | null>(null);
+
+  useEffect(() => {
+    let cancelled=false;
+    void (async()=>{
+      const client=getSupabaseClient();if(!client)return;
+      const {data}=await client.auth.getSession();if(!data.session)return;
+      const saved=loadActiveMatch();
+      try{
+        const match=saved?await getMatch(saved.activeMatchId):await findMyActiveMatch();
+        if(cancelled)return;
+        if(match){setOnlineMatch(match);saveActiveMatch({activeMatchId:match.id,lobbyId:match.lobbyId});setScreen('online-game');}
+        else if(saved)clearActiveMatch();
+      }catch{if(saved)clearActiveMatch();}
+    })();
+    return()=>{cancelled=true;};
+  },[]);
+
+  const acceptOnlineMatch=(match:OnlineMatch)=>{setOnlineMatch(match);saveActiveMatch({activeMatchId:match.id,lobbyId:match.lobbyId});setScreen('online-game');};
 
   const updateSetting = (patch: Partial<LocalSettings>) => {
     setSettings((current) => {
@@ -153,40 +172,12 @@ export function App() {
           onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })}
           onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })}
           onContinueGame={hasSavedGame ? continueGame : undefined}
-          onCreateGame={() => guardDestructive(() => setScreen("setup"))}
+          onReturnToOnlineGame={onlineMatch?.status==='playing'?()=>setScreen('online-game'):undefined}
+          onCreateGame={() => setScreen(onlineNavigationTarget("create"))}
           onQuickGame={() => guardDestructive(quickGame)}
-          onRules={() => setRulesOpen(true)}
-          onSettings={() => setSettingsOpen(true)}
+          onFindGame={() => setScreen(onlineNavigationTarget("find"))}
+          onExit={() => { if (typeof window !== "undefined" && window.history.length > 1) window.history.back(); }}
         />
-        {rulesOpen && (
-          <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="rules-title">
-            <section className="rules-card">
-              <button type="button" className="rules-close" aria-label="Закрыть правила" onClick={() => setRulesOpen(false)}>×</button>
-              <h2 id="rules-title">Как играть</h2>
-              <ol>
-                {RULES_STEPS.map((step) => <li key={step}>{step}</li>)}
-              </ol>
-              <p>Река строится первой — пока все речные карты не размещены, сдаются только они.</p>
-              <p>Человечки ставятся только на дорогу, город или монастырь. Поля и сады игровыми целями не являются.</p>
-            </section>
-          </div>
-        )}
-        {settingsOpen && (
-          <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-            <section className="rules-card">
-              <button type="button" className="rules-close" aria-label="Закрыть настройки" onClick={() => setSettingsOpen(false)}>×</button>
-              <h2 id="settings-title">Настройки</h2>
-              <div className="settings-row">
-                <button type="button" aria-pressed={settings.soundEnabled} onClick={() => updateSetting({ soundEnabled: !settings.soundEnabled })}>
-                  Звук: {settings.soundEnabled ? "вкл" : "выкл"}
-                </button>
-                <button type="button" aria-pressed={settings.musicEnabled} onClick={() => updateSetting({ musicEnabled: !settings.musicEnabled })}>
-                  Музыка: {settings.musicEnabled ? "вкл" : "выкл"}
-                </button>
-              </div>
-            </section>
-          </div>
-        )}
         {confirmNewGame && (
           <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="newgame-title">
             <section className="rules-card">
@@ -202,6 +193,11 @@ export function App() {
       </>
     );
   }
+
+  if (screen === "online-browser") return <FindGamePage onBack={() => setScreen(onlineNavigationTarget("back"))} onCreate={() => setScreen(onlineNavigationTarget("create"))} onJoined={(lobby) => { setOnlineLobby(lobby); setScreen(onlineNavigationTarget("joined")); }} />;
+  if (screen === "online-create") return <OnlineCreatePage onBack={() => setScreen("menu")} onCreated={(lobby) => { setOnlineLobby(lobby); setScreen("online-lobby"); }} />;
+  if (screen === "online-lobby" && onlineLobby) return <OnlineLobbyPage lobbyId={onlineLobby.id} initialLobby={onlineLobby} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} onMatch={acceptOnlineMatch} />;
+  if (screen === "online-game" && onlineMatch) return <OnlineGamePage initialMatch={onlineMatch} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} />;
 
   if (screen === "setup") {
     return (
@@ -253,10 +249,10 @@ export function App() {
       onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })}
       onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })}
       onContinueGame={hasSavedGame ? continueGame : undefined}
-      onCreateGame={() => guardDestructive(() => setScreen("setup"))}
+      onReturnToOnlineGame={onlineMatch?.status==='playing'?()=>setScreen('online-game'):undefined}
+      onCreateGame={() => setScreen(onlineNavigationTarget("create"))}
       onQuickGame={() => guardDestructive(quickGame)}
-      onRules={() => setRulesOpen(true)}
-      onSettings={() => setSettingsOpen(true)}
+      onFindGame={() => setScreen(onlineNavigationTarget("find"))}
     />
   );
 }
