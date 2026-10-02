@@ -1,6 +1,6 @@
-import { AUDITED_051_100 } from './audited051100';
-import { AUDITED_101_144 } from './audited101144';
-import type { CardDefinition } from './types';
+import { AUDITED_051_100 } from './audited051100.js';
+import { AUDITED_101_144 } from './audited101144.js';
+import type { CardDefinition } from './types.js';
 
 /**
  * Canonical visual audit of the user-supplied JPG archive.

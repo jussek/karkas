@@ -9,8 +9,8 @@
  * React только рендерит результат endTurn(), ничего не вычисляя сам.
  */
 
-import type { FeatureScoreType, TurnScoringResult } from '../rules/scoring';
-import type { FinalScoringResult } from '../rules/finalScoring';
+import type { FeatureScoreType, TurnScoringResult } from '../rules/scoring.js';
+import type { FinalScoringResult } from '../rules/finalScoring.js';
 
 export interface TurnScoreEvent {
   featureType: FeatureScoreType;
