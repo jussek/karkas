@@ -1,7 +1,7 @@
-import type { Board, Meeple, Player } from '../game/types/state';
-import type { LastPlacedTile } from '../game/types/state';
-import type { MeeplePlacement, Rotation, TilePosition } from '../game/types/geometry';
-import type { TurnResolution } from '../game/engine/turnResolution';
+import type { Board, Meeple, Player } from '../game/types/state.js';
+import type { LastPlacedTile } from '../game/types/state.js';
+import type { MeeplePlacement, Rotation, TilePosition } from '../game/types/geometry.js';
+import type { TurnResolution } from '../game/engine/turnResolution.js';
 
 export type OnlineMatchStatus = 'playing' | 'finished' | 'abandoned';
 export type OnlineMatchIntent =

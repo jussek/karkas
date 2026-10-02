@@ -1,6 +1,6 @@
-import { getCardDefinition, getTileDefinition } from '../cards/catalogApi';
-import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog';
-import { seededShuffle } from '../deck/seededShuffle';
+import { getCardDefinition, getTileDefinition } from '../cards/catalogApi.js';
+import { RUNTIME_CARD_CATALOG } from '../cards/runtimeCatalog.js';
+import { seededShuffle } from '../deck/seededShuffle.js';
 import {
   assertRiverSolvableFrom,
   countOpenRiverEdges,
@@ -8,20 +8,20 @@ import {
   frontiersOf,
   planRiver,
   replanRemainingRiver,
-} from '../deck/riverPlanner';
-import { rotateEdge } from './geometry';
+} from '../deck/riverPlanner.js';
+import { rotateEdge } from './geometry.js';
 import {
   applyAction,
   applyActionWithResolution,
   completeTurnWithResult,
   createGame,
-} from './gameEngine';
-import { buildTurnResolution, emptyTurnResolution, type TurnResolution } from './turnResolution';
-import { getLegalTilePlacements } from '../rules/placement';
-import { getLegalMeeplePlacements } from '../rules/localFeatures';
-import { placementKey, type MeeplePlacement, type Rotation, type TilePosition } from '../types/geometry';
-import type { GameState, Player } from '../types/state';
-import { posKey, type Board } from '../types/state';
+} from './gameEngine.js';
+import { buildTurnResolution, emptyTurnResolution, type TurnResolution } from './turnResolution.js';
+import { getLegalTilePlacements } from '../rules/placement.js';
+import { getLegalMeeplePlacements } from '../rules/localFeatures.js';
+import { placementKey, type MeeplePlacement, type Rotation, type TilePosition } from '../types/geometry.js';
+import type { GameState, Player } from '../types/state.js';
+import { posKey, type Board } from '../types/state.js';
 
 export const TURN_PHASES = [
   'AWAITING_DRAW',

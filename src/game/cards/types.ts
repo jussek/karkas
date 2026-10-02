@@ -8,7 +8,7 @@
  * from geometry to derive rotated variants at runtime.
  */
 
-import type { EdgeIndex, EdgeType } from '../types/geometry';
+import type { EdgeIndex, EdgeType } from '../types/geometry.js';
 
 export type { EdgeType };
 

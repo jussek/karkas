@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { authenticateBearer, getSupabaseAdmin } from '../../_lib/supabaseAdmin';
-import { type ApiRequest,type ApiResponse,requirePost,sendError } from '../../_lib/http';
-import { advanceToPlayableDraw,buildEnginePlayers,buildPublicMatchSnapshot,createTurnFlow } from '../../_lib/matchCore';
+import { authenticateBearer, getSupabaseAdmin } from '../../_lib/supabaseAdmin.js';
+import { type ApiRequest,type ApiResponse,requirePost,sendError } from '../../_lib/http.js';
+import { advanceToPlayableDraw,buildEnginePlayers,buildPublicMatchSnapshot,createTurnFlow } from '../../_lib/matchCore.js';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export default async function handler(request:ApiRequest,response:ApiResponse):Promise<void>{try{requirePost(request);const actor=await authenticateBearer(typeof request.headers.authorization==='string'?request.headers.authorization:undefined);const body=request.body as Record<string,unknown>|null;if(!body||typeof body.lobbyId!=='string'||!uuid.test(body.lobbyId))throw Object.assign(new Error('Invalid request body.'),{status:400,code:'INVALID_BODY'});const admin=getSupabaseAdmin();
  const {data:lobby,error}=await admin.from('online_lobbies').select('id,host_user_id,status,max_players,bot_slots,turn_timer_seconds,online_lobby_players(user_id,seat_index,display_name)').eq('id',body.lobbyId).single();if(error||!lobby)throw Object.assign(new Error('Lobby not found.'),{status:404,code:'NOT_FOUND'});if(lobby.host_user_id!==actor)throw Object.assign(new Error('Only the lobby host can start a match.'),{status:403,code:'FORBIDDEN'});

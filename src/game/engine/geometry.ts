@@ -9,8 +9,8 @@ import type {
   Rotation,
   TileDefinition,
   TilePosition,
-} from '../types/geometry';
-import { EDGES } from '../types/geometry';
+} from '../types/geometry.js';
+import { EDGES } from '../types/geometry.js';
 
 /** Противоположная сторона (N<->S, E<->W). */
 export function oppositeEdge(edge: EdgeIndex): EdgeIndex {
