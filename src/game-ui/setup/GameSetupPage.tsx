@@ -10,11 +10,11 @@ import { MAX_PLAYERS, MIN_PLAYERS, PLAYER_IDENTITIES, buildPlayers, defaultPlaye
 import type { LocalGameConfig, LocalMatchOptions } from '../../game/session';
 import './gameSetup.css';
 
-const TURN_TIMER_OPTIONS: readonly { value: 0 | 60 | 90 | 120; label: string }[] = [
+export const TURN_TIMER_OPTIONS: readonly { value: 0 | 15 | 30 | 60; label: string }[] = [
   { value: 0, label: 'Без таймера' },
+  { value: 15, label: '15 секунд' },
+  { value: 30, label: '30 секунд' },
   { value: 60, label: '60 секунд' },
-  { value: 90, label: '90 секунд' },
-  { value: 120, label: '120 секунд' },
 ];
 
 export interface GameSetupPageProps {
@@ -30,7 +30,7 @@ export interface GameSetupPageProps {
 export function GameSetupPage({ onStart, makeGameId, makeSeed, onBack }: GameSetupPageProps) {
   const [count, setCount] = useState<number>(MIN_PLAYERS);
   const [names, setNames] = useState<(string | undefined)[]>([]);
-  const [turnTimerSeconds, setTurnTimerSeconds] = useState<0 | 60 | 90 | 120>(0);
+  const [turnTimerSeconds, setTurnTimerSeconds] = useState<0 | 15 | 30 | 60>(0);
 
   const setName = (index: number, value: string) => {
     setNames((current) => {
@@ -148,8 +148,8 @@ export function createLocalSetupConfig(input: {
   matchOptions?: LocalMatchOptions;
 }): LocalGameConfig {
   const seconds = input.matchOptions?.turnTimerSeconds;
-  const turnTimerSeconds: 0 | 60 | 90 | 120 =
-    seconds === 60 || seconds === 90 || seconds === 120 ? seconds : 0;
+  const turnTimerSeconds: 0 | 15 | 30 | 60 =
+    seconds === 15 || seconds === 30 || seconds === 60 ? seconds : 0;
   return {
     gameId: input.gameId,
     seed: input.seed >>> 0,
