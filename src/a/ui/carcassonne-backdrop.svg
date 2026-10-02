@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#17263c"/>
+      <stop offset=".32" stop-color="#31536d"/>
+      <stop offset=".62" stop-color="#d28b56"/>
+      <stop offset="1" stop-color="#efc27e"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="50%" cy="42%" r="48%">
+      <stop offset="0" stop-color="#ffdca4" stop-opacity=".78"/>
+      <stop offset=".34" stop-color="#f5ae68" stop-opacity=".23"/>
+      <stop offset="1" stop-color="#f5ae68" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="farHill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#385449"/>
+      <stop offset="1" stop-color="#20362f"/>
+    </linearGradient>
+    <linearGradient id="nearHill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#324c35"/>
+      <stop offset="1" stop-color="#17271e"/>
+    </linearGradient>
+    <linearGradient id="river" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9cd2dc"/>
+      <stop offset=".45" stop-color="#4f8ea5"/>
+      <stop offset="1" stop-color="#254d67"/>
+    </linearGradient>
+    <linearGradient id="castle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#44505a"/>
+      <stop offset="1" stop-color="#20282d"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+    <filter id="mist"><feGaussianBlur stdDeviation="8"/></filter>
+  </defs>
+
+  <rect width="1080" height="1920" fill="url(#sky)"/>
+  <rect width="1080" height="1920" fill="url(#sunGlow)"/>
+  <circle cx="720" cy="630" r="112" fill="#ffd797" opacity=".74"/>
+  <circle cx="720" cy="630" r="210" fill="#ffd797" opacity=".12" filter="url(#soft)"/>
+
+  <g fill="#eef4f4" opacity=".17" filter="url(#mist)">
+    <path d="M-50 430c120-62 229-45 302 22 77-45 173-34 230 25 90-59 210-40 278 35 70-25 151-9 203 37H-50z"/>
+    <path d="M366 305c88-44 174-29 224 24 65-39 155-24 198 31 66-25 135-11 179 28H366z"/>
+  </g>
+
+  <path d="M0 860c150-129 267-168 402-89 118-125 232-120 340-31 92-58 202-45 338 74v326H0z" fill="#253a3a" opacity=".82"/>
+  <path d="M0 1002c156-82 282-88 422-15 145-121 303-95 432 16 79-47 150-43 226-8v331H0z" fill="url(#farHill)"/>
+
+  <g transform="translate(584 746)" fill="url(#castle)" stroke="#151a1e" stroke-width="8" stroke-linejoin="round">
+    <path d="M65 244V98h62V40h70v58h76V12h84v86h69v146z"/>
+    <path d="M30 244V150h35v94zM426 244v-94h35v94z"/>
+    <path d="M94 98V70h18V54h18v16h18v28zm192 0V58h19V40h20v18h18v40zm86 0V69h18V51h19v18h18v29z"/>
+    <path d="M216 244v-72c0-35 50-35 50 0v72z" fill="#172128"/>
+    <g fill="#f7c578" stroke="none" opacity=".78">
+      <rect x="96" y="128" width="17" height="28" rx="8"/><rect x="162" y="124" width="17" height="28" rx="8"/><rect x="310" y="123" width="17" height="28" rx="8"/><rect x="381" y="129" width="17" height="28" rx="8"/>
+    </g>
+  </g>
+
+  <path d="M0 1240c178-96 349-98 505-12 143-103 354-98 575 7v685H0z" fill="url(#nearHill)"/>
+  <path d="M442 1100c147 98 142 218 80 346-73 150-57 320 76 474H357c-84-167-74-337 11-478 75-125 101-218 74-342z" fill="url(#river)" opacity=".96"/>
+  <path d="M447 1120c89 86 75 177 28 284-57 130-51 270 34 410" fill="none" stroke="#dff3f2" stroke-width="13" stroke-linecap="round" opacity=".22"/>
+
+  <g opacity=".32" fill="#111b14">
+    <path d="M45 1470l45-150 44 150zM90 1468l38-126 36 126zM886 1440l52-178 52 178zM942 1460l42-142 43 142z"/>
+    <path d="M124 1605l48-160 46 160zM808 1598l51-170 50 170z"/>
+  </g>
+
+  <rect y="1420" width="1080" height="500" fill="url(#sunGlow)" opacity=".10"/>
+  <rect width="1080" height="1920" fill="none" stroke="#0b0a08" stroke-width="80" opacity=".16"/>
+</svg>
