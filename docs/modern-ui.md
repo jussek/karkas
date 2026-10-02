@@ -1,1 +1,0 @@
-The modern UI pass intentionally keeps gameplay tiles visually dominant and uses the illustrated medieval landscape only outside the board viewport. Menu, lobby and loading surfaces use dark glass, restrained bronze/gold accents and large mobile touch controls.
