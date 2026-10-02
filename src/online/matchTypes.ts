@@ -19,6 +19,6 @@ export interface OnlinePublicMatchSnapshot {
   flow: { phase: 'AWAITING_DRAW' | 'TILE_IN_HAND' | 'TILE_POSITIONED' | 'TILE_PLACED' | 'MEEPLE_SELECTION' | 'GAME_OVER'; riverPlaced: number; lastResolution: TurnResolution };
   derived: { legalTilePlacementOptions: Array<{ position: TilePosition; rotations: Rotation[] }>; legalMeeplePlacements: MeeplePlacement[]; canEndTurn: boolean };
 }
-export interface OnlineMatch { id: string; lobbyId: string; version: number; status: OnlineMatchStatus; currentPlayerId: string | null; turnNumber: number; snapshot: OnlinePublicMatchSnapshot; createdAt: string; updatedAt: string }
+export interface OnlineMatch { id: string; lobbyId: string; version: number; status: OnlineMatchStatus; currentPlayerId: string | null; turnNumber: number; snapshot: OnlinePublicMatchSnapshot; turnTimerSeconds:0|15|30|60; turnStartedAt:string|null; turnDeadlineAt:string|null; createdAt: string; updatedAt: string }
 export interface OnlineMatchActionRequest { matchId: string; expectedVersion: number; intentId: string; intent: OnlineMatchIntent }
 export interface OnlineMatchActionResponse { match: OnlineMatch; idempotent: boolean }

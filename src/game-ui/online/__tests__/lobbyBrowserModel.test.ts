@@ -39,6 +39,7 @@ describe('online lobby browser model', () => {
       '20261001143823_stage5c1_lobby_consistency.sql',
       '20261002062013_stage5d1_authoritative_match_core.sql',
       '20261002062148_stage5d1_match_performance.sql',
+      '20261002100000_stage5d3_timer_automation.sql',
     ]);
     expect(files).not.toContain('20261001150000_stage5c_real_online_lobby.sql');
     expect(files).not.toContain('20261002090000_stage5d1_authoritative_match_core.sql');
