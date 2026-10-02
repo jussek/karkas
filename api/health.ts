@@ -8,6 +8,7 @@ export default async function handler(request:ApiRequest,response:ApiResponse):P
   const cronSecretConfigured=Boolean(process.env.CRON_SECRET?.trim());
   let databaseReady=false;
   if(supabaseConfigured){try{const result=await getSupabaseAdmin().from('online_matches').select('id',{head:true,count:'exact'}).limit(1);databaseReady=!result.error;}catch{databaseReady=false;}}
-  const ok=supabaseConfigured&&automationSecretConfigured&&cronSecretConfigured&&databaseReady;
-  response.status(ok?200:503).json({ok,supabaseConfigured,automationSecretConfigured,cronSecretConfigured,databaseReady,version:process.env.VERCEL_GIT_COMMIT_SHA?.slice(0,12)??'local'});
+  const coreReady=supabaseConfigured&&databaseReady;
+  const schedulerConfigured=automationSecretConfigured||cronSecretConfigured;
+  response.status(coreReady?200:503).json({ok:coreReady,coreReady,schedulerConfigured,supabaseConfigured,automationSecretConfigured,cronSecretConfigured,databaseReady,version:process.env.VERCEL_GIT_COMMIT_SHA?.slice(0,12)??'local'});
 }
