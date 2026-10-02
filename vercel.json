@@ -1,4 +1,5 @@
 {
+  "crons": [{ "path": "/api/online/match/cron", "schedule": "* * * * *" }],
   "rewrites": [
     {
       "source": "/((?!assets/).*)",

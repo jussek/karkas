@@ -1,6 +1,4 @@
-// @ts-expect-error -- Node builtins are available in Vitest.
 import { existsSync } from 'node:fs';
-// @ts-expect-error -- Node builtins are available in Vitest.
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildGalleryEntries } from '../../game-ui/gallery/galleryModel';

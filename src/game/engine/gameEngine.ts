@@ -31,19 +31,19 @@ import type {
   PlaceMeepleAction,
   PlaceTileAction,
   Player,
-} from '../types/state';
-import { meepleBoardKey, posKey } from '../types/state';
-import type { TileDefinition, TilePosition } from '../types/geometry';
-import type { ValidationResult } from './errors';
-import { gameError } from './errors';
-import { isLegalTilePlacement, type PlacementCheckContext } from '../rules/placement';
+} from '../types/state.js';
+import { meepleBoardKey, posKey } from '../types/state.js';
+import type { TileDefinition, TilePosition } from '../types/geometry.js';
+import type { ValidationResult } from './errors.js';
+import { gameError } from './errors.js';
+import { isLegalTilePlacement, type PlacementCheckContext } from '../rules/placement.js';
 import {
   isPlacementOnValidFeature,
-} from '../rules/localFeatures';
-import { isGlobalFeatureOccupied } from '../rules/globalFeatures';
-import { getTestTile } from '../tiles/testTiles';
-import { scoreCompletedFeaturesForTurn, type TurnScoringResult } from '../rules/scoring';
-import { scoreFinalFeatures, type FinalScoringResult } from '../rules/finalScoring';
+} from '../rules/localFeatures.js';
+import { isGlobalFeatureOccupied } from '../rules/globalFeatures.js';
+import { getTestTile } from '../tiles/testTiles.js';
+import { scoreCompletedFeaturesForTurn, type TurnScoringResult } from '../rules/scoring.js';
+import { scoreFinalFeatures, type FinalScoringResult } from '../rules/finalScoring.js';
 
 /* ------------------------------------------------------------------ */
 /* Мееплы на игрока (базовая игра: 7 подданных)                       */
