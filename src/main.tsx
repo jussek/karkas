@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
@@ -14,6 +14,9 @@ import { OnlineGamePage } from "./game-ui/online/OnlineGamePage";
 import { onlineNavigationTarget } from "./game-ui/online/onlineNavigation";
 import type { OnlineLobbySnapshot } from "./online/types";
 import type { OnlineMatch } from "./online/matchTypes";
+import { findMyActiveMatch, getMatch } from "./online/matchApi";
+import { clearActiveMatch, loadActiveMatch, saveActiveMatch } from "./online/activeMatchPersistence";
+import { getSupabaseClient } from "./online/supabaseClient";
 import type { LocalGameConfig } from "./game/session";
 import { DEFAULT_MATCH_OPTIONS, createLocalGameConfig } from "./game/session";
 import type { TurnFlowState } from "./game/engine/turnFlow";
@@ -73,6 +76,24 @@ export function App() {
   const [settings, setSettings] = useState<LocalSettings>(() => loadSettings());
   const [onlineLobby, setOnlineLobby] = useState<OnlineLobbySnapshot | null>(null);
   const [onlineMatch, setOnlineMatch] = useState<OnlineMatch | null>(null);
+
+  useEffect(() => {
+    let cancelled=false;
+    void (async()=>{
+      const client=getSupabaseClient();if(!client)return;
+      const {data}=await client.auth.getSession();if(!data.session)return;
+      const saved=loadActiveMatch();
+      try{
+        const match=saved?await getMatch(saved.activeMatchId):await findMyActiveMatch();
+        if(cancelled)return;
+        if(match){setOnlineMatch(match);saveActiveMatch({activeMatchId:match.id,lobbyId:match.lobbyId});setScreen('online-game');}
+        else if(saved)clearActiveMatch();
+      }catch{if(saved)clearActiveMatch();}
+    })();
+    return()=>{cancelled=true;};
+  },[]);
+
+  const acceptOnlineMatch=(match:OnlineMatch)=>{setOnlineMatch(match);saveActiveMatch({activeMatchId:match.id,lobbyId:match.lobbyId});setScreen('online-game');};
 
   const updateSetting = (patch: Partial<LocalSettings>) => {
     setSettings((current) => {
@@ -151,6 +172,7 @@ export function App() {
           onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })}
           onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })}
           onContinueGame={hasSavedGame ? continueGame : undefined}
+          onReturnToOnlineGame={onlineMatch?.status==='playing'?()=>setScreen('online-game'):undefined}
           onCreateGame={() => setScreen(onlineNavigationTarget("create"))}
           onQuickGame={() => guardDestructive(quickGame)}
           onFindGame={() => setScreen(onlineNavigationTarget("find"))}
@@ -174,8 +196,8 @@ export function App() {
 
   if (screen === "online-browser") return <FindGamePage onBack={() => setScreen(onlineNavigationTarget("back"))} onCreate={() => setScreen(onlineNavigationTarget("create"))} onJoined={(lobby) => { setOnlineLobby(lobby); setScreen(onlineNavigationTarget("joined")); }} />;
   if (screen === "online-create") return <OnlineCreatePage onBack={() => setScreen("menu")} onCreated={(lobby) => { setOnlineLobby(lobby); setScreen("online-lobby"); }} />;
-  if (screen === "online-lobby" && onlineLobby) return <OnlineLobbyPage lobbyId={onlineLobby.id} initialLobby={onlineLobby} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} onMatch={(match) => { setOnlineMatch(match); setScreen("online-game"); }} />;
-  if (screen === "online-game" && onlineMatch) return <OnlineGamePage initialMatch={onlineMatch} onExit={() => { setOnlineMatch(null); setOnlineLobby(null); setScreen("menu"); }} />;
+  if (screen === "online-lobby" && onlineLobby) return <OnlineLobbyPage lobbyId={onlineLobby.id} initialLobby={onlineLobby} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} onMatch={acceptOnlineMatch} />;
+  if (screen === "online-game" && onlineMatch) return <OnlineGamePage initialMatch={onlineMatch} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} />;
 
   if (screen === "setup") {
     return (
@@ -227,6 +249,7 @@ export function App() {
       onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })}
       onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })}
       onContinueGame={hasSavedGame ? continueGame : undefined}
+      onReturnToOnlineGame={onlineMatch?.status==='playing'?()=>setScreen('online-game'):undefined}
       onCreateGame={() => setScreen(onlineNavigationTarget("create"))}
       onQuickGame={() => guardDestructive(quickGame)}
       onFindGame={() => setScreen(onlineNavigationTarget("find"))}

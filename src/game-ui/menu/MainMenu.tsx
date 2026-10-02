@@ -10,12 +10,13 @@ export interface MainMenuProps {
   onExit?: () => void;
   hasSavedGame?: boolean;
   onContinueGame?: () => void;
+  onReturnToOnlineGame?: () => void;
   settings?: LocalSettings;
   onToggleSound?: () => void;
   onToggleMusic?: () => void;
 }
 
-export function MainMenu({ onCreateGame, onQuickGame, onFindGame, onExit, hasSavedGame = false, onContinueGame, settings, onToggleSound, onToggleMusic }: MainMenuProps) {
+export function MainMenu({ onCreateGame, onQuickGame, onFindGame, onExit, hasSavedGame = false, onContinueGame, onReturnToOnlineGame, settings, onToggleSound, onToggleMusic }: MainMenuProps) {
   const soundEnabled = settings?.soundEnabled ?? true;
   const musicEnabled = settings?.musicEnabled ?? true;
   return <main className="main-menu">
@@ -33,6 +34,7 @@ export function MainMenu({ onCreateGame, onQuickGame, onFindGame, onExit, hasSav
         <button type="button" className="menu-action menu-action--green" onClick={onCreateGame}><OnlineIcon name="plus" /><span><b>Создать игру</b><small>Настроить и пригласить игроков</small></span></button>
       </nav>
       <div className="main-menu__local">
+        {onReturnToOnlineGame && <button type="button" onClick={onReturnToOnlineGame}>Вернуться в игру</button>}
         {hasSavedGame && onContinueGame && <button type="button" onClick={onContinueGame}>Продолжить локальную игру</button>}
         <button type="button" onClick={onQuickGame}>Локальная игра</button>
       </div>
