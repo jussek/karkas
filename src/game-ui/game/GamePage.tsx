@@ -41,6 +41,7 @@ import {
 } from './matchTimer';
 import type { MatchTimerState } from './matchTimer';
 import { localHandVisible } from './draftVisibility';
+import { playGameSound } from '../../audio/gameAudio';
 import './gamePage.css';
 
 const CELL = 92;
@@ -276,6 +277,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
       return false;
     }
     setFlow(next);
+    playGameSound('preview');
     setPlacementFeedback(null);
     return true;
   }, [flow]);
@@ -297,7 +299,11 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
     setMeepleDraft(null);
     setMeepleDialogOpen(false);
     setFeedbackTick((tick) => tick + 1);
+    playGameSound('turn');
   };
+
+  useEffect(()=>{if(feedbackLines.length)playGameSound('score');},[feedbackLines]);
+  useEffect(()=>{if(gameOver)playGameSound('finished');},[gameOver]);
 
   const finalScores = flow.lastResolution.final;
   const riverActive = flow.riverPlaced < RIVER_CARD_COUNT;
@@ -397,7 +403,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
                   className="preview-rotate"
                   disabled={paused}
                   aria-label="Выбрать следующий разрешённый поворот"
-                  onClick={() => setFlow(rotatePositionedTurnTile)}
+                  onClick={() => {setFlow(rotatePositionedTurnTile);playGameSound('rotate');}}
                 >↻</button>}
               </div>
             )}
@@ -508,8 +514,8 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
           }}
         >↺ <span>Заменить</span></button>}<TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={92} /><span>{flow.rotation}°</span></div>}
         {flow.phase === 'AWAITING_DRAW' && <button type="button" className="draw-action" disabled={paused} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>}
-        {flow.phase === 'TILE_POSITIONED' && <><button type="button" className="cancel-placement" disabled={paused} onClick={() => setFlow((current) => cancelPositionedTurnTile(current))}>Отмена</button><button type="button" className="confirm-placement" aria-label="Подтвердить размещение карты" disabled={paused} onClick={() => setFlow(confirmTurnTilePlacement)}>✓ <span>Установить карту</span></button></>}
-        {meepleDraft ? <><button type="button" disabled={paused} onClick={() => setMeepleDraft(null)}>Отмена</button><button type="button" className="confirm-meeple" disabled={paused} onClick={() => { setFlow((current) => selectTurnMeeple(current, meepleDraft)); setMeepleDraft(null); }}>Поставить человечка</button></> : ['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) && <button
+        {flow.phase === 'TILE_POSITIONED' && <><button type="button" className="cancel-placement" disabled={paused} onClick={() => setFlow((current) => cancelPositionedTurnTile(current))}>Отмена</button><button type="button" className="confirm-placement" aria-label="Подтвердить размещение карты" disabled={paused} onClick={() => {setFlow(confirmTurnTilePlacement);playGameSound('tile');}}>✓ <span>Установить карту</span></button></>}
+        {meepleDraft ? <><button type="button" disabled={paused} onClick={() => setMeepleDraft(null)}>Отмена</button><button type="button" className="confirm-meeple" disabled={paused} onClick={() => { setFlow((current) => selectTurnMeeple(current, meepleDraft)); setMeepleDraft(null); playGameSound('meeple'); }}>Поставить человечка</button></> : ['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) && <button
           type="button"
           aria-pressed={meepleMode}
           disabled={!['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) || available === 0 || paused}

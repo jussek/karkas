@@ -22,7 +22,7 @@ export function FindGamePage({ onBack, onCreate, onJoined }: { onBack: () => voi
     if (refresh) setRefreshing(true); else setState('loading');
     if (onlineBrowserAvailability(getSupabaseClient()) === 'unavailable') { setState('error'); setRefreshing(false); return; }
     try { await ensureOnlineIdentity(); setLobbies(await listPublicLobbies()); setState('loaded'); }
-    catch (error) { console.error('Не удалось загрузить online lobby', error); setState('error'); }
+    catch (error) { if(import.meta.env.DEV)console.error('Не удалось загрузить online lobby',error); setState('error'); }
     finally { setRefreshing(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -30,7 +30,7 @@ export function FindGamePage({ onBack, onCreate, onJoined }: { onBack: () => voi
   const handleJoin = async (lobby: OnlineLobbySnapshot) => {
     setJoiningId(lobby.id);
     try { onJoined(await joinLobby(lobby.id)); }
-    catch (error) { console.error('Не удалось присоединиться к lobby', error); setState('error'); }
+    catch (error) { if(import.meta.env.DEV)console.error('Не удалось присоединиться к lobby',error); setState('error'); }
     finally { setJoiningId(null); }
   };
 

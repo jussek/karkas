@@ -5,6 +5,7 @@ import type { OnlineMatchIntent } from '../../src/online/matchTypes.js';
 import { applyOnlineMatchIntent, buildPublicMatchSnapshot } from './matchCore.js';
 
 export type AutomationSource = 'bot' | 'timeout';
+export interface PumpResult {processed:boolean;version:number;versionBefore:number;versionAfter:number;reason:AutomationSource|'noop'}
 type MatchRow = { id:string; version:number; status:string; current_player_id:string|null; turn_deadline_at:string|null };
 type RosterRow = { player_id:string; is_bot:boolean };
 
@@ -42,13 +43,14 @@ async function load(admin:SupabaseClient,matchId:string):Promise<{match:MatchRow
   return {match:matchResult.data as MatchRow,flow:stateResult.data.state as TurnFlowState,roster:rosterResult.data as RosterRow[]};
 }
 
-export async function pumpAuthoritativeMatch(admin:SupabaseClient,matchId:string,now=Date.now()):Promise<{processed:boolean;version:number}> {
+export async function pumpAuthoritativeMatch(admin:SupabaseClient,matchId:string,now=Date.now()):Promise<PumpResult> {
   let loaded=await load(admin,matchId);
-  if(loaded.match.status!=='playing')return {processed:false,version:loaded.match.version};
+  const versionBefore=loaded.match.version;
+  if(loaded.match.status!=='playing')return {processed:false,version:loaded.match.version,versionBefore,versionAfter:loaded.match.version,reason:'noop'};
   const initialPlayer=loaded.match.current_player_id;
   const bot=loaded.roster.some(row=>row.player_id===initialPlayer&&row.is_bot);
   const expired=!bot&&!!loaded.match.turn_deadline_at&&now>=Date.parse(loaded.match.turn_deadline_at);
-  if(!bot&&!expired)return {processed:false,version:loaded.match.version};
+  if(!bot&&!expired)return {processed:false,version:loaded.match.version,versionBefore,versionAfter:loaded.match.version,reason:'noop'};
   const source:AutomationSource=bot?'bot':'timeout';let processed=false;
   for(let guard=0;guard<3&&loaded.match.status==='playing'&&loaded.match.current_player_id===initialPlayer;guard++){
     const intent=chooseAutomationIntent(loaded.flow,source);if(!intent)break;
@@ -60,8 +62,8 @@ export async function pumpAuthoritativeMatch(admin:SupabaseClient,matchId:string
       p_action_type:intent.type,p_payload:intent,p_state:next,p_snapshot:snapshot,p_current_player_id:currentPlayerId,
       p_turn_number:next.game.turnNumber,p_status:status,p_source:source,p_turn_advanced:intent.type==='END_TURN',
     });
-    if(committed.error){if(committed.error.message.includes('VERSION_CONFLICT'))return {processed,version:loaded.match.version};throw committed.error;}
+    if(committed.error){if(committed.error.message.includes('VERSION_CONFLICT'))return {processed,version:loaded.match.version,versionBefore,versionAfter:loaded.match.version,reason:processed?source:'noop'};throw committed.error;}
     processed=true;loaded=await load(admin,matchId);
   }
-  return {processed,version:loaded.match.version};
+  return {processed,version:loaded.match.version,versionBefore,versionAfter:loaded.match.version,reason:processed?source:'noop'};
 }
