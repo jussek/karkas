@@ -11,15 +11,15 @@
  * - Первая плитка (стартовый тайл) кладётся без проверок стыков.
  */
 
-import type { Board } from '../types/state';
-import { posKey } from '../types/state';
-import type { Rotation, TileDefinition, TilePosition } from '../types/geometry';
-import { EDGES } from '../types/geometry';
+import type { Board } from '../types/state.js';
+import { posKey } from '../types/state.js';
+import type { Rotation, TileDefinition, TilePosition } from '../types/geometry.js';
+import { EDGES } from '../types/geometry.js';
 import {
   areEdgesCompatible,
   edgeOffset,
   getTileEdges,
-} from '../engine/geometry';
+} from '../engine/geometry.js';
 
 export interface PlacementCheckContext {
   board: Board;

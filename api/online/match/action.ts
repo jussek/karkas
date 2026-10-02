@@ -1,8 +1,8 @@
-import { authenticateBearer,getSupabaseAdmin } from '../../_lib/supabaseAdmin';
-import { type ApiRequest,type ApiResponse,requirePost,sendError } from '../../_lib/http';
-import { applyOnlineMatchIntent,assertActorTurn,buildPublicMatchSnapshot,MatchIntentError } from '../../_lib/matchCore';
-import type { TurnFlowState } from '../../../src/game/engine/turnFlow';
-import type { OnlineMatchActionRequest,OnlineMatchIntent } from '../../../src/online/matchTypes';
+import { authenticateBearer,getSupabaseAdmin } from '../../_lib/supabaseAdmin.js';
+import { type ApiRequest,type ApiResponse,requirePost,sendError } from '../../_lib/http.js';
+import { applyOnlineMatchIntent,assertActorTurn,buildPublicMatchSnapshot,MatchIntentError } from '../../_lib/matchCore.js';
+import type { TurnFlowState } from '../../../src/game/engine/turnFlow.js';
+import type { OnlineMatchActionRequest,OnlineMatchIntent } from '../../../src/online/matchTypes.js';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 function validIntent(value:unknown):value is OnlineMatchIntent{if(!value||typeof value!=='object')return false;const i=value as Record<string,unknown>;if(i.type==='END_TURN')return true;if(i.type==='PLACE_TILE'){const p=i.position as Record<string,unknown>|null;return !!p&&Number.isInteger(p.x)&&Number.isInteger(p.y)&&[0,90,180,270].includes(i.rotation as number);}if(i.type==='PLACE_MEEPLE')return ['road','city','monastery'].includes(String(i.featureType))&&(i.edge===null||[0,1,2,3].includes(i.edge as number));return false;}
 function validBody(value:unknown):value is OnlineMatchActionRequest{if(!value||typeof value!=='object')return false;const b=value as Record<string,unknown>;return typeof b.matchId==='string'&&uuid.test(b.matchId)&&Number.isSafeInteger(b.expectedVersion)&&(b.expectedVersion as number)>=0&&typeof b.intentId==='string'&&uuid.test(b.intentId)&&validIntent(b.intent);}

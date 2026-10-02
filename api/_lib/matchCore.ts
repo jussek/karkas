@@ -1,8 +1,8 @@
-import { getTileDefinition } from '../../src/game/cards/catalogApi';
-import { canEndTurn, confirmTurnTilePlacement, createTurnFlow, drawTurnTile, endTurn, getLegalTilePlacementOptions, hasAnyLegalTilePlacement, placeTurnTile, replaceUnplayableTurnTile, rotatePositionedTurnTile, selectTurnMeeple, type TurnFlowState } from '../../src/game/engine/turnFlow';
-import { getLegalMeeplePlacements } from '../../src/game/rules/localFeatures';
-import type { Player } from '../../src/game/types/state';
-import type { OnlineMatchIntent, OnlinePublicMatchSnapshot } from '../../src/online/matchTypes';
+import { getTileDefinition } from '../../src/game/cards/catalogApi.js';
+import { canEndTurn, confirmTurnTilePlacement, createTurnFlow, drawTurnTile, endTurn, getLegalTilePlacementOptions, hasAnyLegalTilePlacement, placeTurnTile, replaceUnplayableTurnTile, rotatePositionedTurnTile, selectTurnMeeple, type TurnFlowState } from '../../src/game/engine/turnFlow.js';
+import { getLegalMeeplePlacements } from '../../src/game/rules/localFeatures.js';
+import type { Player } from '../../src/game/types/state.js';
+import type { OnlineMatchIntent, OnlinePublicMatchSnapshot } from '../../src/online/matchTypes.js';
 
 export class MatchIntentError extends Error { constructor(public code:string,message:string,public status=409){super(message);} }
 export function assertActorTurn(flow:TurnFlowState,actorUserId:string,roster:ReadonlyArray<{playerId:string;userId:string|null;isBot:boolean}>):void{

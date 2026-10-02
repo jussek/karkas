@@ -11,9 +11,9 @@ import type {
   PlacedTile,
   Rotation,
   TilePosition,
-} from './geometry';
-import { placementKey } from './geometry';
-import type { GameError } from '../engine/errors';
+} from './geometry.js';
+import { placementKey } from './geometry.js';
+import type { GameError } from '../engine/errors.js';
 
 /* ------------------------------------------------------------------ */
 /* Игроки и meeple                                                     */

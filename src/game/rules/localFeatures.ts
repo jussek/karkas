@@ -19,11 +19,11 @@ import type {
   MeeplePlacement,
   Rotation,
   TileDefinition,
-} from '../types/geometry';
-import { EDGES } from '../types/geometry';
-import { rotateEdge } from '../engine/geometry';
-import type { GameState } from '../types/state';
-import { isGlobalFeatureOccupied } from './globalFeatures';
+} from '../types/geometry.js';
+import { EDGES } from '../types/geometry.js';
+import { rotateEdge } from '../engine/geometry.js';
+import type { GameState } from '../types/state.js';
+import { isGlobalFeatureOccupied } from './globalFeatures.js';
 
 /**
  * Множество поворотов sides-индексов: baseEdge -> [rotatedEdges...].

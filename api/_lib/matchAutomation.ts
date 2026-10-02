@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { TurnFlowState } from '../../src/game/engine/turnFlow';
-import type { OnlineMatchIntent } from '../../src/online/matchTypes';
-import { applyOnlineMatchIntent, buildPublicMatchSnapshot } from './matchCore';
+import type { TurnFlowState } from '../../src/game/engine/turnFlow.js';
+import type { OnlineMatchIntent } from '../../src/online/matchTypes.js';
+import { applyOnlineMatchIntent, buildPublicMatchSnapshot } from './matchCore.js';
 
 export type AutomationSource = 'bot' | 'timeout';
 type MatchRow = { id:string; version:number; status:string; current_player_id:string|null; turn_deadline_at:string|null };

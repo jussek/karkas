@@ -1,5 +1,5 @@
-import type { CardDefinition } from './types';
-import type { TileDefinition } from '../types/geometry';
+import type { CardDefinition } from './types.js';
+import type { TileDefinition } from '../types/geometry.js';
 
 export function cardToTileDefinition(card: CardDefinition): TileDefinition {
   const roadSegments = card.topology.roads.map((_, index) => `road:${index}`);
