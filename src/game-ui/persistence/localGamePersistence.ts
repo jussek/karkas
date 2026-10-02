@@ -223,11 +223,13 @@ export interface LocalGameSaveV1 {
 }
 
 /** null → невалидно; undefined → отсутствует (старый save, ок). */
-function validateMatchOptions(value: unknown): { turnTimerSeconds: number } | null | undefined {
+function validateMatchOptions(value: unknown): { turnTimerSeconds: 0 | 15 | 30 | 60 } | null | undefined {
   if (value === undefined) return undefined;
   if (!isRecord(value)) return null;
   const s = value.turnTimerSeconds;
-  if (s !== 0 && s !== 60 && s !== 90 && s !== 120) return null;
+  // Legacy 90/120-second saves remain loadable, but use the safe disabled fallback.
+  if (s === 90 || s === 120) return { turnTimerSeconds: 0 };
+  if (s !== 0 && s !== 15 && s !== 30 && s !== 60) return null;
   return { turnTimerSeconds: s };
 }
 

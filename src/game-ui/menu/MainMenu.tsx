@@ -1,70 +1,44 @@
 import type { LocalSettings } from '../persistence/localGamePersistence';
+import { OnlineIcon } from '../online/OnlineIcon';
+import { exitMainMenu } from './menuExit';
 import './mainMenu.css';
 
 export interface MainMenuProps {
   onCreateGame: () => void;
   onQuickGame: () => void;
-  /** Opens the rules modal (rendered by the application root). */
-  onRules?: () => void;
-  /** Stage 4B: сохранённая незавершённая партия существует. */
+  onFindGame?: () => void;
+  onExit?: () => void;
   hasSavedGame?: boolean;
-  /** Показывается только когда hasSavedGame. */
   onContinueGame?: () => void;
-  onSettings?: () => void;
+  onReturnToOnlineGame?: () => void;
   settings?: LocalSettings;
   onToggleSound?: () => void;
   onToggleMusic?: () => void;
 }
 
-export function MainMenu({
-  onCreateGame,
-  onQuickGame,
-  onRules,
-  hasSavedGame = false,
-  onContinueGame,
-  onSettings,
-  settings,
-  onToggleSound,
-  onToggleMusic,
-}: MainMenuProps) {
+export function MainMenu({ onCreateGame, onQuickGame, onFindGame, onExit, hasSavedGame = false, onContinueGame, onReturnToOnlineGame, settings, onToggleSound, onToggleMusic }: MainMenuProps) {
   const soundEnabled = settings?.soundEnabled ?? true;
   const musicEnabled = settings?.musicEnabled ?? true;
   return <main className="main-menu">
-    <div className="main-menu__audio" aria-label="Звук и музыка">
-      <button
-        type="button"
-        aria-label="Звук"
-        aria-pressed={soundEnabled}
-        className={soundEnabled ? 'is-on' : 'is-off'}
-        onClick={onToggleSound}
-      >{soundEnabled ? '🔊' : '🔇'}</button>
-      <button
-        type="button"
-        aria-label="Музыка"
-        aria-pressed={musicEnabled}
-        className={musicEnabled ? 'is-on' : 'is-off'}
-        onClick={onToggleMusic}
-      >{musicEnabled ? '♫' : '♪̸'}</button>
+    <div className="main-menu__beams" aria-hidden="true" />
+    <div className="main-menu__toolbar">
+      <button type="button" aria-label="Звук" aria-pressed={soundEnabled} onClick={onToggleSound}><OnlineIcon name="sound" /></button>
+      <button type="button" aria-label="Музыка" aria-pressed={musicEnabled} onClick={onToggleMusic}><OnlineIcon name="music" /></button>
+      <button type="button" aria-label="Выход" onClick={() => exitMainMenu(onExit, typeof window === 'undefined' ? undefined : window)}><OnlineIcon name="close" /></button>
     </div>
-    <header className="main-menu__brand">
-      <span className="main-menu__meeple" aria-hidden>♟</span>
-      <p>Настольная игра</p>
-      <h1>Каркассон</h1>
-      <span>Стройте земли · собирайте реку · побеждайте</span>
-    </header>
-    <nav className="main-menu__actions" aria-label="Главное меню">
-      {hasSavedGame && onContinueGame && (
-        <button type="button" className="wood-button wood-button--blue" onClick={onContinueGame}>Продолжить игру</button>
-      )}
-      <button type="button" className="wood-button wood-button--blue" disabled title="Сетевой режим появится позже">Найти игру <small>Скоро</small></button>
-      <button type="button" className="wood-button wood-button--green" onClick={onCreateGame}>Создать игру</button>
-      <button type="button" className="wood-button" onClick={onQuickGame}>Быстрая локальная игра</button>
-      <div className="main-menu__minor">
-        <button type="button" onClick={onRules}>Правила</button>
-        <button type="button" onClick={onSettings}>Настройки</button>
-        <button type="button">Выход</button>
+    <section className="main-menu__content">
+      <div className="main-menu__emblem" aria-hidden="true"><OnlineIcon name="meeple" /></div>
+      <header className="main-menu__brand"><span>Настольная игра</span><h1>Каркассон</h1><p>Стройте земли · собирайте реку · побеждайте</p></header>
+      <nav className="main-menu__primary" aria-label="Главное меню">
+        <button type="button" className="menu-action menu-action--blue" onClick={onFindGame}><OnlineIcon name="search" /><span><b>Найти игру</b><small>Присоединиться к существующему лобби</small></span></button>
+        <button type="button" className="menu-action menu-action--green" onClick={onCreateGame}><OnlineIcon name="plus" /><span><b>Создать игру</b><small>Настроить и пригласить игроков</small></span></button>
+      </nav>
+      <div className="main-menu__local">
+        {onReturnToOnlineGame && <button type="button" onClick={onReturnToOnlineGame}>Вернуться в игру</button>}
+        {hasSavedGame && onContinueGame && <button type="button" onClick={onContinueGame}>Продолжить локальную игру</button>}
+        <button type="button" onClick={onQuickGame}>Локальная игра</button>
       </div>
-    </nav>
-    <p className="main-menu__offline">Локальный режим · 1–6 игроков · без сети</p>
+    </section>
+    <div className="main-menu__table" aria-hidden="true"><i /><i /><i /></div>
   </main>;
 }
