@@ -12,7 +12,30 @@ export async function submitMatchIntent(request:OnlineMatchActionRequest):Promis
 export async function getMatch(matchId:string):Promise<OnlineMatch>{await ensureOnlineIdentity();const {data,error}=await requireSupabaseClient().from('online_matches').select('*').eq('id',matchId).single();if(error)throw error;return fromRow(data as MatchRow);}
 export async function getMatchByLobby(lobbyId:string):Promise<OnlineMatch>{await ensureOnlineIdentity();const {data,error}=await requireSupabaseClient().from('online_matches').select('*').eq('lobby_id',lobbyId).single();if(error)throw error;const match=fromRow(data as MatchRow);saveActiveMatch({activeMatchId:match.id,lobbyId:match.lobbyId});return match;}
 export async function pumpMatch(matchId:string):Promise<{processed:boolean;version?:number}>{return post('/api/online/match/pump',{matchId});}
-export async function findMyActiveMatch():Promise<OnlineMatch|null>{const client=requireSupabaseClient();const {data,error}=await client.from('online_matches').select('*').eq('status','playing').order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;return data?fromRow(data as MatchRow):null;}
+
+export async function setMatchPresence(matchId:string,present:boolean):Promise<void>{
+  await ensureOnlineIdentity();
+  const {error}=await requireSupabaseClient().rpc('set_online_match_presence',{p_match_id:matchId,p_present:present});
+  if(error)throw error;
+}
+
+export async function leaveMyOnlineMatches(exceptMatchId:string|null=null):Promise<number>{
+  await ensureOnlineIdentity();
+  const {data,error}=await requireSupabaseClient().rpc('leave_my_online_matches',{p_except_match_id:exceptMatchId});
+  if(error)throw error;
+  return Number(data??0);
+}
+
+export async function findMyActiveMatch():Promise<OnlineMatch|null>{
+  await ensureOnlineIdentity();
+  const client=requireSupabaseClient();
+  const {data,error}=await client.rpc('find_my_active_online_match_id');
+  if(error)throw error;
+  if(!data)return null;
+  const match=await getMatch(String(data));
+  return match.status==='playing'?match:null;
+}
+
 export type MatchConnectionStatus='connected'|'reconnecting'|'offline';
 export function subscribeToMatch(matchId:string,callback:(match:OnlineMatch|null,error?:Error)=>void,onStatus?:(status:MatchConnectionStatus)=>void):()=>void{
  const client=requireSupabaseClient();let channel:ReturnType<typeof client.channel>|null=null,running=false,pending=false,closed=false,retry=0,timer:ReturnType<typeof setTimeout>|null=null;
