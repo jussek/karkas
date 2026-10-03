@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { MAX_PLAYERS, MIN_PLAYERS, PLAYER_IDENTITIES, buildPlayers, defaultPlayerName } from '../../game/session';
 import type { LocalGameConfig, LocalMatchOptions } from '../../game/session';
 import './gameSetup.css';
+import '../referenceSetup.css';
 
 export const TURN_TIMER_OPTIONS: readonly { value: 0 | 15 | 30 | 60; label: string }[] = [
   { value: 0, label: 'Без таймера' },
