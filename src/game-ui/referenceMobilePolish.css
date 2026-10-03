@@ -1,0 +1,164 @@
+/* Stage 5H.2 — mobile proportion pass against approved visual references.
+   Presentation only: no gameplay, network or persistence behavior changes. */
+
+/* Main menu: exactly two primary online CTAs in the visual hierarchy. */
+.main-menu__local{display:none!important}
+.main-menu__content{width:min(92vw,520px)!important}
+.main-menu__toolbar{gap:7px!important;top:max(10px,env(safe-area-inset-top))!important;right:max(10px,env(safe-area-inset-right))!important}
+.main-menu__toolbar button{width:43px!important;height:43px!important;border-radius:11px!important}
+.main-menu__brand{padding:44px 22px 22px!important}
+.main-menu__brand h1{font-size:clamp(3.25rem,15vw,5rem)!important}
+.main-menu__brand p{margin-top:10px!important}
+.main-menu__primary{gap:15px!important;margin-top:22px!important}
+.menu-action{min-height:94px!important;grid-template-columns:62px 1fr!important;padding:12px 16px!important}
+.menu-action svg{width:44px!important;height:44px!important}
+.menu-action b{font-size:clamp(1.42rem,5.4vw,1.85rem)!important}
+.menu-action small{font-size:.76rem!important}
+
+/* Lobby browser: denser, readable cards matching portrait reference. */
+.online-browser__shell{max-width:620px!important}
+.online-browser__header{grid-template-columns:44px 1fr 44px!important;gap:7px!important;margin:10px 6px 8px!important}
+.online-browser__header button{width:44px!important;height:44px!important}
+.online-browser__header h1{font-size:1.7rem!important;padding:10px 16px!important}
+.online-browser__filters{margin:0 5px 9px!important;padding:6px!important}
+.online-browser__filters button{min-height:42px!important;font-size:.76rem!important;padding:5px 6px!important}
+.online-browser__list{gap:9px!important;padding:1px 5px 10px!important}
+.lobby-card{grid-template-columns:94px minmax(0,1fr)!important;gap:10px!important;padding:8px 9px!important}
+.lobby-card__tiles{width:90px!important;height:90px!important;padding:4px!important}
+.lobby-card__tiles img{width:39px!important;height:39px!important}
+.lobby-card h2{font-size:1.05rem!important}
+.lobby-card__body{gap:5px!important}
+.lobby-card__body>button{min-height:44px!important;min-width:132px!important;padding:6px 12px!important;font-size:.88rem!important}
+.online-browser__actions{gap:8px!important;margin:0 5px!important;padding:7px 0 3px!important}
+.online-browser__actions button{min-height:52px!important;font-size:.9rem!important}
+
+/* Create/lobby: keep the whole composition comfortably inside portrait screens. */
+.online-room{overflow-y:auto!important}
+.online-room__shell{max-width:620px!important;gap:9px!important;padding:10px max(9px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(9px,env(safe-area-inset-left))!important}
+.online-room__header{grid-template-columns:44px 1fr 44px!important}
+.online-room__header>button{width:44px!important;height:44px!important}
+.online-room__header h1{font-size:1.62rem!important;padding:8px 12px!important}
+.room-panel{padding:12px!important}
+.create-form{gap:11px!important}
+.classic-map{grid-template-columns:104px 1fr!important;min-height:102px!important;gap:10px!important;padding:8px!important}
+.classic-map__tiles{width:100px!important;height:100px!important;padding:4px!important}
+.classic-map__tiles img{width:44px!important;height:44px!important}
+.room-chips button,.room-toggle button,.room-code button{min-height:43px!important;padding:6px 10px!important}
+.room-primary,.ready-button{min-height:57px!important;font-size:1.08rem!important}
+.room-player{min-height:54px!important}
+.room-player>svg{width:32px!important;height:32px!important}
+.chat-panel{min-height:190px!important}
+.chat-messages{max-height:150px!important}
+.lobby-actions{gap:6px!important;padding:7px!important}
+
+/* No explicit rotation control: rotate by tapping the positioned tile itself. */
+.online-game__draft-tile b,.preview-rotate{display:none!important}
+
+/* Gameplay: make the board dominant and keep controls compact, like the reference. */
+.game-page,.online-game{padding-left:5px!important;padding-right:5px!important}
+.game-header,.online-game__players{min-height:52px!important;padding-top:3px!important;padding-bottom:4px!important}
+.game-scores>span,.online-game__players>div:not(.online-game__tools){min-width:92px!important;min-height:46px!important;padding:4px 6px!important}
+.online-game__players{padding-right:92px!important}
+.online-game__players strong,.game-scores strong{font-size:.82rem!important}
+.online-game__players small{font-size:.61rem!important}
+.game-menu-button,.online-game__tools button{width:42px!important;height:42px!important}
+.game-turn-status{top:56px!important;min-height:27px!important;padding:3px 9px!important;font-size:.66rem!important}
+.turn-message{top:58px!important;padding:4px 10px!important;font-size:.68rem!important}
+.turn-change-banner{top:88px!important}
+
+.board-viewport,.online-game__viewport{
+  height:calc(100dvh - 170px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+  min-height:300px!important;
+  margin-top:2px!important;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(112,65,31,.22),transparent 46%),
+    repeating-linear-gradient(0deg,#351b0e 0 84px,#4c2914 85px 86px),
+    repeating-linear-gradient(90deg,transparent 0 84px,#5b3118 85px 86px)!important;
+}
+.camera-controls,.online-game__camera{left:7px!important;gap:5px!important;padding:3px!important}
+.camera-button,.online-game__camera button{width:43px!important;height:43px!important;min-width:43px!important;min-height:43px!important;font-size:1.15rem!important}
+
+.turn-controls,.online-game__controls{min-height:108px!important}
+.online-game__controls{grid-template-columns:70px 92px minmax(0,1fr)!important;gap:6px!important;padding:7px max(7px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left))!important}
+.online-game__meeple-count{grid-template-columns:48px auto!important;min-height:76px!important;padding:5px 3px!important}
+.online-game__meeple-count svg{width:48px!important;height:48px!important}
+.online-game__meeple-count b{font-size:1.1rem!important}
+.online-game__hand{min-height:88px!important}
+.online-game__hand img,.held-tile img{width:82px!important;height:82px!important}
+.online-game__actions{gap:5px!important}
+.online-game__actions button,.turn-controls button{min-height:54px!important;padding:6px 8px!important;font-size:.76rem!important}
+.online-game__feedback{bottom:112px!important}
+
+/* Keep legal cells clear but less visually static while panning. */
+.legal-cell,.online-game__legal{border-width:2px!important;box-shadow:inset 0 0 13px rgba(72,186,255,.22),0 0 12px rgba(19,143,233,.48)!important}
+.legal-cell span,.online-game__legal span{width:9px!important;height:9px!important}
+
+/* Loading: more cinematic area, less modal-card dominance. */
+.game-loading__scene{top:7%!important;width:min(92vw,570px)!important}
+.game-loading__content{width:min(90vw,450px)!important;margin-top:min(41vh,315px)!important;padding:20px 17px 17px!important}
+.game-loading h1{font-size:clamp(2.55rem,12vw,4.25rem)!important;margin-bottom:16px!important}
+
+@media(max-width:430px){
+  .main-menu{padding:max(72px,env(safe-area-inset-top)) 10px max(18px,env(safe-area-inset-bottom))!important}
+  .main-menu__emblem{width:82px!important;height:82px!important;margin-bottom:-31px!important}
+  .main-menu__emblem svg{width:50px!important;height:50px!important}
+  .main-menu__brand{padding:38px 15px 18px!important}
+  .main-menu__brand h1{font-size:clamp(3rem,14.5vw,4.15rem)!important}
+  .main-menu__brand p{font-size:.72rem!important}
+  .main-menu__primary{gap:12px!important;margin-top:16px!important}
+  .menu-action{min-height:82px!important;grid-template-columns:52px 1fr!important;padding:10px 13px!important}
+  .menu-action svg{width:38px!important;height:38px!important}
+  .menu-action b{font-size:1.42rem!important}
+  .menu-action small{font-size:.68rem!important}
+
+  .online-browser__header h1,.online-room__header h1{font-size:1.42rem!important}
+  .lobby-card{grid-template-columns:82px minmax(0,1fr)!important}
+  .lobby-card__tiles{width:78px!important;height:78px!important}
+  .lobby-card__tiles img{width:34px!important;height:34px!important}
+  .lobby-card__body>button{justify-self:stretch!important;min-width:0!important}
+
+  .classic-map{grid-template-columns:92px 1fr!important}
+  .classic-map__tiles{width:88px!important;height:88px!important}
+  .classic-map__tiles img{width:38px!important;height:38px!important}
+
+  .board-viewport,.online-game__viewport{height:calc(100dvh - 162px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;min-height:280px!important}
+  .online-game__players{padding-right:88px!important}
+  .game-scores>span,.online-game__players>div:not(.online-game__tools){min-width:88px!important}
+  .turn-controls,.online-game__controls{min-height:101px!important}
+  .online-game__controls{grid-template-columns:60px 82px minmax(0,1fr)!important;gap:5px!important;padding:5px!important}
+  .online-game__meeple-count{grid-template-columns:40px auto!important;min-height:68px!important}
+  .online-game__meeple-count svg{width:40px!important;height:40px!important}
+  .online-game__hand img,.held-tile img{width:72px!important;height:72px!important}
+  .online-game__actions button,.turn-controls button{min-height:50px!important;padding-inline:6px!important;font-size:.68rem!important}
+}
+
+@media(max-width:360px){
+  .main-menu__brand h1{font-size:2.85rem!important}
+  .menu-action{min-height:76px!important}
+  .menu-action b{font-size:1.28rem!important}
+  .menu-action small{display:block!important;font-size:.62rem!important}
+  .online-browser__filters button{font-size:.63rem!important;padding-inline:3px!important}
+  .lobby-card{grid-template-columns:72px minmax(0,1fr)!important;gap:7px!important}
+  .lobby-card__tiles{width:68px!important;height:68px!important}
+  .lobby-card__tiles img{width:29px!important;height:29px!important}
+  .online-game__controls{grid-template-columns:52px 70px minmax(0,1fr)!important;gap:4px!important}
+  .online-game__meeple-count{grid-template-columns:34px auto!important}
+  .online-game__meeple-count svg{width:34px!important;height:34px!important}
+  .online-game__hand img,.held-tile img{width:62px!important;height:62px!important}
+  .online-game__actions button,.turn-controls button{font-size:.61rem!important;padding-inline:4px!important}
+}
+
+@media(max-height:700px){
+  .main-menu{padding-top:max(60px,env(safe-area-inset-top))!important}
+  .main-menu__emblem{width:72px!important;height:72px!important;margin-bottom:-27px!important}
+  .main-menu__brand{padding-top:33px!important;padding-bottom:14px!important}
+  .main-menu__brand h1{font-size:2.9rem!important}
+  .main-menu__brand p{display:none!important}
+  .main-menu__primary{margin-top:12px!important;gap:9px!important}
+  .menu-action{min-height:70px!important}
+  .menu-action small{display:none!important}
+  .game-loading__scene{top:2%!important;width:min(76vw,420px)!important}
+  .game-loading__content{margin-top:min(32vh,205px)!important;padding-top:15px!important}
+  .board-viewport,.online-game__viewport{min-height:250px!important}
+  .turn-controls,.online-game__controls{min-height:92px!important}
+}

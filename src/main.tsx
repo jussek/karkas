@@ -30,6 +30,7 @@ import {
 import type { LocalSettings, UiMatchState } from "./game-ui/persistence/localGamePersistence";
 import { configureAudio,installAudioGestureUnlock } from "./audio/gameAudio";
 import "./game-ui/referenceVisual.css";
+import "./game-ui/referenceMobilePolish.css";
 
 function browserGameId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
