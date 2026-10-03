@@ -35,18 +35,13 @@ import "./game-ui/sessionLifecyclePolish.css";
 import "./game-ui/referenceDetailPolish.css";
 
 function browserGameId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
   return `local-${Date.now().toString(36)}`;
 }
 
 function browserSeed(): number {
   const buffer = new Uint32Array(1);
-  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
-    crypto.getRandomValues(buffer);
-    return buffer[0];
-  }
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") { crypto.getRandomValues(buffer); return buffer[0]; }
   return Date.now() >>> 0;
 }
 
@@ -54,17 +49,8 @@ function onlineCriticalCards(match:OnlineMatch):string[]{return [...Object.value
 
 export type Screen = "menu" | "setup" | "lobby" | "game" | "online-browser" | "online-create" | "online-lobby" | "online-game" | "loading";
 
-export function buildRematchConfig(
-  previous: LocalGameConfig,
-  gameId: string,
-  seed: number,
-): LocalGameConfig {
-  return {
-    gameId,
-    seed,
-    players: previous.players.map((player) => ({ ...player })),
-    matchOptions: { ...(previous.matchOptions ?? DEFAULT_MATCH_OPTIONS) },
-  };
+export function buildRematchConfig(previous: LocalGameConfig, gameId: string, seed: number): LocalGameConfig {
+  return { gameId, seed, players: previous.players.map((player) => ({ ...player })), matchOptions: { ...(previous.matchOptions ?? DEFAULT_MATCH_OPTIONS) } };
 }
 
 export function App() {
@@ -82,7 +68,6 @@ export function App() {
   const [loadingVariant,setLoadingVariant]=useState<'game'|'reconnect'>('game');
 
   useEffect(()=>{configureAudio(settings);return installAudioGestureUnlock();},[settings]);
-
   const beginLoading=useCallback((target:'game'|'online-game',cardIds:string[],variant:'game'|'reconnect'='game')=>{setLoadingTarget(target);setLoadingCards(cardIds.length?cardIds:['card-133']);setLoadingVariant(variant);setScreen('loading');},[]);
   const finishLoading=useCallback(()=>setScreen(loadingTarget),[loadingTarget]);
 
@@ -105,72 +90,32 @@ export function App() {
   useEffect(()=>{
     if(screen!=='online-game'||!onlineMatch||onlineMatch.status!=='playing')return;
     let disposed=false;
-    const heartbeat=()=>{
-      if(disposed||document.visibilityState!=='visible')return;
-      void setMatchPresence(onlineMatch.id,true).catch(()=>undefined);
-    };
+    const heartbeat=()=>{if(disposed||document.visibilityState!=='visible')return;void setMatchPresence(onlineMatch.id,true).catch(()=>undefined);};
     heartbeat();
     const timer=window.setInterval(heartbeat,30000);
     const onVisibility=()=>{if(document.visibilityState==='visible')heartbeat();};
     document.addEventListener('visibilitychange',onVisibility);
-    return()=>{
-      disposed=true;
-      window.clearInterval(timer);
-      document.removeEventListener('visibilitychange',onVisibility);
-      void setMatchPresence(onlineMatch.id,false).catch(()=>undefined);
-    };
+    return()=>{disposed=true;window.clearInterval(timer);document.removeEventListener('visibilitychange',onVisibility);void setMatchPresence(onlineMatch.id,false).catch(()=>undefined);};
   },[screen,onlineMatch?.id,onlineMatch?.status]);
 
   const acceptOnlineMatch=(match:OnlineMatch)=>{setOnlineMatch(match);saveActiveMatch({activeMatchId:match.id,lobbyId:match.lobbyId});beginLoading('online-game',onlineCriticalCards(match));};
   const returnToOnlineGame=()=>{if(onlineMatch?.status==='playing')beginLoading('online-game',onlineCriticalCards(onlineMatch),'reconnect');};
   const leaveOnlineForLocal=()=>{clearActiveMatch();setOnlineMatch(null);void leaveMyOnlineMatches().catch(()=>undefined);};
 
-  const updateSetting = (patch: Partial<LocalSettings>) => {
-    setSettings((current) => {
-      const next = { ...current, ...patch };
-      saveSettings(next);
-      return next;
-    });
-  };
-
-  const guardDestructive = (proceed: () => void) => {
-    if (loadLocalGameSave() !== null) setConfirmNewGame(true);
-    else proceed();
-  };
-
-  const discardSaveAndGoToSetup = () => {
-    clearLocalGameSave();
-    setHasSavedGame(false);
-    setConfirmNewGame(false);
-    setRestoredFlow(null);
-    setRestoredUiMatchState(undefined);
-    setScreen("setup");
-  };
+  const updateSetting = (patch: Partial<LocalSettings>) => { setSettings((current) => { const next = { ...current, ...patch }; saveSettings(next); return next; }); };
+  const guardDestructive = (proceed: () => void) => { if (loadLocalGameSave() !== null) setConfirmNewGame(true); else proceed(); };
+  const discardSaveAndGoToSetup = () => { clearLocalGameSave();setHasSavedGame(false);setConfirmNewGame(false);setRestoredFlow(null);setRestoredUiMatchState(undefined);setScreen("setup"); };
 
   const quickGame = () => {
     leaveOnlineForLocal();
-    const next = createLocalGameConfig({
-      gameId: browserGameId(),
-      seed: browserSeed(),
-      count: 2,
-      matchOptions: { turnTimerSeconds: 0 },
-    });
-    setConfig(next);
-    setRestoredFlow(null);
-    setRestoredUiMatchState(undefined);
-    beginLoading('game',['card-133']);
+    const next = createLocalGameConfig({gameId: browserGameId(),seed: browserSeed(),count: 2,matchOptions: { turnTimerSeconds: 0 }});
+    setConfig(next);setRestoredFlow(null);setRestoredUiMatchState(undefined);beginLoading('game',['card-133']);
   };
 
   const continueGame = () => {
     const save = loadLocalGameSave();
-    if (!save) {
-      setHasSavedGame(false);
-      return;
-    }
-    leaveOnlineForLocal();
-    setConfig(save.config);
-    setRestoredFlow(save.flow);
-    setRestoredUiMatchState(save.uiMatchState);
+    if (!save) { setHasSavedGame(false); return; }
+    leaveOnlineForLocal();setConfig(save.config);setRestoredFlow(save.flow);setRestoredUiMatchState(save.uiMatchState);
     beginLoading('game',[save.flow.game.drawnTileDefinitionId,...Object.values(save.flow.game.board).map(tile=>tile.definitionId)].filter((id):id is string=>Boolean(id)),'reconnect');
   };
 
@@ -178,132 +123,30 @@ export function App() {
     if (!config) return;
     clearLocalGameSave();
     const next = buildRematchConfig(config, browserGameId(), browserSeed());
-    setConfig(next);
-    setRestoredFlow(null);
-    setRestoredUiMatchState(undefined);
-    setHasSavedGame(true);
-    beginLoading('game',['card-133']);
+    setConfig(next);setRestoredFlow(null);setRestoredUiMatchState(undefined);setHasSavedGame(true);beginLoading('game',['card-133']);
   };
 
-  const prepare = (next: LocalGameConfig) => {
-    setConfig(next);
-    setRestoredFlow(null);
-    setRestoredUiMatchState(undefined);
-    setScreen("lobby");
-  };
+  const prepare = (next: LocalGameConfig) => { setConfig(next);setRestoredFlow(null);setRestoredUiMatchState(undefined);setScreen("lobby"); };
 
   if (screen === "menu") {
-    return (
-      <>
-        <MainMenu
-          hasSavedGame={hasSavedGame}
-          settings={settings}
-          onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })}
-          onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })}
-          onContinueGame={hasSavedGame ? continueGame : undefined}
-          onReturnToOnlineGame={onlineMatch?.status==='playing'?returnToOnlineGame:undefined}
-          onCreateGame={() => setScreen(onlineNavigationTarget("create"))}
-          onQuickGame={() => guardDestructive(quickGame)}
-          onFindGame={() => setScreen(onlineNavigationTarget("find"))}
-          onExit={() => { if (typeof window !== "undefined" && window.history.length > 1) window.history.back(); }}
-        />
-        {confirmNewGame && (
-          <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="newgame-title">
-            <section className="rules-card">
-              <h2 id="newgame-title">Начать новую игру?</h2>
-              <p>Текущая сохранённая партия будет удалена.</p>
-              <div className="settings-row">
-                <button type="button" onClick={discardSaveAndGoToSetup}>Да, начать новую</button>
-                <button type="button" onClick={() => setConfirmNewGame(false)}>Отмена</button>
-              </div>
-            </section>
-          </div>
-        )}
-      </>
-    );
+    return <><MainMenu hasSavedGame={hasSavedGame} settings={settings} onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })} onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })} onContinueGame={hasSavedGame ? continueGame : undefined} onReturnToOnlineGame={onlineMatch?.status==='playing'?returnToOnlineGame:undefined} onCreateGame={() => setScreen(onlineNavigationTarget("create"))} onQuickGame={() => guardDestructive(quickGame)} onFindGame={() => setScreen(onlineNavigationTarget("find"))} onExit={() => { if (typeof window !== "undefined" && window.history.length > 1) window.history.back(); }} />
+      {confirmNewGame && <div className="rules-overlay" role="dialog" aria-modal="true" aria-labelledby="newgame-title"><section className="rules-card"><h2 id="newgame-title">Начать новую игру?</h2><p>Текущая сохранённая партия будет удалена.</p><div className="settings-row"><button type="button" onClick={discardSaveAndGoToSetup}>Да, начать новую</button><button type="button" onClick={() => setConfirmNewGame(false)}>Отмена</button></div></section></div>}</>;
   }
 
   if(screen==='loading')return <GameLoadingScreen cardIds={loadingCards} variant={loadingVariant} onReady={finishLoading} onExit={()=>setScreen('menu')}/>;
-
   if (screen === "online-browser") return <FindGamePage onBack={() => setScreen(onlineNavigationTarget("back"))} onCreate={() => setScreen(onlineNavigationTarget("create"))} onJoined={(lobby) => { setOnlineLobby(lobby); setScreen(onlineNavigationTarget("joined")); }} />;
   if (screen === "online-create") return <OnlineCreatePage onBack={() => setScreen("menu")} onCreated={(lobby) => { setOnlineLobby(lobby); setScreen("online-lobby"); }} />;
-  if (screen === "online-lobby" && onlineLobby) return <OnlineLobbyPage lobbyId={onlineLobby.id} initialLobby={onlineLobby} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} onMatch={acceptOnlineMatch} />;
+  if (screen === "online-lobby" && onlineLobby) return <OnlineLobbyPage lobbyId={onlineLobby.id} initialLobby={onlineLobby} onExit={() => { setOnlineLobby(null); setScreen("online-browser"); }} onMatch={acceptOnlineMatch} />;
   if (screen === "online-game" && onlineMatch) return <OnlineGamePage initialMatch={onlineMatch} onExit={() => { setOnlineLobby(null); setScreen("menu"); }} />;
 
-  if (screen === "setup") {
-    return (
-      <GameSetupPage
-        makeGameId={browserGameId}
-        makeSeed={browserSeed}
-        onStart={prepare}
-        onBack={() => setScreen("menu")}
-      />
-    );
-  }
+  if (screen === "setup") return <GameSetupPage makeGameId={browserGameId} makeSeed={browserSeed} onStart={prepare} onBack={() => setScreen("menu")} />;
+  if (screen === "lobby" && config) return <LocalLobby config={config} onStart={() => {leaveOnlineForLocal();beginLoading('game',['card-133']);}} onBack={() => setScreen("setup")} />;
+  if (screen === "game" && config) return <GamePage config={config} key={restoredFlow ? `${config.gameId}:resume` : config.gameId} initialFlow={restoredFlow ?? undefined} initialUiMatchState={restoredUiMatchState} onExit={() => { setRestoredFlow(null); setRestoredUiMatchState(undefined); setHasSavedGame(true); setScreen("menu"); }} onRematch={rematch} onNewGame={() => {clearLocalGameSave();setHasSavedGame(false);setRestoredFlow(null);setRestoredUiMatchState(undefined);setConfig(null);setScreen("setup");}} />;
 
-  if (screen === "lobby" && config) {
-    return (
-      <LocalLobby
-        config={config}
-        onStart={() => {leaveOnlineForLocal();beginLoading('game',['card-133']);}}
-        onBack={() => setScreen("setup")}
-      />
-    );
-  }
-
-  if (screen === "game" && config) {
-    return (
-      <GamePage
-        config={config}
-        key={restoredFlow ? `${config.gameId}:resume` : config.gameId}
-        initialFlow={restoredFlow ?? undefined}
-        initialUiMatchState={restoredUiMatchState}
-        onExit={() => { setRestoredFlow(null); setRestoredUiMatchState(undefined); setHasSavedGame(true); setScreen("menu"); }}
-        onRematch={rematch}
-        onNewGame={() => {
-          clearLocalGameSave();
-          setHasSavedGame(false);
-          setRestoredFlow(null);
-          setRestoredUiMatchState(undefined);
-          setConfig(null);
-          setScreen("setup");
-        }}
-      />
-    );
-  }
-
-  return (
-    <MainMenu
-      hasSavedGame={hasSavedGame}
-      settings={settings}
-      onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })}
-      onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })}
-      onContinueGame={hasSavedGame ? continueGame : undefined}
-      onReturnToOnlineGame={onlineMatch?.status==='playing'?returnToOnlineGame:undefined}
-      onCreateGame={() => setScreen(onlineNavigationTarget("create"))}
-      onQuickGame={() => guardDestructive(quickGame)}
-      onFindGame={() => setScreen(onlineNavigationTarget("find"))}
-    />
-  );
+  return <MainMenu hasSavedGame={hasSavedGame} settings={settings} onToggleSound={() => updateSetting({ soundEnabled: !settings.soundEnabled })} onToggleMusic={() => updateSetting({ musicEnabled: !settings.musicEnabled })} onContinueGame={hasSavedGame ? continueGame : undefined} onReturnToOnlineGame={onlineMatch?.status==='playing'?returnToOnlineGame:undefined} onCreateGame={() => setScreen(onlineNavigationTarget("create"))} onQuickGame={() => guardDestructive(quickGame)} onFindGame={() => setScreen(onlineNavigationTarget("find"))} />;
 }
 
-function RoutedApp() {
-  if (typeof window !== "undefined" && window.location.pathname === "/tiles") {
-    return <TileGalleryPage />;
-  }
-  return <App />;
-}
-
-export function mountApp(container: HTMLElement) {
-  createRoot(container).render(
-    <StrictMode>
-      <RoutedApp />
-    </StrictMode>,
-  );
-}
-
+function RoutedApp() { if (typeof window !== "undefined" && window.location.pathname === "/tiles") return <TileGalleryPage />; return <App />; }
+export function mountApp(container: HTMLElement) { createRoot(container).render(<StrictMode><RoutedApp /></StrictMode>); }
 const rootElement = document.getElementById("root");
-
-if (rootElement) {
-  mountApp(rootElement);
-}
+if (rootElement) mountApp(rootElement);
