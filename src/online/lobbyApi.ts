@@ -1,7 +1,7 @@
 import { ensureOnlineIdentity } from './auth';
 import { leaveMyOnlineMatches } from './matchApi';
 import { requireSupabaseClient } from './supabaseClient';
-import { lobbyFromDto, type CreateLobbyInput, type OnlineLobbySnapshot, type UpdateLobbySettingsInput } from './types';
+import { lobbyDirectoryEntryFromDto, lobbyFromDto, type CreateLobbyInput, type OnlineLobbyDirectoryEntry, type OnlineLobbySnapshot, type UpdateLobbySettingsInput } from './types';
 
 const selectLobby = '*, online_lobby_players(*)';
 function convert(row: Record<string, unknown>): OnlineLobbySnapshot {
@@ -24,6 +24,12 @@ export async function listPublicLobbies(): Promise<OnlineLobbySnapshot[]> {
   if (error) throw error;
   return (data ?? []).map((row) => convert(row));
 }
+export async function listLobbyDirectory(): Promise<OnlineLobbyDirectoryEntry[]> {
+  await ensureOnlineIdentity();
+  const { data, error } = await requireSupabaseClient().rpc('list_online_lobby_directory');
+  if (error) throw error;
+  return (Array.isArray(data) ? data : []).map(lobbyDirectoryEntryFromDto);
+}
 export async function createLobby(input: CreateLobbyInput): Promise<OnlineLobbySnapshot> {
   return enterNewLobby('create_online_lobby_with_code', {
     p_name: input.name?.trim() || null,
@@ -37,6 +43,7 @@ export async function createLobby(input: CreateLobbyInput): Promise<OnlineLobbyS
 }
 export async function joinLobby(lobbyId: string, displayName?: string): Promise<OnlineLobbySnapshot> { return enterNewLobby('join_online_lobby', { p_lobby_id: lobbyId, p_display_name: displayName?.trim() || null }); }
 export async function joinLobbyByCode(code: string, displayName?: string): Promise<OnlineLobbySnapshot> { return enterNewLobby('join_online_lobby_by_code', { p_code: code.trim().toUpperCase(), p_display_name: displayName?.trim() || null }); }
+export async function joinLobbyWithCode(lobbyId: string, code: string, displayName?: string): Promise<OnlineLobbySnapshot> { return enterNewLobby('join_online_lobby_with_code', { p_lobby_id: lobbyId, p_code: code.trim(), p_display_name: displayName?.trim() || null }); }
 export async function leaveLobby(lobbyId: string): Promise<void> { await ensureOnlineIdentity(); const { error } = await requireSupabaseClient().rpc('leave_online_lobby', { p_lobby_id: lobbyId }); if (error) throw error; }
 export async function setReady(lobbyId: string, ready: boolean): Promise<void> {
   await ensureOnlineIdentity();
