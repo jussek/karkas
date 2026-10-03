@@ -1,0 +1,19 @@
+{
+  "name": "Каркассон Онлайн",
+  "short_name": "Каркассон",
+  "description": "Мобильная онлайн-версия настольной игры.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1b0d07",
+  "theme_color": "#2a1208",
+  "icons": [
+    {
+      "src": "/app-crest.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
