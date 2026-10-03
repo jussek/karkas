@@ -23,7 +23,6 @@ import './onlineGamePolishV3.css';
 const CELL=86,PADDING=2,TOTAL_TILE_COUNT=143;
 const targetKey=(target:MeeplePlacement)=>`${target.featureType}:${target.edge??'center'}`;
 const featureLabel=(target:MeeplePlacement)=>target.featureType==='city'?'город':target.featureType==='road'?'дорогу':'монастырь';
-const MeepleGlyph=({fill,size=28,className}:{fill:string;size?:number;className?:string})=><svg className={className} viewBox="0 0 100 100" width={size} height={size} aria-hidden="true"><MeepleIcon fill={fill} size={30}/></svg>;
 const UiMeepleGlyph=({fill,size=26,className}:{fill:string;size?:number;className?:string})=><svg className={className} viewBox="0 0 100 100" width={size} height={size} aria-hidden="true"><MeepleIcon fill={fill} size={58}/></svg>;
 
 export function OnlineGamePage({initialMatch,onExit}:{initialMatch:OnlineMatch;onExit:()=>void}){
