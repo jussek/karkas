@@ -32,6 +32,7 @@ import { configureAudio,installAudioGestureUnlock } from "./audio/gameAudio";
 import "./game-ui/referenceVisual.css";
 import "./game-ui/referenceMobilePolish.css";
 import "./game-ui/sessionLifecyclePolish.css";
+import "./game-ui/referenceDetailPolish.css";
 
 function browserGameId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
