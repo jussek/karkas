@@ -1,9 +1,10 @@
+import { PLAYER_SEAT_COLORS } from '../../game/playerColors';
 import type { CreateLobbyInput, OnlineLobbyMessage, OnlineLobbySnapshot, OnlineTurnTimerSeconds } from '../../online/types';
 
 export const CREATE_PLAYER_OPTIONS = [2, 3, 4, 5, 6] as const;
 export const CREATE_TIMER_OPTIONS = [0, 15, 30, 60] as const;
 export const DEFAULT_ONLINE_LOBBY: CreateLobbyInput = { visibility: 'public', maxPlayers: 4, turnTimerSeconds: 0, botFillEnabled: false };
-export const SEAT_COLORS = ['blue', 'red', 'green', 'yellow', 'purple', 'black'] as const;
+export const SEAT_COLORS = PLAYER_SEAT_COLORS;
 export function currentLobbyPlayer(lobby: OnlineLobbySnapshot, userId: string) { return lobby.players.find((player) => player.userId === userId); }
 export function isLobbyHost(lobby: OnlineLobbySnapshot, userId: string): boolean { return lobby.hostUserId === userId; }
 export function startBlockReason(lobby: OnlineLobbySnapshot, userId: string): string | null {
