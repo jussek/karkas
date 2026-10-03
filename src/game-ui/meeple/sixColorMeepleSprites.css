@@ -1,0 +1,175 @@
+/* Six-colour premium meeple sprite pass.
+   Uses the generated sprite sheet in src/a for lobby + gameplay consistency. */
+
+:root{
+  --meeple-sprite:url('../../a/5a2d79bc-dbb2-4c38-af95-d5e39f561491.png');
+}
+
+/* Shared sprite positions. The source sheet is laid out left-to-right:
+   blue, red, green, yellow, purple, black. */
+html body .online-game .online-game__meeple,
+html body .game-page svg.board-meeple,
+html body .online-game .online-game__meeple-target,
+html body .game-page .feature-meeple-target,
+html body .online-game .online-game__meeple-count,
+html body .online-room .lobby-meeple{
+  --meeple-x:1%;
+  --meeple-glow:rgba(65,167,255,.72);
+}
+
+html body .online-game .online-game__meeple:has(path[fill="red"]),
+html body .game-page svg.board-meeple:has(path[fill="red"]){--meeple-x:20%;--meeple-glow:rgba(255,75,70,.72)}
+html body .online-game .online-game__meeple:has(path[fill="green"]),
+html body .game-page svg.board-meeple:has(path[fill="green"]){--meeple-x:39%;--meeple-glow:rgba(43,214,93,.70)}
+html body .online-game .online-game__meeple:has(path[fill="yellow"]),
+html body .game-page svg.board-meeple:has(path[fill="yellow"]){--meeple-x:58%;--meeple-glow:rgba(255,213,66,.76)}
+html body .online-game .online-game__meeple:has(path[fill="purple"]),
+html body .game-page svg.board-meeple:has(path[fill="purple"]){--meeple-x:78%;--meeple-glow:rgba(189,92,255,.72)}
+html body .online-game .online-game__meeple:has(path[fill="black"]),
+html body .game-page svg.board-meeple:has(path[fill="black"]){--meeple-x:97%;--meeple-glow:rgba(225,225,225,.48)}
+
+/* Real placed meeples: use the actual coloured art instead of hue rotation. */
+html body .online-game .online-game__meeple,
+html body .game-page svg.board-meeple{
+  background-image:var(--meeple-sprite)!important;
+  background-repeat:no-repeat!important;
+  background-size:600% auto!important;
+  background-position:var(--meeple-x) 32%!important;
+  filter:drop-shadow(0 6px 3px rgba(0,0,0,.68)) drop-shadow(0 0 3px var(--meeple-glow))!important;
+}
+html body .online-game .online-game__meeple svg,
+html body .game-page svg.board-meeple path{
+  opacity:0!important;
+}
+
+/* Selected local meeple preview stays bright and tactile. */
+html body .game-page svg.board-meeple.meeple-draft-preview{
+  opacity:.96!important;
+  filter:drop-shadow(0 5px 3px rgba(0,0,0,.62)) drop-shadow(0 0 8px var(--meeple-glow)) drop-shadow(0 0 14px var(--meeple-glow))!important;
+}
+
+/* Placement markers: translucent meeple in the CURRENT player's real colour. */
+html body .online-game .online-game__meeple-target,
+html body .game-page .feature-meeple-target{
+  background-image:var(--meeple-sprite)!important;
+  background-repeat:no-repeat!important;
+  background-size:600% auto!important;
+  background-position:var(--meeple-x) 32%!important;
+  background-color:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  opacity:.42!important;
+  filter:drop-shadow(0 0 5px var(--meeple-glow)) drop-shadow(0 3px 3px rgba(0,0,0,.48))!important;
+}
+html body .online-game .online-game__meeple-target svg,
+html body .game-page .feature-meeple-target svg{
+  opacity:0!important;
+}
+
+/* Online current-player colour drives all ghost markers. */
+html body .online-game:has(.online-game__meeple-count path[fill="red"]) .online-game__meeple-target,
+html body .online-game .online-game__meeple-count:has(path[fill="red"]){--meeple-x:20%;--meeple-glow:rgba(255,75,70,.72)}
+html body .online-game:has(.online-game__meeple-count path[fill="green"]) .online-game__meeple-target,
+html body .online-game .online-game__meeple-count:has(path[fill="green"]){--meeple-x:39%;--meeple-glow:rgba(43,214,93,.70)}
+html body .online-game:has(.online-game__meeple-count path[fill="yellow"]) .online-game__meeple-target,
+html body .online-game .online-game__meeple-count:has(path[fill="yellow"]){--meeple-x:58%;--meeple-glow:rgba(255,213,66,.76)}
+html body .online-game:has(.online-game__meeple-count path[fill="purple"]) .online-game__meeple-target,
+html body .online-game .online-game__meeple-count:has(path[fill="purple"]){--meeple-x:78%;--meeple-glow:rgba(189,92,255,.72)}
+html body .online-game:has(.online-game__meeple-count path[fill="black"]) .online-game__meeple-target,
+html body .online-game .online-game__meeple-count:has(path[fill="black"]){--meeple-x:97%;--meeple-glow:rgba(225,225,225,.48)}
+
+/* Local current-player colour drives its ghost targets too. */
+html body .game-page:has(.turn-controls path[fill="red"]) .feature-meeple-target{--meeple-x:20%;--meeple-glow:rgba(255,75,70,.72)}
+html body .game-page:has(.turn-controls path[fill="green"]) .feature-meeple-target{--meeple-x:39%;--meeple-glow:rgba(43,214,93,.70)}
+html body .game-page:has(.turn-controls path[fill="yellow"]) .feature-meeple-target{--meeple-x:58%;--meeple-glow:rgba(255,213,66,.76)}
+html body .game-page:has(.turn-controls path[fill="purple"]) .feature-meeple-target{--meeple-x:78%;--meeple-glow:rgba(189,92,255,.72)}
+html body .game-page:has(.turn-controls path[fill="black"]) .feature-meeple-target{--meeple-x:97%;--meeple-glow:rgba(225,225,225,.48)}
+
+html body .online-game .online-game__meeple-target:hover:not(:disabled),
+html body .online-game .online-game__meeple-target:focus-visible:not(:disabled),
+html body .game-page .feature-meeple-target:hover:not(:disabled),
+html body .game-page .feature-meeple-target:focus-visible:not(:disabled){
+  opacity:.78!important;
+  transform:scale(1.12)!important;
+  filter:drop-shadow(0 0 7px var(--meeple-glow)) drop-shadow(0 0 14px var(--meeple-glow)) drop-shadow(0 3px 3px rgba(0,0,0,.48))!important;
+}
+
+/* Online selected location becomes almost-solid before confirmation. */
+html body .online-game .online-game__meeple-target:has(path:not([fill="transparent"])){
+  opacity:.96!important;
+  transform:scale(1.08)!important;
+  filter:drop-shadow(0 5px 3px rgba(0,0,0,.62)) drop-shadow(0 0 9px var(--meeple-glow))!important;
+}
+
+/* Bottom player HUD: replace the old flat SVG with the same premium art. */
+html body .online-game .online-game__meeple-count{
+  position:relative!important;
+  grid-template-columns:52px auto!important;
+}
+html body .online-game .online-game__meeple-count::before{
+  content:"";
+  display:block;
+  width:52px;
+  height:52px;
+  background-image:var(--meeple-sprite);
+  background-repeat:no-repeat;
+  background-size:600% auto;
+  background-position:var(--meeple-x) 32%;
+  filter:drop-shadow(0 5px 3px rgba(0,0,0,.65)) drop-shadow(0 0 4px var(--meeple-glow));
+}
+html body .online-game .online-game__meeple-count>svg{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  opacity:.001!important;
+  pointer-events:none!important;
+}
+html body .online-game .online-game__meeple-count b{
+  font-size:1.08rem!important;
+  text-shadow:0 2px 2px rgba(0,0,0,.8)!important;
+}
+
+/* Top online roster: use miniature meeples rather than simple colour pills. */
+html body .online-game .online-game__players>div:not(.online-game__tools)>i{
+  flex:0 0 31px!important;
+  width:31px!important;
+  height:31px!important;
+  border-radius:0!important;
+  background-color:transparent!important;
+  background-image:var(--meeple-sprite)!important;
+  background-repeat:no-repeat!important;
+  background-size:600% auto!important;
+  background-position:1% 32%!important;
+  box-shadow:none!important;
+  filter:drop-shadow(0 3px 2px rgba(0,0,0,.60))!important;
+}
+html body .online-game .online-game__players i[style*="background: red"]{background-position:20% 32%!important}
+html body .online-game .online-game__players i[style*="background: green"]{background-position:39% 32%!important}
+html body .online-game .online-game__players i[style*="background: yellow"]{background-position:58% 32%!important}
+html body .online-game .online-game__players i[style*="background: purple"]{background-position:78% 32%!important}
+html body .online-game .online-game__players i[style*="background: black"]{background-position:97% 32%!important}
+
+/* Lobby consumes exactly the same colour cells. */
+html body .online-room .seat-blue .lobby-meeple{--meeple-x:1%}
+html body .online-room .seat-red .lobby-meeple{--meeple-x:20%}
+html body .online-room .seat-green .lobby-meeple{--meeple-x:39%}
+html body .online-room .seat-yellow .lobby-meeple{--meeple-x:58%}
+html body .online-room .seat-purple .lobby-meeple{--meeple-x:78%}
+html body .online-room .seat-black .lobby-meeple{--meeple-x:97%}
+html body .online-room .lobby-meeple{
+  background-image:var(--meeple-sprite)!important;
+  background-size:600% auto!important;
+  background-position:var(--meeple-x) 32%!important;
+}
+
+@media(max-width:430px){
+  html body .online-game .online-game__meeple-count{grid-template-columns:48px auto!important}
+  html body .online-game .online-game__meeple-count::before{width:48px;height:48px}
+  html body .online-game .online-game__players>div:not(.online-game__tools)>i{width:28px!important;height:28px!important;flex-basis:28px!important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  html body .online-game .online-game__meeple-target,
+  html body .game-page .feature-meeple-target{transition:none!important}
+}
