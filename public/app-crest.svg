@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="74" y1="40" x2="436" y2="468" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7B421E"/>
+      <stop offset=".5" stop-color="#3B1B0D"/>
+      <stop offset="1" stop-color="#180B06"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="151" y1="78" x2="357" y2="438" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF1A7"/>
+      <stop offset=".28" stop-color="#E9B94E"/>
+      <stop offset=".7" stop-color="#A25C22"/>
+      <stop offset="1" stop-color="#55270D"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="256" y1="149" x2="256" y2="384" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#70C7FF"/>
+      <stop offset=".55" stop-color="#1E7DE0"/>
+      <stop offset="1" stop-color="#073D8E"/>
+    </linearGradient>
+    <linearGradient id="land" x1="256" y1="260" x2="256" y2="406" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9CC45D"/>
+      <stop offset="1" stop-color="#467A36"/>
+    </linearGradient>
+    <linearGradient id="river" x1="199" y1="289" x2="321" y2="423" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8EEFF"/>
+      <stop offset=".4" stop-color="#48AEEA"/>
+      <stop offset="1" stop-color="#1759A9"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="18" stdDeviation="14" flood-color="#000" flood-opacity=".65"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect x="18" y="18" width="476" height="476" rx="100" stroke="#241007" stroke-width="18"/>
+  <rect x="31" y="31" width="450" height="450" rx="88" stroke="url(#gold)" stroke-width="12"/>
+  <path d="M256 69 397 122v125c0 103-56 163-141 202-85-39-141-99-141-202V122L256 69Z" fill="#2B1409" stroke="url(#gold)" stroke-width="14" filter="url(#shadow)"/>
+  <path d="M256 95 374 139v107c0 82-43 132-118 168-75-36-118-86-118-168V139L256 95Z" fill="url(#sky)"/>
+  <path d="M138 285c52-31 95-33 137-6 38-26 68-25 99-6v100c-31 19-70 33-118 41-48-8-87-22-118-41v-88Z" fill="url(#land)"/>
+  <path d="M224 275c22 29 24 55 7 82-17 28-11 47 20 64h51c-35-28-42-59-21-93 20-33 17-54-10-75l-47 22Z" fill="url(#river)"/>
+  <path d="M172 274v-83h26v-28h34v28h50v-45h42v45h25v83H172Z" fill="#EFE5C4" stroke="#70451D" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M194 191v-20h16v20m82 0v-27h17v27" stroke="#70451D" stroke-width="7" stroke-linecap="round"/>
+  <path d="M246 274v-48c0-24 28-24 28 0v48h-28Z" fill="#6A3618"/>
+  <path d="M209 220h15v22h-15zm91-3h15v22h-15z" fill="#E7B650"/>
+  <circle cx="256" cy="344" r="20" fill="#F5D86D" stroke="#6D3C16" stroke-width="7"/>
+  <path d="M242 365 208 397l18 12 18-19v33h24v-33l18 19 18-12-34-32h-28Z" fill="#147FEF" stroke="#06366F" stroke-width="7" stroke-linejoin="round"/>
+  <circle cx="256" cy="344" r="7" fill="#DDF5FF" opacity=".7"/>
+</svg>
