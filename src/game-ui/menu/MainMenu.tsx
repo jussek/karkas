@@ -27,10 +27,10 @@ export function MainMenu({ onCreateGame, onFindGame, onExit, settings, onToggleS
       <button type="button" aria-label="Выход" onClick={() => exitMainMenu(onExit, typeof window === 'undefined' ? undefined : window)}><OnlineIcon name="close" /></button>
     </div>
     <section className="main-menu__content">
-      <header className="main-menu__brand"><h1 aria-label="Каркасон">Каркасон</h1></header>
+      <header className="main-menu__brand"><h1>Каркассон</h1></header>
       <nav className="main-menu__primary" aria-label="Главное меню">
-        <button type="button" className="menu-action menu-action--blue" onClick={onFindGame}><OnlineIcon name="search" /><span><b>Найти игру</b><small>Присоединиться к существующему лобби</small></span></button>
-        <button type="button" className="menu-action menu-action--green" onClick={onCreateGame}><OnlineIcon name="plus" /><span><b>Создать игру</b><small>Настроить и пригласить игроков</small></span></button>
+        <button type="button" className="menu-action menu-action--blue" onClick={onFindGame}><OnlineIcon name="search" /><span><b>Найти игру</b></span></button>
+        <button type="button" className="menu-action menu-action--green" onClick={onCreateGame}><OnlineIcon name="plus" /><span><b>Создать игру</b></span></button>
       </nav>
     </section>
   </main>;
