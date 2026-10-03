@@ -1,32 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ensureOnlineIdentity } from '../../online/auth';
-import { joinLobby, joinLobbyByCode, listPublicLobbies } from '../../online/lobbyApi';
+import { joinLobby, joinLobbyWithCode, listLobbyDirectory } from '../../online/lobbyApi';
 import { getSupabaseClient } from '../../online/supabaseClient';
-import type { OnlineLobbySnapshot } from '../../online/types';
+import type { OnlineLobbyDirectoryEntry, OnlineLobbySnapshot } from '../../online/types';
 import { LobbyBrowserCard } from './LobbyBrowserCard';
 import { OnlineIcon } from './OnlineIcon';
 import { LobbyCodePad } from './LobbyCodePad';
 import { filterLobbies, onlineBrowserAvailability, type LobbyTimerFilter } from './lobbyBrowserModel';
 import './onlineBrowser.css';
-import './joinCode.css';
 
 const FILTERS: readonly { value: LobbyTimerFilter; label: string }[] = [{ value: 'any', label: 'Любой' }, { value: 15, label: '15 сек' }, { value: 30, label: '30 сек' }, { value: 60, label: '60 сек' }, { value: 0, label: 'Без таймера' }];
 type LoadState = 'loading' | 'loaded' | 'error';
 const joinErrorMessage=(reason:unknown)=>{
   const text=reason&&typeof reason==='object'&&'message' in reason?String((reason as {message?:unknown}).message??''):'';
   if(text.includes('already in active lobby'))return 'Вы уже состоите в другом активном лобби.';
-  if(text.includes('not joinable'))return 'Лобби с таким кодом не найдено или оно уже запущено.';
+  if(text.includes('code is invalid'))return 'Неверный код лобби.';
+  if(text.includes('not joinable'))return 'Лобби уже недоступно.';
   if(text.includes('full'))return 'В этом лобби уже нет свободных мест.';
-  return 'Не удалось присоединиться. Проверьте код и соединение.';
+  return 'Не удалось присоединиться. Проверьте соединение.';
 };
 
 export function FindGamePage({ onBack, onCreate, onJoined }: { onBack: () => void; onCreate: () => void; onJoined: (lobby: OnlineLobbySnapshot) => void }) {
-  const [lobbies, setLobbies] = useState<OnlineLobbySnapshot[]>([]);
+  const [lobbies, setLobbies] = useState<OnlineLobbyDirectoryEntry[]>([]);
   const [filter, setFilter] = useState<LobbyTimerFilter>('any');
   const [state, setState] = useState<LoadState>('loading');
   const [refreshing, setRefreshing] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
-  const [codeOpen,setCodeOpen]=useState(false);
+  const [codeLobby,setCodeLobby]=useState<OnlineLobbyDirectoryEntry|null>(null);
   const [code,setCode]=useState('');
   const [codeError,setCodeError]=useState('');
   const [codePending,setCodePending]=useState(false);
@@ -35,23 +35,27 @@ export function FindGamePage({ onBack, onCreate, onJoined }: { onBack: () => voi
   const load = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true); else setState('loading');
     if (onlineBrowserAvailability(getSupabaseClient()) === 'unavailable') { setState('error'); setRefreshing(false); return; }
-    try { await ensureOnlineIdentity(); setLobbies(await listPublicLobbies()); setState('loaded'); }
+    try { await ensureOnlineIdentity(); setLobbies(await listLobbyDirectory()); setState('loaded'); }
     catch (error) { if(import.meta.env.DEV)console.error('Не удалось загрузить online lobby',error); setState('error'); }
     finally { setRefreshing(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
   const shown = useMemo(() => filterLobbies(lobbies, filter), [lobbies, filter]);
-  const handleJoin = async (lobby: OnlineLobbySnapshot) => {
-    setJoiningId(lobby.id);setJoinError('');
+  const handleJoin = async (lobby: OnlineLobbyDirectoryEntry) => {
+    setJoinError('');
+    if (lobby.visibility === 'private') {
+      setCode('');setCodeError('');setCodeLobby(lobby);return;
+    }
+    setJoiningId(lobby.id);
     try { onJoined(await joinLobby(lobby.id)); }
     catch (error) { if(import.meta.env.DEV)console.error('Не удалось присоединиться к lobby',error); setJoinError(joinErrorMessage(error)); }
     finally { setJoiningId(null); }
   };
   const handleCodeJoin=async()=>{
-    if(!/^\d{4}$/.test(code))return;
+    if(!codeLobby||!/^\d{4}$/.test(code))return;
     setCodePending(true);setCodeError('');
-    try{onJoined(await joinLobbyByCode(code));}
-    catch(error){if(import.meta.env.DEV)console.error('Не удалось войти по коду',error);setCodeError(joinErrorMessage(error));}
+    try{onJoined(await joinLobbyWithCode(codeLobby.id,code));}
+    catch(error){if(import.meta.env.DEV)console.error('Не удалось войти в закрытое лобби',error);setCodeError(joinErrorMessage(error));}
     finally{setCodePending(false)}
   };
 
@@ -64,10 +68,10 @@ export function FindGamePage({ onBack, onCreate, onJoined }: { onBack: () => voi
         {state === 'loading' && <div className="online-browser__state"><span className="online-browser__spinner" /><h2>Ищем свободные лобби…</h2></div>}
         {state === 'error' && <div className="online-browser__state"><OnlineIcon name="meeple" /><h2>Онлайн-режим временно недоступен</h2><p>Проверьте соединение и попробуйте ещё раз.</p><div><button type="button" onClick={() => void load()}><OnlineIcon name="retry"/>Повторить</button><button type="button" onClick={onBack}><OnlineIcon name="back"/>Назад</button></div></div>}
         {state === 'loaded' && shown.map((lobby) => <LobbyBrowserCard key={lobby.id} lobby={lobby} joining={joiningId === lobby.id} onJoin={(item) => void handleJoin(item)} />)}
-        {state === 'loaded' && shown.length === 0 && <div className="online-browser__state"><OnlineIcon name="map" /><h2>Сейчас нет доступных игр</h2><p>Создайте лобби или войдите в закрытое по коду.</p></div>}
+        {state === 'loaded' && shown.length === 0 && <div className="online-browser__state"><OnlineIcon name="map" /><h2>Сейчас нет доступных игр</h2><p>Создайте новое лобби и пригласите игроков.</p></div>}
       </section>
-      <footer className="online-browser__actions online-browser__actions--three"><button type="button" onClick={() => void load(true)} disabled={refreshing}><OnlineIcon name="refresh" />{refreshing ? 'Обновляем…' : 'Обновить'}</button><button type="button" className="is-code" onClick={()=>{setCode('');setCodeOpen(true);setCodeError('')}}><OnlineIcon name="private"/>По коду</button><button type="button" className="is-create" onClick={onCreate}><OnlineIcon name="plus" />Создать</button></footer>
+      <footer className="online-browser__actions"><button type="button" onClick={() => void load(true)} disabled={refreshing}><OnlineIcon name="refresh" />{refreshing ? 'Обновляем…' : 'Обновить'}</button><button type="button" className="is-create" onClick={onCreate}><OnlineIcon name="plus" />Создать</button></footer>
     </div>
-    {codeOpen&&<LobbyCodePad title="Войти по коду" description="Введите 4 цифры закрытого лобби." value={code} onChange={(value)=>{setCode(value);setCodeError('')}} onConfirm={()=>void handleCodeJoin()} onClose={()=>setCodeOpen(false)} pending={codePending} error={codeError}/>} 
+    {codeLobby&&<LobbyCodePad title="Закрытое лобби" description={`Введите 4 цифры для входа в «${codeLobby.name?.trim() || 'Закрытое лобби'}».`} value={code} onChange={(value)=>{setCode(value);setCodeError('')}} onConfirm={()=>void handleCodeJoin()} onClose={()=>setCodeLobby(null)} pending={codePending} error={codeError}/>} 
   </main>;
 }
