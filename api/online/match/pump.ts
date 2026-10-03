@@ -16,8 +16,8 @@ export default async function handler(request:ApiRequest,response:ApiResponse):P
     }
     const actor=await authenticateBearer(typeof request.headers.authorization==='string'?request.headers.authorization:undefined);
     if(typeof body?.matchId!=='string'||!uuid.test(body.matchId))throw Object.assign(new Error('Invalid request body.'),{status:400,code:'INVALID_BODY'});
-    const member=await admin.from('online_match_players').select('match_id').eq('match_id',body.matchId).eq('user_id',actor).eq('is_bot',false).maybeSingle();
-    if(member.error)throw member.error;if(!member.data)throw Object.assign(new Error('Actor is not a match participant.'),{status:403,code:'FORBIDDEN'});
+    const member=await admin.from('online_match_players').select('match_id').eq('match_id',body.matchId).eq('user_id',actor).eq('is_bot',false).is('left_at',null).maybeSingle();
+    if(member.error)throw member.error;if(!member.data)throw Object.assign(new Error('Actor has left this match.'),{status:403,code:'MATCH_SESSION_ENDED'});
     const result=await pumpAuthoritativeMatch(admin,body.matchId);logPump('participant',body.matchId,result);response.status(200).json(result);
   }catch(error){sendError(response,error);}
 }
