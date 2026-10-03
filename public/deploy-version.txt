@@ -1,2 +1,2 @@
-main=f02f8105f2c2b4ad73396d4b9add930c96ae99bb
-trigger=2026-10-03T12:49:00+03:00
+main=14c510be7e2541b8bc87986f4cc457f20f20eff0
+trigger=lobby-alignment-mobile-pass
