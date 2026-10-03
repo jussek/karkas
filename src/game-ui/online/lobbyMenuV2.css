@@ -1,0 +1,351 @@
+/* Premium portrait lobby menu. Loaded after older lobby layers on purpose. */
+
+.lobby-menu-v2.online-room{
+  min-height:100dvh!important;
+  height:100dvh!important;
+  overflow:hidden!important;
+  background-color:#160b06!important;
+  background-image:
+    linear-gradient(180deg,rgba(14,5,2,.08),rgba(12,5,2,.30) 45%,rgba(8,3,1,.72)),
+    url('../../a/21137698-88b0-4eae-9afb-5a82c221ec32.png')!important;
+  background-position:center!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+}
+
+.lobby-menu-v2 .lobby-shell{
+  box-sizing:border-box!important;
+  width:min(100%,620px)!important;
+  height:100dvh!important;
+  min-height:0!important;
+  margin:0 auto!important;
+  padding:max(5px,env(safe-area-inset-top)) max(7px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left))!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:5px!important;
+  overflow:hidden!important;
+}
+
+/* Header */
+.lobby-menu-v2 .lobby-reference-header{
+  flex:0 0 64px!important;
+  min-height:64px!important;
+  grid-template-columns:44px minmax(0,1fr) 44px!important;
+  gap:7px!important;
+}
+.lobby-menu-v2 .lobby-reference-header>button{
+  width:44px!important;
+  height:44px!important;
+  min-width:44px!important;
+  min-height:44px!important;
+  border:2px solid #a55b2b!important;
+  border-radius:11px!important;
+  background:linear-gradient(#4a2716,#241108)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,208,117,.22),0 3px 0 #120704,0 6px 12px rgba(0,0,0,.45)!important;
+}
+.lobby-menu-v2 .lobby-reference-header>button:last-child{
+  border-color:#cf5a48!important;
+  background:linear-gradient(#8d2e27,#551712)!important;
+}
+.lobby-menu-v2 .lobby-reference-header__title{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-rows:39px 17px!important;
+  place-items:center!important;
+  gap:1px!important;
+}
+.lobby-menu-v2 .lobby-reference-header h1,
+.lobby-menu-v2 .lobby-title-editor{
+  box-sizing:border-box!important;
+  width:min(100%,390px)!important;
+  height:39px!important;
+  margin:0!important;
+  padding:5px 10px!important;
+  border:3px solid #a56531!important;
+  border-radius:11px!important;
+  color:#fff2ca!important;
+  background:linear-gradient(#5b2e17,#35180d)!important;
+  box-shadow:inset 0 0 0 1px #e0a05b88,0 3px 0 #1b0a05,0 5px 12px rgba(0,0,0,.45)!important;
+  font:700 clamp(1.08rem,4.8vw,1.48rem) Georgia,"Times New Roman",serif!important;
+  line-height:1!important;
+  text-align:center!important;
+  text-shadow:0 2px 2px #0009!important;
+  outline:none!important;
+}
+.lobby-menu-v2 .lobby-title-editor:focus{
+  border-color:#e0a15b!important;
+  box-shadow:inset 0 0 0 1px #ffe1a488,0 0 0 2px rgba(229,159,81,.18),0 3px 0 #1b0a05!important;
+}
+.lobby-menu-v2 .lobby-title-editor::placeholder{color:#ddc391!important;opacity:.82!important}
+.lobby-menu-v2 .lobby-code-copy{
+  height:17px!important;
+  min-height:17px!important;
+  margin:0!important;
+  padding:0 8px!important;
+  color:#f0d18a!important;
+  font-size:.67rem!important;
+  line-height:17px!important;
+}
+
+/* Order follows the approved mockup: setup -> players -> chat -> actions. */
+.lobby-menu-v2 .lobby-menu-settings{order:1!important}
+.lobby-menu-v2 .lobby-reference-players{order:2!important}
+.lobby-menu-v2 .lobby-reference-chat{order:3!important}
+.lobby-menu-v2 .room-error{order:4!important}
+.lobby-menu-v2 .lobby-reference-actions{order:5!important}
+
+/* Settings card */
+.lobby-menu-v2 .lobby-menu-settings{
+  flex:0 0 132px!important;
+  min-height:132px!important;
+  padding:7px!important;
+  display:grid!important;
+  grid-template-columns:124px minmax(0,1fr)!important;
+  gap:7px!important;
+  overflow:hidden!important;
+  border:2px solid #9b5628!important;
+  border-radius:11px!important;
+  background:linear-gradient(180deg,rgba(66,30,13,.96),rgba(29,13,7,.97))!important;
+  box-shadow:inset 0 0 0 1px rgba(223,149,75,.42),inset 0 0 22px rgba(0,0,0,.28),0 5px 13px rgba(0,0,0,.40)!important;
+}
+.lobby-menu-v2 .lobby-map-card{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-rows:18px 86px 15px!important;
+  gap:2px!important;
+}
+.lobby-menu-v2 .lobby-map-card>strong,
+.lobby-menu-v2 .lobby-settings-stack>strong{
+  color:#fff0c4!important;
+  font:700 .78rem Georgia,"Times New Roman",serif!important;
+  line-height:18px!important;
+}
+.lobby-menu-v2 .lobby-map-preview{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  grid-template-rows:1fr 1fr!important;
+  gap:1px!important;
+  overflow:hidden!important;
+  border:2px solid #d09a45!important;
+  border-radius:8px!important;
+  background:#241108!important;
+  box-shadow:inset 0 0 0 1px #ffe6a555,0 4px 8px rgba(0,0,0,.34)!important;
+}
+.lobby-menu-v2 .lobby-map-preview img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  object-fit:cover!important;
+  border-radius:0!important;
+}
+.lobby-menu-v2 .lobby-map-card>small{
+  overflow:hidden!important;
+  color:#d9c49f!important;
+  font-size:.56rem!important;
+  line-height:15px!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  text-overflow:ellipsis!important;
+}
+.lobby-menu-v2 .lobby-settings-stack{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-rows:18px 37px 1fr!important;
+  gap:4px!important;
+}
+.lobby-menu-v2 .lobby-timer{
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+}
+.lobby-menu-v2 .lobby-timer legend{display:none!important}
+.lobby-menu-v2 .lobby-timer>div{
+  height:37px!important;
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:3px!important;
+}
+.lobby-menu-v2 .lobby-timer button{
+  min-width:0!important;
+  height:37px!important;
+  min-height:37px!important;
+  padding:2px!important;
+  border:1px solid #7f4a26!important;
+  border-radius:6px!important;
+  color:#f4dfbb!important;
+  background:linear-gradient(#412616,#23120a)!important;
+  font:700 .59rem Georgia,"Times New Roman",serif!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)!important;
+}
+.lobby-menu-v2 .lobby-timer button[aria-pressed="true"]{
+  border-color:#6fc0ff!important;
+  color:#fff!important;
+  background:linear-gradient(#248ff1,#0758c8)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 0 8px rgba(37,133,255,.36)!important;
+}
+.lobby-menu-v2 .lobby-settings-bottom{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:61px 72px minmax(0,1fr)!important;
+  gap:4px!important;
+  align-items:end!important;
+}
+.lobby-menu-v2 .lobby-settings-bottom label{
+  min-width:0!important;
+  display:grid!important;
+  gap:2px!important;
+  color:#e7cfaa!important;
+  font-size:.55rem!important;
+}
+.lobby-menu-v2 .lobby-settings-bottom select,
+.lobby-menu-v2 .lobby-settings-bottom button{
+  box-sizing:border-box!important;
+  min-width:0!important;
+  width:100%!important;
+  height:32px!important;
+  min-height:32px!important;
+  padding:2px 5px!important;
+  border:1px solid #7d4925!important;
+  border-radius:6px!important;
+  color:#f9e8c5!important;
+  background:linear-gradient(#3d2416,#211109)!important;
+  font-size:.57rem!important;
+}
+.lobby-menu-v2 .lobby-settings-bottom .bot-toggle button[aria-pressed="true"],
+.lobby-menu-v2 .lobby-visibility button[aria-pressed="true"]{
+  border-color:#5db7ff!important;
+  color:#fff!important;
+  background:linear-gradient(#2187e7,#0756bd)!important;
+}
+.lobby-menu-v2 .lobby-visibility{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:3px!important;
+}
+.lobby-menu-v2 .lobby-visibility button{padding-inline:3px!important;white-space:nowrap!important}
+.lobby-menu-v2 .lobby-visibility button svg{width:12px!important;height:12px!important;margin-right:2px!important;vertical-align:-2px!important}
+
+/* Six compact player slots. */
+.lobby-menu-v2 .lobby-reference-players{
+  flex:0 0 auto!important;
+  padding:6px 7px!important;
+}
+.lobby-menu-v2 .lobby-reference-players>h2{
+  height:21px!important;
+  margin:0 0 3px!important;
+  font-size:.95rem!important;
+}
+.lobby-menu-v2 .room-players{gap:3px!important}
+.lobby-menu-v2 .room-player{
+  height:37px!important;
+  min-height:37px!important;
+  grid-template-columns:18px 37px minmax(0,1fr) 60px!important;
+  gap:4px!important;
+  padding:1px 4px!important;
+  border-radius:6px!important;
+}
+.lobby-menu-v2 .room-player__seat-number{
+  width:18px!important;
+  height:25px!important;
+  font-size:.62rem!important;
+}
+.lobby-menu-v2 .lobby-meeple{
+  width:37px!important;
+  height:37px!important;
+}
+.lobby-menu-v2 .room-player__body>b,
+.lobby-menu-v2 .room-player__label b{font-size:.79rem!important}
+.lobby-menu-v2 .room-player__body>small,
+.lobby-menu-v2 .room-player__status{font-size:.52rem!important;min-height:9px!important}
+.lobby-menu-v2 .room-player__identity{grid-template-columns:minmax(0,1fr) 26px!important;gap:3px!important}
+.lobby-menu-v2 .room-player__name-input{
+  height:25px!important;
+  min-height:25px!important;
+  padding:2px 28px 2px 6px!important;
+  font-size:.72rem!important;
+}
+.lobby-menu-v2 .room-player__name-save{
+  width:26px!important;
+  height:25px!important;
+  min-height:25px!important;
+}
+.lobby-menu-v2 .room-player__ready-check{width:17px!important;height:17px!important}
+.lobby-menu-v2 .room-player__ready-state{
+  width:57px!important;
+  height:25px!important;
+  font-size:.53rem!important;
+}
+.lobby-menu-v2 .room-player__ready-state.is-empty{width:25px!important;height:25px!important}
+
+/* Chat */
+.lobby-menu-v2 .lobby-reference-chat{
+  flex:1 1 82px!important;
+  min-height:76px!important;
+  max-height:118px!important;
+  padding:5px 7px!important;
+  grid-template-rows:18px minmax(24px,1fr) 30px!important;
+  gap:2px!important;
+}
+.lobby-menu-v2 .lobby-reference-chat h2{height:18px!important;font-size:.84rem!important}
+.lobby-menu-v2 .lobby-reference-chat .chat-messages p{padding:1px 4px!important;font-size:.56rem!important}
+.lobby-menu-v2 .lobby-reference-chat .chat-input input,
+.lobby-menu-v2 .lobby-reference-chat .chat-input button{height:29px!important;min-height:29px!important;font-size:.62rem!important}
+.lobby-menu-v2 .lobby-reference-chat .chat-input{grid-template-columns:minmax(0,1fr) 36px!important}
+
+/* Bottom buttons */
+.lobby-menu-v2 .lobby-reference-actions{
+  flex:0 0 52px!important;
+  min-height:52px!important;
+  padding:3px!important;
+  grid-template-columns:minmax(90px,.62fr) minmax(0,1.45fr)!important;
+  gap:5px!important;
+}
+.lobby-menu-v2 .lobby-reference-actions .ready-button,
+.lobby-menu-v2 .lobby-reference-actions .room-primary{
+  height:44px!important;
+  min-height:44px!important;
+  border-radius:8px!important;
+  font:800 .74rem Georgia,"Times New Roman",serif!important;
+}
+.lobby-menu-v2 .lobby-reference-actions .room-primary{
+  border-color:#5ee18b!important;
+  background:linear-gradient(#13ad58,#08763e)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.20),0 3px 0 #054b27,0 0 12px rgba(35,211,102,.16)!important;
+}
+
+@media(max-width:370px){
+  .lobby-menu-v2 .lobby-menu-settings{grid-template-columns:105px minmax(0,1fr)!important;padding-inline:5px!important}
+  .lobby-menu-v2 .lobby-settings-bottom{grid-template-columns:53px 62px minmax(0,1fr)!important;gap:2px!important}
+  .lobby-menu-v2 .lobby-settings-bottom button,.lobby-menu-v2 .lobby-settings-bottom select{font-size:.50rem!important;padding-inline:2px!important}
+  .lobby-menu-v2 .room-player{grid-template-columns:16px 34px minmax(0,1fr) 52px!important;height:35px!important;min-height:35px!important}
+  .lobby-menu-v2 .lobby-meeple{width:34px!important;height:34px!important}
+  .lobby-menu-v2 .room-player__ready-state{width:50px!important;font-size:.48rem!important}
+}
+
+@media(max-height:690px){
+  .lobby-menu-v2 .lobby-reference-header{flex-basis:57px!important;min-height:57px!important}
+  .lobby-menu-v2 .lobby-reference-header>button{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important}
+  .lobby-menu-v2 .lobby-reference-header__title{grid-template-rows:35px 15px!important}
+  .lobby-menu-v2 .lobby-reference-header h1,.lobby-menu-v2 .lobby-title-editor{height:35px!important;font-size:1.05rem!important}
+  .lobby-menu-v2 .lobby-code-copy{height:15px!important;min-height:15px!important;line-height:15px!important}
+  .lobby-menu-v2 .lobby-menu-settings{flex-basis:112px!important;min-height:112px!important;grid-template-columns:102px minmax(0,1fr)!important}
+  .lobby-menu-v2 .lobby-map-card{grid-template-rows:16px 71px 13px!important}
+  .lobby-menu-v2 .lobby-settings-stack{grid-template-rows:16px 31px 1fr!important}
+  .lobby-menu-v2 .lobby-timer>div,.lobby-menu-v2 .lobby-timer button{height:31px!important;min-height:31px!important}
+  .lobby-menu-v2 .lobby-settings-bottom select,.lobby-menu-v2 .lobby-settings-bottom button{height:27px!important;min-height:27px!important}
+  .lobby-menu-v2 .room-player{height:33px!important;min-height:33px!important}
+  .lobby-menu-v2 .lobby-meeple{width:33px!important;height:33px!important}
+  .lobby-menu-v2 .lobby-reference-chat{flex-basis:70px!important;min-height:66px!important;grid-template-rows:16px minmax(18px,1fr) 27px!important}
+  .lobby-menu-v2 .lobby-reference-chat .chat-input input,.lobby-menu-v2 .lobby-reference-chat .chat-input button{height:26px!important;min-height:26px!important}
+  .lobby-menu-v2 .lobby-reference-actions{flex-basis:47px!important;min-height:47px!important}
+  .lobby-menu-v2 .lobby-reference-actions .ready-button,.lobby-menu-v2 .lobby-reference-actions .room-primary{height:39px!important;min-height:39px!important}
+}
+
+@media(max-height:610px){
+  .lobby-menu-v2.online-room{overflow-y:auto!important}
+  .lobby-menu-v2 .lobby-shell{height:auto!important;min-height:100dvh!important;overflow:visible!important}
+}
