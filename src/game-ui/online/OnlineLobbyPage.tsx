@@ -5,7 +5,7 @@ import { getLobby, leaveLobby, setLobbyDisplayName, setReady, startLobby, update
 import { subscribeToLobby, subscribeToLobbyMessages } from '../../online/realtime';
 import { getMatchByLobby, startOnlineMatch } from '../../online/matchApi';
 import type { OnlineMatch } from '../../online/matchTypes';
-import type { OnlineLobbyMessage, OnlineLobbySnapshot, OnlineTurnTimerSeconds } from '../../online/types';
+import type { OnlineLobbyMessage, OnlineLobbySnapshot } from '../../online/types';
 import { OnlineIcon } from './OnlineIcon';
 import {
   CREATE_PLAYER_OPTIONS,
@@ -20,6 +20,7 @@ import {
 import { lobbyDisplayName } from './lobbyBrowserModel';
 import './onlineLobby.css';
 import './lobbyIdentity.css';
+import './lobbyReferenceFinal.css';
 
 export function OnlineLobbyPage({
   lobbyId,
@@ -146,7 +147,7 @@ export function OnlineLobbyPage({
     try {
       await navigator.clipboard?.writeText(lobby.code);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setTimeout(() => setCopied(false), 1400);
     } catch {
       setError('Не удалось скопировать код.');
     }
@@ -157,25 +158,31 @@ export function OnlineLobbyPage({
   }
 
   return <main className="online-room"><div className="online-room__shell lobby-shell">
-    <header className="online-room__header">
+    <header className="online-room__header lobby-reference-header">
       <button aria-label="Покинуть лобби" onClick={() => void leave()}><OnlineIcon name="back"/></button>
-      <div><h1>{lobbyDisplayName(lobby)}</h1><small>Код: {lobby.code}</small></div>
+      <div className="lobby-reference-header__title">
+        <h1>{lobbyDisplayName(lobby)}</h1>
+        <button type="button" className="lobby-code-copy" onClick={() => void copy()} aria-label="Скопировать код лобби">
+          {copied ? 'Код скопирован' : `Код: ${lobby.code}`}
+        </button>
+      </div>
       <button aria-label="Закрыть" onClick={() => void leave()}><OnlineIcon name="close"/></button>
     </header>
 
-    {lobby.visibility === 'private' && <div className="room-code"><b><OnlineIcon name="private"/>Код: {lobby.code}</b><button onClick={() => void copy()}><OnlineIcon name={copied ? 'check' : 'copy'}/>{copied ? 'Скопирован' : 'Копировать'}</button></div>}
     {lobby.status === 'starting' && <section className="room-panel room-starting"><span className="online-browser__spinner"/><h2>Игра запускается…</h2><p>Подготовка сетевой партии</p></section>}
 
-    <section className="room-panel players-panel">
+    <section className="room-panel players-panel lobby-reference-players">
       <h2><span className="panel-title"><OnlineIcon name="users"/>Игроки</span><span>{lobby.players.length}/{lobby.maxPlayers}</span></h2>
       <div className="room-players">
         {Array.from({ length: lobby.maxPlayers }, (_, seat) => {
           const p = lobby.players.find((item) => item.seatIndex === seat);
           const bot = !p && lobby.status === 'starting' && seat >= lobby.maxPlayers - lobby.botSlots;
           const mine = p?.userId === userId;
-          return <div className={`room-player seat-${SEAT_COLORS[seat]}${p?.ready ? ' is-ready' : ''}`} key={seat}>
-            <OnlineIcon name={bot ? 'bot' : 'meeple'}/>
-            <span>
+          const seatColor = SEAT_COLORS[seat] ?? 'black';
+          return <div className={`room-player seat-${seatColor}${p?.ready ? ' is-ready' : ''}${mine ? ' is-mine' : ''}`} key={seat}>
+            <span className="room-player__seat-number" aria-hidden="true">{seat + 1}</span>
+            {bot ? <span className="room-player__bot"><OnlineIcon name="bot"/></span> : <span className="lobby-meeple" aria-hidden="true"/>}
+            <span className="room-player__body">
               {p ? <>
                 {mine ? <div className="room-player__identity">
                   <div className="room-player__name-wrap">
@@ -204,32 +211,52 @@ export function OnlineLobbyPage({
                   ><OnlineIcon name="check"/></button>
                 </div> : <div className="room-player__label"><b>{p.displayName}</b>{p.ready && <span className="room-player__ready-check" aria-label="Готов"><OnlineIcon name="check"/></span>}</div>}
                 <small className="room-player__status">{p.userId === lobby.hostUserId ? <><OnlineIcon name="crown"/>Организатор</> : p.ready ? <>Готов</> : <>Не готов</>}</small>
-              </> : bot ? <><b>Бот</b><small className="room-player__status"><OnlineIcon name="bot"/>Дозаполнение</small></> : <><b>Ожидание игрока</b><small>Свободное место</small></>}
+              </> : bot ? <><b>Бот</b><small className="room-player__status"><OnlineIcon name="bot"/>Дозаполнение</small></> : <><b>Ожидание игрока…</b><small>Свободное место</small></>}
+            </span>
+            <span className={`room-player__ready-state${p?.ready ? ' is-ready' : ''}${!p ? ' is-empty' : ''}`} aria-label={p?.ready ? 'Готов' : p ? 'Не готов' : 'Свободное место'}>
+              {p?.ready ? <><OnlineIcon name="check"/><em>Готов</em></> : p ? <em>Не готов</em> : <i/>}
             </span>
           </div>;
         })}
       </div>
     </section>
 
-    <section className="room-panel lobby-settings">
+    <section className="room-panel lobby-settings lobby-reference-settings">
       <h2>Настройки</h2>
-      <label>Название <input disabled={!host || lobby.status !== 'waiting'} value={lobby.name ?? ''} onChange={(event) => setLobby({ ...lobby, name: event.target.value })} onBlur={(event) => void settings({ name: event.target.value })}/></label>
-      <div className="settings-grid">
-        <label><span className="label-with-icon"><OnlineIcon name="users"/>Игроков</span><select disabled={!host || busy || lobby.status !== 'waiting'} value={lobby.maxPlayers} onChange={(event) => void settings({ maxPlayers: Number(event.target.value) })}>{CREATE_PLAYER_OPTIONS.map((value) => <option disabled={value < lobby.players.length} key={value}>{value}</option>)}</select></label>
-        <label><span className="label-with-icon"><OnlineIcon name="clock"/>Таймер</span><select disabled={!host || busy || lobby.status !== 'waiting'} value={lobby.turnTimerSeconds} onChange={(event) => void settings({ turnTimerSeconds: Number(event.target.value) as OnlineTurnTimerSeconds })}>{CREATE_TIMER_OPTIONS.map((value) => <option value={value} key={value}>{timerLabel(value)}</option>)}</select></label>
+      <div className="lobby-settings__grid">
+        <label className="lobby-settings__name">Название
+          <input
+            disabled={!host || lobby.status !== 'waiting'}
+            value={lobby.name ?? ''}
+            placeholder="Игра в Каркассон"
+            onChange={(event) => setLobby({ ...lobby, name: event.target.value })}
+            onBlur={(event) => void settings({ name: event.target.value })}
+          />
+        </label>
+        <label className="lobby-settings__players"><span className="label-with-icon"><OnlineIcon name="users"/>Игроков</span>
+          <select disabled={!host || busy || lobby.status !== 'waiting'} value={lobby.maxPlayers} onChange={(event) => void settings({ maxPlayers: Number(event.target.value) })}>
+            {CREATE_PLAYER_OPTIONS.map((value) => <option disabled={value < lobby.players.length} key={value}>{value}</option>)}
+          </select>
+        </label>
+        <fieldset className="lobby-timer" disabled={!host || busy || lobby.status !== 'waiting'}>
+          <legend><OnlineIcon name="clock"/>Таймер на ход</legend>
+          <div>{CREATE_TIMER_OPTIONS.map((value) => <button type="button" key={value} aria-pressed={lobby.turnTimerSeconds === value} onClick={() => void settings({ turnTimerSeconds: value })}>{timerLabel(value)}</button>)}</div>
+        </fieldset>
       </div>
-      <label className="room-toggle"><span><b><OnlineIcon name="bot"/>Боты (дозаполнение)</b><small>{lobby.botFillEnabled ? 'Свободные места будут заполнены при старте' : 'Выключено'}</small></span><button disabled={!host || busy || lobby.status !== 'waiting'} aria-pressed={lobby.botFillEnabled} onClick={() => void settings({ botFillEnabled: !lobby.botFillEnabled })}>{lobby.botFillEnabled ? 'Вкл' : 'Выкл'}</button></label>
-      {host && lobby.status === 'waiting' && <div className="room-chips"><button disabled={busy} aria-pressed={lobby.visibility === 'public'} onClick={() => void settings({ visibility: 'public' })}><OnlineIcon name="public"/>Публичная</button><button disabled={busy} aria-pressed={lobby.visibility === 'private'} onClick={() => void settings({ visibility: 'private' })}><OnlineIcon name="private"/>По коду</button></div>}
+      <div className="lobby-settings__secondary">
+        <label className="room-toggle"><span><b><OnlineIcon name="bot"/>Боты</b><small>{lobby.botFillEnabled ? 'Заполнят свободные места' : 'Выключены'}</small></span><button type="button" disabled={!host || busy || lobby.status !== 'waiting'} aria-pressed={lobby.botFillEnabled} onClick={() => void settings({ botFillEnabled: !lobby.botFillEnabled })}>{lobby.botFillEnabled ? 'Вкл' : 'Выкл'}</button></label>
+        {host && lobby.status === 'waiting' && <div className="room-chips"><button type="button" disabled={busy} aria-pressed={lobby.visibility === 'public'} onClick={() => void settings({ visibility: 'public' })}><OnlineIcon name="public"/>Публичная</button><button type="button" disabled={busy} aria-pressed={lobby.visibility === 'private'} onClick={() => void settings({ visibility: 'private' })}><OnlineIcon name="private"/>По коду</button></div>}
+      </div>
     </section>
 
-    <section className="room-panel chat-panel">
-      <h2><span className="panel-title"><OnlineIcon name="chat"/>Чат</span></h2>
+    <section className="room-panel chat-panel lobby-reference-chat">
+      <h2><span className="panel-title"><OnlineIcon name="chat"/>Чат лобби</span></h2>
       <div className="chat-messages" ref={chatRef} onScroll={(event) => { const element = event.currentTarget; nearBottom.current = element.scrollHeight - element.scrollTop - element.clientHeight < 48; }}>{messages.map((message) => <p className={message.userId === userId ? 'is-own' : ''} key={message.id}><b>{message.displayName}</b><span>{message.body}</span><time>{new Date(message.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}</time></p>)}</div>
-      <div className="chat-input"><input value={body} maxLength={280} placeholder="Сообщение…" onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') send(); }}/><button aria-label="Отправить" disabled={!validateChatBody(body) || busy} onClick={send}><OnlineIcon name="send"/></button></div>
+      <div className="chat-input"><input value={body} maxLength={280} placeholder="Написать сообщение…" onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') send(); }}/><button aria-label="Отправить" disabled={!validateChatBody(body) || busy} onClick={send}><OnlineIcon name="send"/></button></div>
     </section>
 
     {error && <p className="room-error">{error}</p>}
-    <footer className="lobby-actions">
+    <footer className="lobby-actions lobby-reference-actions">
       <button
         className={`ready-button${me?.ready ? ' is-ready' : ''}`}
         aria-pressed={Boolean(me?.ready)}
