@@ -7,6 +7,7 @@ import { LobbyCodePad } from './LobbyCodePad';
 import { CREATE_PLAYER_OPTIONS, CREATE_TIMER_OPTIONS, DEFAULT_ONLINE_LOBBY, timerLabel } from './onlineLobbyModel';
 import './onlineLobby.css';
 import '../referenceDetails.css';
+import './screenHeaderClarity.css';
 
 const CREATE_MAP_PREVIEW = [TILE_ASSETS[8], TILE_ASSETS[31], TILE_ASSETS[62], TILE_ASSETS[86]];
 const errorMessage = (reason: unknown) => {
