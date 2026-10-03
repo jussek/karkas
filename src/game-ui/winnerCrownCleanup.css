@@ -1,0 +1,5 @@
+/* Online result markup still carries one legacy crown character; avoid rendering a second CSS crown. */
+.online-game__finished p.is-winner span::before {
+  display: none !important;
+  content: none !important;
+}
