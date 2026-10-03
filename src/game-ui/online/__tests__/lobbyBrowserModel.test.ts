@@ -1,11 +1,11 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import type { OnlineLobbySnapshot } from '../../../online/types';
+import type { OnlineLobbyDirectoryEntry } from '../../../online/types';
 import { filterLobbies, formatLobbyTimer, isLobbyJoinable, lobbyDisplayName, lobbyJoinLabel, lobbyThumbnailSeed, onlineBrowserAvailability } from '../lobbyBrowserModel';
 import { onlineNavigationTarget } from '../onlineNavigation';
 
-function lobby(timer: 0 | 15 | 30 | 60, overrides: Partial<OnlineLobbySnapshot> = {}): OnlineLobbySnapshot {
-  return { id: `id-${timer}`, code: `CODE${timer}`, hostUserId: 'host', name: `Lobby ${timer}`, visibility: 'public', status: 'waiting', maxPlayers: 4, turnTimerSeconds: timer, botSlots: 0, botFillEnabled: false, createdAt: '', updatedAt: '', players: [], ...overrides };
+function lobby(timer: 0 | 15 | 30 | 60, overrides: Partial<OnlineLobbyDirectoryEntry> = {}): OnlineLobbyDirectoryEntry {
+  return { id: `id-${timer}`, name: `Lobby ${timer}`, visibility: 'public', status: 'waiting', maxPlayers: 4, turnTimerSeconds: timer, botSlots: 0, botFillEnabled: false, playerCount: 0, createdAt: '', updatedAt: '', ...overrides };
 }
 
 describe('online lobby browser model', () => {
@@ -13,16 +13,20 @@ describe('online lobby browser model', () => {
   it('FILTER_ANY', () => expect(filterLobbies(lobbies, 'any')).toEqual(lobbies));
   it.each([0, 15, 30, 60] as const)('filters timer %s', (timer) => expect(filterLobbies(lobbies, timer)).toEqual([lobby(timer)]));
   it('removes stale non-waiting lobbies from cached results',()=>expect(filterLobbies([lobby(15),lobby(15,{id:'stale',status:'in_game'})],'any')).toEqual([lobby(15)]));
-  it('uses lobby code when name is null', () => expect(lobbyDisplayName(lobby(0, { name: null, code: '2458AB' }))).toBe('Лобби #2458AB'));
+  it('uses safe fallback names when directory does not expose secret code', () => {
+    expect(lobbyDisplayName(lobby(0, { name: null, visibility: 'private' }))).toBe('Закрытое лобби');
+    expect(lobbyDisplayName({ name: null, code: '2458' })).toBe('Лобби #2458');
+  });
   it('formats timer labels', () => {
     expect([0, 15, 30, 60].map((value) => formatLobbyTimer(value as 0 | 15 | 30 | 60))).toEqual(['Без таймера', 'Ход: 15 сек', 'Ход: 30 сек', 'Ход: 60 сек']);
   });
-  it('handles open, full, bot-filled, and stale lobbies', () => {
+  it('handles public, private, full, and stale lobby states', () => {
     expect(isLobbyJoinable(lobby(0))).toBe(true);
     expect(lobbyJoinLabel(lobby(0))).toBe('Присоединиться');
-    expect(isLobbyJoinable(lobby(0, { maxPlayers: 2, players: [{}, {}] as never }))).toBe(false);
-    expect(lobbyJoinLabel(lobby(0, { maxPlayers: 2, players: [{}, {}] as never }))).toBe('Заполнено');
-    expect(isLobbyJoinable(lobby(0, { maxPlayers: 3, botSlots: 2, botFillEnabled: true, players: [{}] as never }))).toBe(true);
+    expect(lobbyJoinLabel(lobby(0, { visibility: 'private' }))).toBe('Ввести код');
+    expect(isLobbyJoinable(lobby(0, { maxPlayers: 2, playerCount: 2 }))).toBe(false);
+    expect(lobbyJoinLabel(lobby(0, { maxPlayers: 2, playerCount: 2 }))).toBe('Заполнено');
+    expect(isLobbyJoinable(lobby(0, { maxPlayers: 3, botSlots: 2, botFillEnabled: true, playerCount: 1 }))).toBe(true);
     expect(lobbyJoinLabel(lobby(0, { status: 'in_game' }))).toBe('Игра началась');
   });
   it('reports missing Supabase and produces stable thumbnail seeds', () => {
@@ -48,6 +52,7 @@ describe('online lobby browser model', () => {
       '20261003111221_lobby_membership_and_custom_code.sql',
       '20261003120702_four_digit_lobby_codes.sql',
       '20261003122201_four_digit_lobby_code_compat.sql',
+      '20261003161504_visible_private_lobby_directory.sql',
     ]);
     expect(files).not.toContain('20261001150000_stage5c_real_online_lobby.sql');
     expect(files).not.toContain('20261002090000_stage5d1_authoritative_match_core.sql');
