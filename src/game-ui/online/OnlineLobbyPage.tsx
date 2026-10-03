@@ -6,6 +6,7 @@ import { subscribeToLobby, subscribeToLobbyMessages } from '../../online/realtim
 import { getMatchByLobby, startOnlineMatch } from '../../online/matchApi';
 import type { OnlineMatch } from '../../online/matchTypes';
 import type { OnlineLobbyMessage, OnlineLobbySnapshot } from '../../online/types';
+import { TILE_ASSETS } from '../tiles/tileAssets';
 import { OnlineIcon } from './OnlineIcon';
 import {
   CREATE_PLAYER_OPTIONS,
@@ -21,6 +22,9 @@ import { lobbyDisplayName } from './lobbyBrowserModel';
 import './onlineLobby.css';
 import './lobbyIdentity.css';
 import './lobbyReferenceFinal.css';
+import './lobbyMenuV2.css';
+
+const LOBBY_MAP_PREVIEW = [TILE_ASSETS[8], TILE_ASSETS[31], TILE_ASSETS[62], TILE_ASSETS[86]];
 
 export function OnlineLobbyPage({
   lobbyId,
@@ -157,11 +161,25 @@ export function OnlineLobbyPage({
     return <main className="online-room"><div className="online-room__shell"><section className="room-panel room-terminal"><OnlineIcon name="meeple"/><h1>Лобби закрыто организатором</h1><button className="room-primary" onClick={onExit}><OnlineIcon name="home"/>В меню</button></section></div></main>;
   }
 
-  return <main className="online-room"><div className="online-room__shell lobby-shell">
+  return <main className="online-room lobby-menu-v2"><div className="online-room__shell lobby-shell">
     <header className="online-room__header lobby-reference-header">
       <button aria-label="Покинуть лобби" onClick={() => void leave()}><OnlineIcon name="back"/></button>
       <div className="lobby-reference-header__title">
-        <h1>{lobbyDisplayName(lobby)}</h1>
+        {host && lobby.status === 'waiting' ? <input
+          className="lobby-title-editor"
+          aria-label="Название лобби"
+          value={lobby.name ?? ''}
+          placeholder={`Лобби #${lobby.code}`}
+          maxLength={80}
+          disabled={busy}
+          onChange={(event) => setLobby({ ...lobby, name: event.target.value })}
+          onBlur={(event) => void settings({ name: event.target.value })}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.currentTarget.blur();
+            }
+          }}
+        /> : <h1>{lobbyDisplayName(lobby)}</h1>}
         <button type="button" className="lobby-code-copy" onClick={() => void copy()} aria-label="Скопировать код лобби">
           {copied ? 'Код скопирован' : `Код: ${lobby.code}`}
         </button>
@@ -170,6 +188,39 @@ export function OnlineLobbyPage({
     </header>
 
     {lobby.status === 'starting' && <section className="room-panel room-starting"><span className="online-browser__spinner"/><h2>Игра запускается…</h2><p>Подготовка сетевой партии</p></section>}
+
+    <section className="room-panel lobby-menu-settings">
+      <div className="lobby-map-card">
+        <strong>Карта</strong>
+        <div className="lobby-map-preview" aria-hidden="true">
+          {LOBBY_MAP_PREVIEW.map((tile) => <img src={tile.url} alt="" key={tile.cardId}/>) }
+        </div>
+        <small>Классическая карта</small>
+      </div>
+      <div className="lobby-settings-stack">
+        <strong>Таймер на ход</strong>
+        <fieldset className="lobby-timer" disabled={!host || busy || lobby.status !== 'waiting'}>
+          <legend>Таймер на ход</legend>
+          <div>{CREATE_TIMER_OPTIONS.map((value) => <button type="button" key={value} aria-pressed={lobby.turnTimerSeconds === value} onClick={() => void settings({ turnTimerSeconds: value })}>{timerLabel(value)}</button>)}</div>
+        </fieldset>
+        <div className="lobby-settings-bottom">
+          <label>Игроков
+            <select disabled={!host || busy || lobby.status !== 'waiting'} value={lobby.maxPlayers} onChange={(event) => void settings({ maxPlayers: Number(event.target.value) })}>
+              {CREATE_PLAYER_OPTIONS.map((value) => <option disabled={value < lobby.players.length} key={value}>{value}</option>)}
+            </select>
+          </label>
+          <label className="bot-toggle">Боты
+            <button type="button" disabled={!host || busy || lobby.status !== 'waiting'} aria-pressed={lobby.botFillEnabled} onClick={() => void settings({ botFillEnabled: !lobby.botFillEnabled })}>{lobby.botFillEnabled ? 'Вкл.' : 'Выкл.'}</button>
+          </label>
+          <label>Доступ
+            <span className="lobby-visibility">
+              <button type="button" disabled={!host || busy || lobby.status !== 'waiting'} aria-pressed={lobby.visibility === 'public'} onClick={() => void settings({ visibility: 'public' })}><OnlineIcon name="public"/>Все</button>
+              <button type="button" disabled={!host || busy || lobby.status !== 'waiting'} aria-pressed={lobby.visibility === 'private'} onClick={() => void settings({ visibility: 'private' })}><OnlineIcon name="private"/>Код</button>
+            </span>
+          </label>
+        </div>
+      </div>
+    </section>
 
     <section className="room-panel players-panel lobby-reference-players">
       <h2><span className="panel-title"><OnlineIcon name="users"/>Игроки</span><span>{lobby.players.length}/{lobby.maxPlayers}</span></h2>
@@ -218,34 +269,6 @@ export function OnlineLobbyPage({
             </span>
           </div>;
         })}
-      </div>
-    </section>
-
-    <section className="room-panel lobby-settings lobby-reference-settings">
-      <h2>Настройки</h2>
-      <div className="lobby-settings__grid">
-        <label className="lobby-settings__name">Название
-          <input
-            disabled={!host || lobby.status !== 'waiting'}
-            value={lobby.name ?? ''}
-            placeholder="Игра в Каркассон"
-            onChange={(event) => setLobby({ ...lobby, name: event.target.value })}
-            onBlur={(event) => void settings({ name: event.target.value })}
-          />
-        </label>
-        <label className="lobby-settings__players"><span className="label-with-icon"><OnlineIcon name="users"/>Игроков</span>
-          <select disabled={!host || busy || lobby.status !== 'waiting'} value={lobby.maxPlayers} onChange={(event) => void settings({ maxPlayers: Number(event.target.value) })}>
-            {CREATE_PLAYER_OPTIONS.map((value) => <option disabled={value < lobby.players.length} key={value}>{value}</option>)}
-          </select>
-        </label>
-        <fieldset className="lobby-timer" disabled={!host || busy || lobby.status !== 'waiting'}>
-          <legend><OnlineIcon name="clock"/>Таймер на ход</legend>
-          <div>{CREATE_TIMER_OPTIONS.map((value) => <button type="button" key={value} aria-pressed={lobby.turnTimerSeconds === value} onClick={() => void settings({ turnTimerSeconds: value })}>{timerLabel(value)}</button>)}</div>
-        </fieldset>
-      </div>
-      <div className="lobby-settings__secondary">
-        <label className="room-toggle"><span><b><OnlineIcon name="bot"/>Боты</b><small>{lobby.botFillEnabled ? 'Заполнят свободные места' : 'Выключены'}</small></span><button type="button" disabled={!host || busy || lobby.status !== 'waiting'} aria-pressed={lobby.botFillEnabled} onClick={() => void settings({ botFillEnabled: !lobby.botFillEnabled })}>{lobby.botFillEnabled ? 'Вкл' : 'Выкл'}</button></label>
-        {host && lobby.status === 'waiting' && <div className="room-chips"><button type="button" disabled={busy} aria-pressed={lobby.visibility === 'public'} onClick={() => void settings({ visibility: 'public' })}><OnlineIcon name="public"/>Публичная</button><button type="button" disabled={busy} aria-pressed={lobby.visibility === 'private'} onClick={() => void settings({ visibility: 'private' })}><OnlineIcon name="private"/>По коду</button></div>}
       </div>
     </section>
 
