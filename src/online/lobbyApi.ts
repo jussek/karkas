@@ -14,9 +14,9 @@ async function rpcLobby(name: string, args: Record<string, unknown>): Promise<On
   return getLobby(String(data));
 }
 async function enterNewLobby(name:string,args:Record<string,unknown>):Promise<OnlineLobbySnapshot>{
-  await ensureOnlineIdentity();
+  const lobby=await rpcLobby(name,args);
   await leaveMyOnlineMatches();
-  return rpcLobby(name,args);
+  return lobby;
 }
 export async function listPublicLobbies(): Promise<OnlineLobbySnapshot[]> {
   await ensureOnlineIdentity();
