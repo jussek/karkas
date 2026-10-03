@@ -1,0 +1,534 @@
+/* Stage 5N — immersive mobile shell. Presentation only. */
+
+:root {
+  --immersive-safe-top: env(safe-area-inset-top, 0px);
+  --immersive-safe-right: env(safe-area-inset-right, 0px);
+  --immersive-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --immersive-safe-left: env(safe-area-inset-left, 0px);
+  --immersive-gold: #f1c75f;
+  --immersive-cream: #fff0c8;
+  --immersive-wood: #3d1d0e;
+  --immersive-dark: #150a05;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--immersive-dark);
+}
+
+html {
+  overscroll-behavior: none;
+  background: #150a05;
+}
+
+body {
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+button,
+[role='button'] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+.chat-messages,
+.online-game__chat {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.main-menu,
+.online-browser,
+.online-room,
+.game-loading,
+.game-page,
+.online-game {
+  min-height: 100dvh;
+  overscroll-behavior: none;
+}
+
+/* A subtle scene entrance makes navigation feel native instead of page-like. */
+.main-menu__content,
+.online-browser__shell,
+.online-room__shell,
+.game-loading__content,
+.game-over-panel,
+.online-game__finished {
+  animation: immersive-screen-arrive .34s cubic-bezier(.2,.78,.26,1) both;
+}
+
+/* Warm moving light, without extra DOM or heavy image assets. */
+.main-menu__beams {
+  opacity: .8;
+  transform-origin: 50% 30%;
+  animation: immersive-light-rake 10s ease-in-out infinite alternate;
+}
+
+.main-menu__brand,
+.online-browser__header h1,
+.online-room__header h1,
+.game-loading__content {
+  isolation: isolate;
+}
+
+.main-menu__brand::after,
+.online-browser__header h1::after,
+.online-room__header h1::after {
+  box-shadow:
+    inset 0 1px rgb(255 245 205 / 14%),
+    inset 0 -1px rgb(32 10 3 / 42%),
+    0 0 22px rgb(245 188 77 / 7%) !important;
+}
+
+/* Keep decorative backgrounds atmospheric rather than static. */
+.main-menu,
+.online-browser,
+.online-room,
+.game-loading {
+  background-attachment: fixed !important;
+}
+
+.game-loading__scene {
+  transform-origin: 50% 56%;
+  animation: immersive-scene-float 7s ease-in-out infinite;
+}
+
+.game-loading__bar span {
+  position: relative;
+  overflow: hidden;
+}
+
+.game-loading__bar span::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: linear-gradient(105deg, transparent 20%, rgb(255 255 255 / 38%) 48%, transparent 72%);
+  transform: translateX(-140%);
+  animation: immersive-progress-shine 2.2s ease-in-out infinite;
+}
+
+/* One tactile language for all important actions. */
+.menu-action,
+.online-browser__actions button,
+.lobby-card__body > button,
+.room-primary,
+.ready-button,
+.room-chips button,
+.room-toggle button,
+.turn-controls button,
+.online-game__actions button,
+.game-over-actions button,
+.online-game__finished > button {
+  transform: translateZ(0);
+  transition:
+    transform .12s ease,
+    filter .12s ease,
+    box-shadow .12s ease !important;
+}
+
+.menu-action:not(:disabled):active,
+.online-browser__actions button:not(:disabled):active,
+.lobby-card__body > button:not(:disabled):active,
+.room-primary:not(:disabled):active,
+.ready-button:not(:disabled):active,
+.room-chips button:not(:disabled):active,
+.room-toggle button:not(:disabled):active,
+.turn-controls button:not(:disabled):active,
+.online-game__actions button:not(:disabled):active,
+.game-over-actions button:not(:disabled):active,
+.online-game__finished > button:not(:disabled):active {
+  transform: translateY(2px) scale(.985);
+  filter: brightness(.96) saturate(.98);
+}
+
+button:focus-visible,
+[role='button']:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid #ffe59a !important;
+  outline-offset: 3px !important;
+}
+
+/* More deliberate mobile scrolling in horizontal player/filter rails. */
+.game-scores,
+.online-game__players,
+.online-browser__filters {
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.game-scores > span,
+.online-game__players > div:not(.online-game__tools),
+.online-browser__filters button {
+  scroll-snap-align: start;
+}
+
+.game-scores,
+.online-game__players,
+.online-browser__filters,
+.online-browser__list,
+.chat-messages,
+.online-game__chat > div {
+  scrollbar-width: none;
+}
+
+.game-scores::-webkit-scrollbar,
+.online-game__players::-webkit-scrollbar,
+.online-browser__filters::-webkit-scrollbar,
+.online-browser__list::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar,
+.online-game__chat > div::-webkit-scrollbar {
+  display: none;
+}
+
+/* Refined depth on the major parchment/wood cards. */
+.lobby-card,
+.room-panel,
+.game-menu-sheet,
+.pause-sheet,
+.game-over-panel,
+.online-game__dialog section,
+.online-game__finished,
+.online-game__chat {
+  box-shadow:
+    inset 0 1px rgb(255 239 190 / 9%),
+    inset 0 -12px 24px rgb(24 8 3 / 20%),
+    0 16px 36px rgb(0 0 0 / 48%) !important;
+}
+
+.lobby-card:hover,
+.room-player:hover {
+  filter: brightness(1.015);
+}
+
+/* Current player and current tile remain readable even on bright art. */
+.game-scores > span.is-current,
+.online-game__players > div.is-current {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 233 154 / 32%),
+    0 0 14px rgb(255 194 74 / 34%),
+    0 4px 9px rgb(0 0 0 / 56%) !important;
+}
+
+.held-tile,
+.online-game__hand {
+  isolation: isolate;
+}
+
+.held-tile::before,
+.online-game__hand::before {
+  position: absolute;
+  z-index: -1;
+  inset: -7px;
+  content: '';
+  pointer-events: none;
+  border-radius: 13px;
+  background: radial-gradient(circle, rgb(68 185 255 / 16%), transparent 68%);
+}
+
+/* Board reads as a large movable table rather than a boxed widget. */
+.board-viewport,
+.online-game__viewport {
+  touch-action: none;
+  contain: layout paint;
+}
+
+.board-canvas,
+.online-game__canvas {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.camera-controls,
+.online-game__camera,
+.turn-controls,
+.online-game__controls {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Make modal sheets feel like part of the same carved UI system. */
+.game-menu-overlay,
+.pause-overlay,
+.online-game__dialog {
+  animation: immersive-overlay-arrive .16s ease-out both;
+}
+
+.game-menu-sheet,
+.pause-sheet,
+.online-game__dialog section,
+.online-game__chat {
+  animation: immersive-sheet-arrive .2s cubic-bezier(.2,.82,.28,1) both;
+}
+
+/* Standalone mode: use every safe pixel like a real mobile app. */
+@media (display-mode: standalone) {
+  body {
+    background: #1b0d07;
+  }
+
+  .main-menu,
+  .online-browser,
+  .online-room,
+  .game-loading,
+  .game-page,
+  .online-game {
+    min-height: 100dvh !important;
+  }
+
+  .main-menu__toolbar,
+  .online-browser__header,
+  .online-room__header {
+    padding-top: max(2px, var(--immersive-safe-top));
+  }
+
+  .turn-controls,
+  .online-game__controls,
+  .lobby-actions,
+  .online-browser__actions {
+    padding-bottom: max(10px, var(--immersive-safe-bottom)) !important;
+  }
+}
+
+/* 430 × 932 class phones: keep the generous reference proportions. */
+@media (min-width: 401px) and (max-width: 440px) and (min-height: 820px) {
+  .main-menu__content {
+    transform: translateY(-1vh);
+  }
+
+  .main-menu__primary {
+    gap: 14px !important;
+  }
+
+  .menu-action {
+    min-height: 88px !important;
+  }
+
+  .online-browser__list {
+    gap: 10px !important;
+  }
+
+  .board-viewport,
+  .online-game__viewport {
+    height: calc(100dvh - 160px - var(--immersive-safe-top) - var(--immersive-safe-bottom)) !important;
+  }
+}
+
+/* 390 × 844 class phones: balanced density. */
+@media (min-width: 371px) and (max-width: 400px) and (min-height: 760px) {
+  .main-menu__brand {
+    padding-top: 37px !important;
+  }
+
+  .main-menu__primary {
+    gap: 11px !important;
+  }
+
+  .menu-action {
+    min-height: 80px !important;
+  }
+
+  .online-browser__filters button {
+    min-height: 40px !important;
+  }
+
+  .online-game__controls {
+    min-height: 99px !important;
+  }
+}
+
+/* 360 × 640 class phones: prioritize the board and primary actions. */
+@media (max-width: 370px) and (max-height: 700px) {
+  .main-menu {
+    padding-top: max(52px, var(--immersive-safe-top)) !important;
+  }
+
+  .main-menu__emblem {
+    width: 66px !important;
+    height: 66px !important;
+    margin-bottom: -25px !important;
+  }
+
+  .main-menu__emblem svg {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .main-menu__brand {
+    padding: 31px 12px 12px !important;
+  }
+
+  .main-menu__brand h1 {
+    font-size: 2.65rem !important;
+  }
+
+  .main-menu__primary {
+    gap: 8px !important;
+    margin-top: 10px !important;
+  }
+
+  .menu-action {
+    grid-template-columns: 44px 1fr !important;
+    min-height: 64px !important;
+    padding: 8px 11px !important;
+  }
+
+  .menu-action svg {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .menu-action b {
+    font-size: 1.16rem !important;
+  }
+
+  .menu-action small {
+    display: none !important;
+  }
+
+  .online-browser__header,
+  .online-room__header {
+    margin-top: 4px !important;
+  }
+
+  .online-browser__filters {
+    padding-block: 4px !important;
+  }
+
+  .lobby-card {
+    min-height: 82px;
+  }
+
+  .room-panel {
+    padding: 9px !important;
+  }
+
+  .chat-panel {
+    min-height: 148px !important;
+  }
+
+  .board-viewport,
+  .online-game__viewport {
+    height: calc(100dvh - 145px - var(--immersive-safe-top) - var(--immersive-safe-bottom)) !important;
+    min-height: 238px !important;
+  }
+
+  .turn-controls,
+  .online-game__controls {
+    min-height: 86px !important;
+  }
+
+  .online-game__controls {
+    grid-template-columns: 48px 64px minmax(0, 1fr) !important;
+  }
+
+  .online-game__hand img,
+  .held-tile img {
+    width: 58px !important;
+    height: 58px !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .main-menu__content,
+  .online-browser__shell,
+  .online-room__shell {
+    max-width: 760px !important;
+  }
+
+  .main-menu__brand p,
+  .menu-action small {
+    display: none !important;
+  }
+
+  .game-header,
+  .online-game__players {
+    min-height: 46px !important;
+  }
+
+  .turn-controls,
+  .online-game__controls {
+    min-height: 82px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-menu__content,
+  .online-browser__shell,
+  .online-room__shell,
+  .game-loading__content,
+  .game-over-panel,
+  .online-game__finished,
+  .main-menu__beams,
+  .game-loading__scene,
+  .game-loading__bar span::after,
+  .game-menu-overlay,
+  .pause-overlay,
+  .online-game__dialog,
+  .game-menu-sheet,
+  .pause-sheet,
+  .online-game__dialog section,
+  .online-game__chat {
+    animation: none !important;
+  }
+
+  .game-scores,
+  .online-game__players,
+  .online-browser__filters {
+    scroll-behavior: auto;
+  }
+}
+
+@keyframes immersive-screen-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes immersive-overlay-arrive {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes immersive-sheet-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes immersive-light-rake {
+  0% { opacity: .58; transform: scale(1) translateX(-1%); }
+  100% { opacity: .88; transform: scale(1.025) translateX(1%); }
+}
+
+@keyframes immersive-scene-float {
+  0%, 100% { translate: -50% 0; }
+  50% { translate: -50% -3px; }
+}
+
+@keyframes immersive-progress-shine {
+  0%, 40% { transform: translateX(-140%); }
+  78%, 100% { transform: translateX(150%); }
+}
