@@ -1,6 +1,7 @@
 import { getTileDefinition } from '../../src/game/cards/catalogApi.js';
 import { canEndTurn, confirmTurnTilePlacement, createTurnFlow, drawTurnTile, endTurn, getLegalTilePlacementOptions, hasAnyLegalTilePlacement, placeTurnTile, replaceUnplayableTurnTile, rotatePositionedTurnTile, selectTurnMeeple, type TurnFlowState } from '../../src/game/engine/turnFlow.js';
 import { getLegalMeeplePlacements } from '../../src/game/rules/localFeatures.js';
+import { PLAYER_SEAT_COLORS } from '../../src/game/playerColors.js';
 import type { Player } from '../../src/game/types/state.js';
 import type { OnlineMatchIntent, OnlinePublicMatchSnapshot } from '../../src/online/matchTypes.js';
 
@@ -39,7 +40,7 @@ export function applyOnlineMatchIntent(flow:TurnFlowState,intent:OnlineMatchInte
   }
   throw new MatchIntentError('INVALID_INTENT','Unsupported match intent.',400);
 }
-export const SEAT_COLORS=['blue','red','green','yellow','purple','black'] as const;
+export const SEAT_COLORS=PLAYER_SEAT_COLORS;
 export interface RosterSource {seatIndex:number;userId:string|null;displayName:string;isBot:boolean}
 export function buildEnginePlayers(matchId:string,humans:ReadonlyArray<Omit<RosterSource,'isBot'>>,maxPlayers:number,botSlots:number):{players:Player[];roster:RosterSource[]} {
  const occupied=new Map(humans.map(h=>[h.seatIndex,{...h,isBot:false}]));let bot=1;for(let seat=0;seat<maxPlayers&&bot<=botSlots;seat++)if(!occupied.has(seat))occupied.set(seat,{seatIndex:seat,userId:null,displayName:`Бот ${bot++}`,isBot:true});
