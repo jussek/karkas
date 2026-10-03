@@ -163,10 +163,37 @@ html body .online-room .lobby-meeple{
   background-position:var(--meeple-x) 32%!important;
 }
 
+/* Search cards preview the exact seat colours before the player joins. */
+html body .online-browser .lobby-card__meeple-sprite{
+  --meeple-x:1%;
+  display:inline-block!important;
+  width:22px!important;
+  height:22px!important;
+  flex:0 0 22px!important;
+  background-image:var(--meeple-sprite)!important;
+  background-repeat:no-repeat!important;
+  background-size:600% auto!important;
+  background-position:var(--meeple-x) 32%!important;
+  filter:drop-shadow(0 2px 1px rgba(65,37,16,.32))!important;
+}
+html body .online-browser .lobby-card__meeple-sprite.seat-red{--meeple-x:20%}
+html body .online-browser .lobby-card__meeple-sprite.seat-green{--meeple-x:39%}
+html body .online-browser .lobby-card__meeple-sprite.seat-yellow{--meeple-x:58%}
+html body .online-browser .lobby-card__meeple-sprite.seat-purple{--meeple-x:78%}
+html body .online-browser .lobby-card__meeple-sprite.seat-black{--meeple-x:97%}
+html body .online-browser .lobby-card__meeple-sprite.is-empty{
+  opacity:.20!important;
+  filter:grayscale(.7) sepia(.3) drop-shadow(0 1px 1px rgba(65,37,16,.22))!important;
+}
+html body .online-browser .lobby-card__meeple-sprite.is-player{
+  opacity:1!important;
+}
+
 @media(max-width:430px){
   html body .online-game .online-game__meeple-count{grid-template-columns:48px auto!important}
   html body .online-game .online-game__meeple-count::before{width:48px;height:48px}
   html body .online-game .online-game__players>div:not(.online-game__tools)>i{width:28px!important;height:28px!important;flex-basis:28px!important}
+  html body .online-browser .lobby-card__meeple-sprite{width:19px!important;height:19px!important;flex-basis:19px!important}
 }
 
 @media(prefers-reduced-motion:reduce){
