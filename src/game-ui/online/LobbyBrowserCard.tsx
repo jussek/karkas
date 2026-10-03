@@ -1,6 +1,7 @@
 import type { OnlineLobbySnapshot } from '../../online/types';
 import { TILE_ASSETS } from '../tiles/tileAssets';
 import { OnlineIcon } from './OnlineIcon';
+import { SEAT_COLORS } from './onlineLobbyModel';
 import { formatLobbyTimer, isLobbyJoinable, lobbyDisplayName, lobbyJoinLabel, lobbyThumbnailSeed } from './lobbyBrowserModel';
 
 export function LobbyBrowserCard({ lobby, joining, onJoin }: { lobby: OnlineLobbySnapshot; joining: boolean; onJoin: (lobby: OnlineLobbySnapshot) => void }) {
@@ -11,7 +12,13 @@ export function LobbyBrowserCard({ lobby, joining, onJoin }: { lobby: OnlineLobb
     <div className="lobby-card__body">
       <div className="lobby-card__title"><OnlineIcon name={lobby.players[0]?.userId === lobby.hostUserId ? 'crown' : 'meeple'} /><h2>{lobbyDisplayName(lobby)}</h2></div>
       <div className="lobby-card__meeples" aria-label={`${lobby.players.length} из ${lobby.maxPlayers} игроков`}>
-        {Array.from({ length: lobby.maxPlayers }, (_, index) => <OnlineIcon key={index} name="meeple" className={index < lobby.players.length ? 'is-player' : 'is-empty'} />)}
+        {Array.from({ length: lobby.maxPlayers }, (_, index) => (
+          <span
+            aria-hidden="true"
+            className={`lobby-card__meeple-sprite seat-${SEAT_COLORS[index]}${index < lobby.players.length ? ' is-player' : ' is-empty'}`}
+            key={index}
+          />
+        ))}
         <b>{lobby.players.length}/{lobby.maxPlayers}</b>{lobby.botSlots > 0 && <small className="lobby-card__bots"><OnlineIcon name="bot" />+{lobby.botSlots}</small>}
       </div>
       <div className="lobby-card__meta"><span><OnlineIcon name="clock" />{formatLobbyTimer(lobby.turnTimerSeconds)}</span><span><OnlineIcon name="map" />Классическая карта</span></div>
