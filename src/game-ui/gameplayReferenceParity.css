@@ -1,0 +1,514 @@
+/* Stage 5K — gameplay-only parity pass against the approved fourth reference.
+   Presentation only: no engine, network, persistence or lifecycle semantics. */
+
+:root{
+  --gp-wood-0:#170a05;
+  --gp-wood-1:#2a1208;
+  --gp-wood-2:#472311;
+  --gp-wood-3:#673819;
+  --gp-bronze:#9f5b2b;
+  --gp-gold:#e8bb55;
+  --gp-gold-hi:#ffe69a;
+  --gp-blue:#1686ed;
+  --gp-green:#0b9749;
+  --gp-green-hi:#28ce72;
+  --gp-cream:#fff0c8;
+}
+
+/* ---------- Screen geometry: board first ---------- */
+body .game-page.game-page,
+body .online-game.online-game{
+  padding:0!important;
+  padding-top:env(safe-area-inset-top)!important;
+  padding-bottom:calc(108px + env(safe-area-inset-bottom))!important;
+  background:
+    linear-gradient(90deg,rgba(31,13,6,.92) 0 5px,transparent 18px calc(100% - 18px),rgba(31,13,6,.92) calc(100% - 5px)),
+    linear-gradient(180deg,#291208,#190b06)!important;
+  overflow:hidden!important;
+}
+
+body .game-page.game-page::before,
+body .online-game.online-game::before{
+  background:
+    radial-gradient(circle at 50% 18%,rgba(255,194,95,.055),transparent 34%),
+    linear-gradient(180deg,rgba(255,255,255,.018),transparent 32%)!important;
+}
+
+/* ---------- Compact top player rail ---------- */
+body .game-page .game-header,
+body .online-game .online-game__players{
+  width:100%!important;
+  max-width:none!important;
+  min-height:58px!important;
+  height:58px!important;
+  margin:0!important;
+  padding:4px 92px 5px 6px!important;
+  gap:5px!important;
+  background:
+    linear-gradient(180deg,#5a2d16 0%,#35180c 46%,#1d0c06 100%)!important;
+  border:0!important;
+  border-bottom:3px solid #6f3b1a!important;
+  box-shadow:inset 0 -1px #b87134,0 5px 13px rgba(0,0,0,.58)!important;
+  overflow:visible!important;
+}
+
+body .game-page .game-header>div:first-child{
+  display:none!important;
+}
+
+body .game-page .game-scores,
+body .online-game .online-game__players{
+  scrollbar-width:none!important;
+  -webkit-mask-image:none!important;
+  mask-image:none!important;
+  overflow-x:auto!important;
+}
+
+body .game-page .game-scores{
+  height:49px!important;
+  padding:0!important;
+  gap:5px!important;
+}
+
+body .game-page .game-scores>span,
+body .online-game .online-game__players>div:not(.online-game__tools){
+  min-width:104px!important;
+  height:48px!important;
+  min-height:48px!important;
+  padding:4px 7px!important;
+  border:2px solid #6f3e20!important;
+  border-radius:7px!important;
+  color:var(--gp-cream)!important;
+  background:
+    linear-gradient(180deg,#4b2816,#281108)!important;
+  box-shadow:inset 0 0 0 1px rgba(219,142,62,.30),0 3px 7px rgba(0,0,0,.52)!important;
+  font-family:Georgia,"Times New Roman",serif!important;
+}
+
+body .game-page .game-scores>span.is-current,
+body .online-game .online-game__players>div.is-current{
+  border-color:#e6b94b!important;
+  background:linear-gradient(180deg,#69401e,#38200e)!important;
+  box-shadow:inset 0 0 0 1px #ffe59766,0 0 10px rgba(240,185,55,.58),0 3px 8px #0008!important;
+}
+
+body .game-page .game-scores>span.is-current::after,
+body .online-game .online-game__players>div.is-current::after{
+  height:2px!important;
+  bottom:2px!important;
+  background:linear-gradient(90deg,transparent,#ffe785 20% 80%,transparent)!important;
+}
+
+body .game-page .score-dot,
+body .online-game .online-game__players i{
+  width:12px!important;
+  height:30px!important;
+  flex:none!important;
+  border-radius:6px 6px 4px 4px!important;
+  box-shadow:inset 0 0 0 1px #fff7,0 3px 5px #0009!important;
+}
+
+body .online-game .online-game__players strong,
+body .game-page .game-scores strong{
+  color:#fff2c9!important;
+  font-size:.78rem!important;
+  line-height:1!important;
+}
+body .online-game .online-game__players small{
+  color:#d9bb7e!important;
+  font-size:.61rem!important;
+  line-height:1.05!important;
+}
+body .online-game .online-game__players small b,
+body .game-page .game-scores b{
+  color:#fff0a5!important;
+  font-size:.94rem!important;
+}
+
+body .game-page .game-hud-right{
+  position:absolute!important;
+  right:6px!important;
+  top:5px!important;
+  gap:5px!important;
+}
+body .game-page .tiles-remaining{display:none!important}
+body .game-page .game-menu-button,
+body .online-game .online-game__tools button{
+  width:43px!important;
+  height:43px!important;
+  min-width:43px!important;
+  min-height:43px!important;
+  border-radius:8px!important;
+  border:2px solid #8b5228!important;
+  background:linear-gradient(#553019,#261108)!important;
+  box-shadow:inset 0 0 0 1px #c77a37,0 4px 0 #130703,0 7px 12px #0008!important;
+}
+body .online-game .online-game__tools{
+  right:5px!important;
+  top:3px!important;
+  gap:5px!important;
+}
+
+/* ---------- Turn status is a small floating plaque ---------- */
+body .game-page .turn-message,
+body .online-game .game-turn-status{
+  top:63px!important;
+  min-height:28px!important;
+  max-width:calc(100vw - 110px)!important;
+  padding:4px 11px!important;
+  border:2px solid #75411e!important;
+  border-radius:9px!important;
+  color:#f5dba7!important;
+  background:linear-gradient(180deg,rgba(72,39,20,.95),rgba(32,15,8,.96))!important;
+  box-shadow:inset 0 0 0 1px #aa612d66,0 5px 12px #0008!important;
+  font:700 .68rem Georgia,serif!important;
+}
+body .online-game .turn-change-banner{
+  top:96px!important;
+  border-radius:9px!important;
+}
+
+/* ---------- Board: flat, large, movable ---------- */
+body .game-page .board-viewport,
+body .online-game .online-game__viewport{
+  width:100%!important;
+  max-width:none!important;
+  height:calc(100dvh - 166px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+  min-height:300px!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  outline:0!important;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(120,70,34,.18),transparent 43%),
+    repeating-linear-gradient(0deg,#32190c 0 85px,#472511 86px 87px),
+    repeating-linear-gradient(90deg,transparent 0 85px,#583017 86px 87px)!important;
+  box-shadow:inset 0 0 52px #070301d9!important;
+}
+body .game-page .board-viewport::before,
+body .online-game .online-game__viewport::before{
+  background:linear-gradient(90deg,rgba(255,196,97,.035),transparent 7% 93%,rgba(255,196,97,.035))!important;
+}
+body .game-page .board-viewport::after,
+body .online-game .online-game__viewport::after{
+  background:radial-gradient(circle at 50% 47%,transparent 58%,rgba(10,4,2,.22) 84%,rgba(7,3,1,.48))!important;
+  box-shadow:none!important;
+}
+body .game-page .board,
+body .online-game .online-game__board{
+  background-image:none!important;
+}
+body .game-page .board-tile img,
+body .online-game .online-game__tile img{
+  filter:saturate(1.07) contrast(1.025) drop-shadow(0 2px 2px #0009)!important;
+}
+
+/* legal cells stay readable without covering the art */
+body .game-page .legal-cell,
+body .online-game .online-game__legal{
+  background:radial-gradient(circle,rgba(80,190,255,.30),rgba(13,112,188,.08) 68%)!important;
+  border:2px solid #4bbcff!important;
+  border-radius:4px!important;
+  box-shadow:inset 0 0 14px rgba(91,199,255,.24),0 0 11px rgba(24,149,230,.48)!important;
+}
+body .game-page .legal-cell span,
+body .online-game .online-game__legal span{
+  width:9px!important;
+  height:9px!important;
+  border:2px solid #d9f3ff!important;
+  background:#2b84b3!important;
+  box-shadow:0 0 10px #50c5ff!important;
+}
+body .game-page .positioned-tile-preview,
+body .online-game .online-game__draft-tile{
+  border:3px solid #7bd4ff!important;
+  border-radius:4px!important;
+  outline:0!important;
+  box-shadow:0 5px 10px #0009,0 0 20px #22a9ff!important;
+}
+body .game-page .preview-rotate,
+body .online-game .online-game__draft-tile b{
+  display:none!important;
+}
+
+/* ---------- Left camera stack ---------- */
+body .game-page .camera-controls,
+body .online-game .online-game__camera{
+  left:7px!important;
+  top:49%!important;
+  gap:5px!important;
+  padding:4px!important;
+  border:2px solid #6b3b1c!important;
+  border-radius:9px!important;
+  background:linear-gradient(#42210fdd,#1e0d06ee)!important;
+  box-shadow:inset 0 0 0 1px #a35e2b99,0 7px 14px #0008!important;
+}
+body .game-page .camera-button,
+body .online-game .online-game__camera button{
+  width:44px!important;
+  min-width:44px!important;
+  height:44px!important;
+  min-height:44px!important;
+  border:2px solid #7d4824!important;
+  border-radius:6px!important;
+  color:#ffe5aa!important;
+  background:linear-gradient(#56301a,#281209)!important;
+  box-shadow:inset 0 0 0 1px #b86b31,0 3px 0 #100602!important;
+  font:800 1.3rem Georgia,serif!important;
+}
+body .game-page .camera-show-moves{display:none!important}
+
+/* ---------- Bottom action dock: meeple / tile / action ---------- */
+body .game-page .turn-controls,
+body .online-game .online-game__controls{
+  height:108px!important;
+  min-height:108px!important;
+  padding:7px max(8px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important;
+  border:0!important;
+  border-top:4px solid #70401d!important;
+  border-radius:0!important;
+  background:
+    linear-gradient(180deg,#502812 0%,#321507 48%,#1d0b04 100%)!important;
+  box-shadow:inset 0 2px #a8622f,0 -9px 20px #0009!important;
+}
+body .online-game .online-game__controls{
+  grid-template-columns:70px 94px minmax(0,1fr)!important;
+  gap:7px!important;
+}
+body .game-page .turn-controls{
+  justify-content:flex-end!important;
+  align-items:center!important;
+  gap:7px!important;
+}
+
+body .online-game .online-game__meeple-count,
+body .game-page .turn-controls button:has(> svg){
+  min-width:66px!important;
+  width:66px!important;
+  height:82px!important;
+  min-height:82px!important;
+  padding:5px 3px!important;
+  border:2px solid #70401e!important;
+  border-radius:8px!important;
+  color:#fff0bd!important;
+  background:linear-gradient(#4b2815,#251007)!important;
+  box-shadow:inset 0 0 0 1px #a8632f,0 4px 9px #0008!important;
+}
+body .online-game .online-game__meeple-count{
+  grid-template-columns:1fr!important;
+  place-items:center!important;
+  gap:0!important;
+}
+body .online-game .online-game__meeple-count svg,
+body .game-page .turn-controls button:has(> svg) svg{
+  width:48px!important;
+  height:48px!important;
+  color:#1684f2!important;
+  filter:drop-shadow(0 5px 2px #063569)!important;
+}
+body .online-game .online-game__meeple-count b,
+body .game-page .turn-controls button:has(> svg) span{
+  color:#fff2c6!important;
+  font:800 .85rem Georgia,serif!important;
+}
+
+body .online-game .online-game__hand,
+body .game-page .held-tile{
+  width:92px!important;
+  height:92px!important;
+  min-height:92px!important;
+  padding:3px!important;
+  border:2px solid #80502b!important;
+  border-radius:8px!important;
+  background:linear-gradient(145deg,#5a3118,#261108)!important;
+  box-shadow:inset 0 0 0 1px #bd7739,0 5px 12px #0009!important;
+}
+body .online-game .online-game__hand img,
+body .game-page .held-tile img{
+  width:84px!important;
+  height:84px!important;
+  border:3px solid #8cd9ff!important;
+  border-radius:5px!important;
+  box-shadow:0 0 0 1px #0b568e,0 0 16px rgba(31,166,242,.62),0 5px 8px #0008!important;
+}
+body .game-page .held-tile{
+  order:-1!important;
+  margin-right:auto!important;
+}
+body .game-page .held-tile>span{display:none!important}
+
+body .online-game .online-game__actions{
+  height:82px!important;
+  min-width:0!important;
+  justify-content:stretch!important;
+  align-items:stretch!important;
+  gap:5px!important;
+}
+body .online-game .online-game__actions>button,
+body .game-page .turn-controls>button:not(:has(> svg)){
+  min-height:58px!important;
+  border:2px solid #74411f!important;
+  border-radius:8px!important;
+  padding:7px 10px!important;
+  color:#f8e6bc!important;
+  background:linear-gradient(#4b2917,#251108)!important;
+  box-shadow:inset 0 0 0 1px #a7602c,0 4px 0 #100603!important;
+  font:800 .8rem Georgia,serif!important;
+}
+body .online-game .online-game__actions .primary,
+body .game-page .turn-controls .end-turn,
+body .game-page .turn-controls .confirm-placement:not(:disabled),
+body .game-page .turn-controls .confirm-meeple{
+  flex:1 1 auto!important;
+  min-width:118px!important;
+  color:white!important;
+  text-shadow:0 2px 2px #00351b!important;
+  background:linear-gradient(180deg,var(--gp-green-hi),var(--gp-green) 55%,#05642f)!important;
+  border-color:#076c32!important;
+  box-shadow:inset 0 0 0 2px #66ef9d80,0 5px 0 #033a1b,0 9px 15px #0008!important;
+  font-size:.9rem!important;
+}
+body .online-game .online-game__actions>span{
+  align-self:center!important;
+  justify-self:center!important;
+  color:#e1c78f!important;
+  font:700 .76rem Georgia,serif!important;
+}
+
+/* ---------- Feedback / dialogs ---------- */
+body .online-game .online-game__feedback,
+body .game-page .placement-feedback,
+body .game-page .resolution-feedback{
+  bottom:116px!important;
+  border:2px solid #80502a!important;
+  border-radius:8px!important;
+  background:linear-gradient(#472515ed,#211008f4)!important;
+  box-shadow:0 8px 18px #0009!important;
+}
+body .online-game .online-game__chat,
+body .online-game .online-game__finished,
+body .game-page .game-over-panel{
+  border-radius:10px!important;
+}
+
+/* ---------- Portrait tuning ---------- */
+@media(max-width:430px){
+  body .game-page .game-header,
+  body .online-game .online-game__players{
+    padding-right:88px!important;
+  }
+  body .game-page .game-scores>span,
+  body .online-game .online-game__players>div:not(.online-game__tools){
+    min-width:94px!important;
+  }
+  body .game-page .board-viewport,
+  body .online-game .online-game__viewport{
+    height:calc(100dvh - 160px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+  }
+  body .online-game .online-game__controls{
+    grid-template-columns:62px 84px minmax(0,1fr)!important;
+    gap:5px!important;
+    padding-inline:5px!important;
+  }
+  body .online-game .online-game__meeple-count,
+  body .game-page .turn-controls button:has(> svg){
+    width:58px!important;
+    min-width:58px!important;
+    height:76px!important;
+    min-height:76px!important;
+  }
+  body .online-game .online-game__meeple-count svg,
+  body .game-page .turn-controls button:has(> svg) svg{
+    width:42px!important;
+    height:42px!important;
+  }
+  body .online-game .online-game__hand,
+  body .game-page .held-tile{
+    width:82px!important;
+    height:82px!important;
+    min-height:82px!important;
+  }
+  body .online-game .online-game__hand img,
+  body .game-page .held-tile img{
+    width:74px!important;
+    height:74px!important;
+  }
+  body .online-game .online-game__actions>button,
+  body .game-page .turn-controls>button:not(:has(> svg)){
+    padding-inline:6px!important;
+    font-size:.70rem!important;
+  }
+}
+
+@media(max-width:360px){
+  body .game-page .game-scores>span,
+  body .online-game .online-game__players>div:not(.online-game__tools){
+    min-width:86px!important;
+    padding-inline:5px!important;
+  }
+  body .online-game .online-game__controls{
+    grid-template-columns:54px 74px minmax(0,1fr)!important;
+    gap:4px!important;
+  }
+  body .online-game .online-game__meeple-count,
+  body .game-page .turn-controls button:has(> svg){
+    width:50px!important;
+    min-width:50px!important;
+  }
+  body .online-game .online-game__meeple-count svg,
+  body .game-page .turn-controls button:has(> svg) svg{
+    width:36px!important;
+    height:36px!important;
+  }
+  body .online-game .online-game__hand,
+  body .game-page .held-tile{
+    width:72px!important;
+    height:72px!important;
+    min-height:72px!important;
+  }
+  body .online-game .online-game__hand img,
+  body .game-page .held-tile img{
+    width:64px!important;
+    height:64px!important;
+  }
+  body .online-game .online-game__actions>button,
+  body .game-page .turn-controls>button:not(:has(> svg)){
+    min-width:0!important;
+    padding-inline:4px!important;
+    font-size:.63rem!important;
+  }
+}
+
+@media(max-height:700px){
+  body .game-page.game-page,
+  body .online-game.online-game{
+    padding-bottom:calc(94px + env(safe-area-inset-bottom))!important;
+  }
+  body .game-page .turn-controls,
+  body .online-game .online-game__controls{
+    height:94px!important;
+    min-height:94px!important;
+  }
+  body .game-page .board-viewport,
+  body .online-game .online-game__viewport{
+    height:calc(100dvh - 148px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+  }
+  body .online-game .online-game__hand,
+  body .game-page .held-tile{
+    width:72px!important;
+    height:72px!important;
+    min-height:72px!important;
+  }
+  body .online-game .online-game__hand img,
+  body .game-page .held-tile img{
+    width:64px!important;
+    height:64px!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  body .game-page .legal-cell,
+  body .online-game .online-game__legal{
+    animation:none!important;
+  }
+}
