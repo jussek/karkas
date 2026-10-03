@@ -1,0 +1,85 @@
+.main-menu.main-menu{
+  background-color:#1a0f09!important;
+  background-image:
+    linear-gradient(180deg,rgba(10,5,2,.03) 0%,rgba(9,4,2,.10) 48%,rgba(7,3,2,.44) 100%),
+    url('../../a/ui/royal-hall.svg')!important;
+  background-position:center!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+}
+.main-menu.main-menu::before{
+  background:
+    radial-gradient(ellipse at 50% 38%,rgba(255,197,91,.10) 0%,rgba(255,197,91,0) 38%),
+    linear-gradient(180deg,rgba(6,3,2,.02),rgba(6,3,2,.08) 58%,rgba(6,3,2,.42))!important;
+  box-shadow:inset 0 0 90px rgba(0,0,0,.22)!important;
+}
+.main-menu.main-menu::after{
+  background:radial-gradient(ellipse at center,transparent 42%,rgba(5,2,1,.30) 100%)!important;
+  box-shadow:none!important;
+}
+.main-menu .main-menu__content{
+  width:min(92vw,560px)!important;
+  display:grid!important;
+  gap:30px!important;
+  text-align:center!important;
+  transform:translateY(-5vh)!important;
+}
+.main-menu .main-menu__brand{
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  overflow:visible!important;
+}
+.main-menu .main-menu__brand h1{
+  margin:0!important;
+  color:#ffd45d!important;
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:clamp(4.25rem,18vw,7rem)!important;
+  font-weight:900!important;
+  line-height:.84!important;
+  letter-spacing:-.07em!important;
+  -webkit-text-stroke:1.25px #6e290b;
+  paint-order:stroke fill;
+  text-shadow:
+    0 2px 0 #f4a72f,
+    0 5px 0 #a84d12,
+    0 8px 0 #612307,
+    0 12px 0 #291006,
+    0 18px 30px rgba(0,0,0,.70)!important;
+  transform:rotate(-1deg)!important;
+}
+.main-menu .main-menu__primary{
+  margin-top:0!important;
+  gap:18px!important;
+}
+.main-menu .menu-action{
+  min-height:104px!important;
+  grid-template-columns:72px minmax(0,1fr)!important;
+  padding:14px 24px!important;
+  border-width:4px!important;
+  border-radius:15px!important;
+}
+.main-menu .menu-action span{
+  display:block!important;
+}
+.main-menu .menu-action b{
+  font-size:clamp(1.55rem,5.4vw,2.1rem)!important;
+  line-height:1!important;
+}
+.main-menu .menu-action svg{
+  width:50px!important;
+  height:50px!important;
+}
+@media(max-height:700px){
+  .main-menu .main-menu__content{gap:18px!important;transform:translateY(-2vh)!important}
+  .main-menu .main-menu__brand h1{font-size:clamp(3.55rem,15vw,5.4rem)!important}
+  .main-menu .menu-action{min-height:82px!important}
+}
+@media(max-width:370px){
+  .main-menu .main-menu__content{width:min(94vw,520px)!important}
+  .main-menu .menu-action{grid-template-columns:58px minmax(0,1fr)!important;padding-inline:16px!important}
+  .main-menu .menu-action svg{width:42px!important;height:42px!important}
+}
