@@ -3,6 +3,7 @@ import { OnlineIcon } from '../online/OnlineIcon';
 import { exitMainMenu } from './menuExit';
 import './mainMenu.css';
 import './mainMenuExactReference.css';
+import './mainMenuStructureFix.css';
 
 export interface MainMenuProps {
   onCreateGame: () => void;
