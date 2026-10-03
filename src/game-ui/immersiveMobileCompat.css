@@ -1,0 +1,27 @@
+/* Stage 5N mobile compatibility overrides. */
+
+.game-loading__scene {
+  animation-name: immersive-scene-float-safe !important;
+}
+
+@keyframes immersive-scene-float-safe {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -3px); }
+}
+
+/* iOS/WebKit does not benefit from fixed background attachment on full-screen app shells. */
+@supports (-webkit-touch-callout: none) {
+  .main-menu,
+  .online-browser,
+  .online-room,
+  .game-loading {
+    background-attachment: scroll !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-loading__scene {
+    animation: none !important;
+    transform: translateX(-50%) !important;
+  }
+}
