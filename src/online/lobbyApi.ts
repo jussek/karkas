@@ -25,7 +25,15 @@ export async function listPublicLobbies(): Promise<OnlineLobbySnapshot[]> {
   return (data ?? []).map((row) => convert(row));
 }
 export async function createLobby(input: CreateLobbyInput): Promise<OnlineLobbySnapshot> {
-  return enterNewLobby('create_online_lobby', { p_name: input.name?.trim() || null, p_visibility: input.visibility, p_max_players: input.maxPlayers, p_turn_timer_seconds: input.turnTimerSeconds, p_bot_fill_enabled: input.botFillEnabled, p_display_name: input.displayName?.trim() || null });
+  return enterNewLobby('create_online_lobby_with_code', {
+    p_name: input.name?.trim() || null,
+    p_visibility: input.visibility,
+    p_max_players: input.maxPlayers,
+    p_turn_timer_seconds: input.turnTimerSeconds,
+    p_bot_fill_enabled: input.botFillEnabled,
+    p_join_code: input.visibility === 'private' ? input.joinCode?.trim().toUpperCase() || null : null,
+    p_display_name: input.displayName?.trim() || null,
+  });
 }
 export async function joinLobby(lobbyId: string, displayName?: string): Promise<OnlineLobbySnapshot> { return enterNewLobby('join_online_lobby', { p_lobby_id: lobbyId, p_display_name: displayName?.trim() || null }); }
 export async function joinLobbyByCode(code: string, displayName?: string): Promise<OnlineLobbySnapshot> { return enterNewLobby('join_online_lobby_by_code', { p_code: code.trim().toUpperCase(), p_display_name: displayName?.trim() || null }); }
