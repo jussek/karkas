@@ -9,6 +9,7 @@ import { LobbyCodePad } from './LobbyCodePad';
 import { filterLobbies, onlineBrowserAvailability, type LobbyTimerFilter } from './lobbyBrowserModel';
 import './onlineBrowser.css';
 import './onlineBrowserClarity.css';
+import './screenHeaderClarity.css';
 
 const FILTERS: readonly { value: LobbyTimerFilter; label: string }[] = [{ value: 'any', label: 'Любой' }, { value: 15, label: '15 сек' }, { value: 30, label: '30 сек' }, { value: 60, label: '60 сек' }, { value: 0, label: 'Без таймера' }];
 type LoadState = 'loading' | 'loaded' | 'error';
