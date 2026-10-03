@@ -5,6 +5,7 @@ import { TILE_ASSETS } from '../tiles/tileAssets';
 import { OnlineIcon } from './OnlineIcon';
 import { CREATE_PLAYER_OPTIONS, CREATE_TIMER_OPTIONS, DEFAULT_ONLINE_LOBBY, timerLabel } from './onlineLobbyModel';
 import './onlineLobby.css';
+import './createLobbyCode.css';
 import '../referenceDetails.css';
 
 const CREATE_MAP_PREVIEW = [TILE_ASSETS[8], TILE_ASSETS[31], TILE_ASSETS[62], TILE_ASSETS[86]];
