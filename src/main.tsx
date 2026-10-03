@@ -15,7 +15,7 @@ import { GameLoadingScreen } from "./game-ui/loading/GameLoadingScreen";
 import { onlineNavigationTarget } from "./game-ui/online/onlineNavigation";
 import type { OnlineLobbySnapshot } from "./online/types";
 import type { OnlineMatch } from "./online/matchTypes";
-import { findMyActiveMatch, getMatch } from "./online/matchApi";
+import { findMyActiveMatch, leaveMyOnlineMatches, setMatchPresence } from "./online/matchApi";
 import { clearActiveMatch, loadActiveMatch, saveActiveMatch } from "./online/activeMatchPersistence";
 import { getSupabaseClient } from "./online/supabaseClient";
 import type { LocalGameConfig } from "./game/session";
@@ -31,6 +31,7 @@ import type { LocalSettings, UiMatchState } from "./game-ui/persistence/localGam
 import { configureAudio,installAudioGestureUnlock } from "./audio/gameAudio";
 import "./game-ui/referenceVisual.css";
 import "./game-ui/referenceMobilePolish.css";
+import "./game-ui/sessionLifecyclePolish.css";
 
 function browserGameId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -52,10 +53,6 @@ function onlineCriticalCards(match:OnlineMatch):string[]{return [...Object.value
 
 export type Screen = "menu" | "setup" | "lobby" | "game" | "online-browser" | "online-create" | "online-lobby" | "online-game" | "loading";
 
-/**
- * Stage 4C: rematch-конфиг генерируется в App/browser layer (не внутри игры):
- * те же players/names/colors/order и matchOptions, НОВЫЕ gameId/seed.
- */
 export function buildRematchConfig(
   previous: LocalGameConfig,
   gameId: string,
@@ -70,9 +67,6 @@ export function buildRematchConfig(
 }
 
 export function App() {
-  // Stage 4B: локальная партия сохраняется автоматически; из меню её
-  // можно продолжить. Engine/scoring/river — нетронутые, UI-слой только
-  // читает/пишет localStorage.
   const [screen, setScreen] = useState<Screen>("menu");
   const [config, setConfig] = useState<LocalGameConfig | null>(null);
   const [restoredFlow, setRestoredFlow] = useState<TurnFlowState | null>(null);
@@ -98,7 +92,7 @@ export function App() {
       const {data}=await client.auth.getSession();if(!data.session)return;
       const saved=loadActiveMatch();
       try{
-        const match=saved?await getMatch(saved.activeMatchId):await findMyActiveMatch();
+        const match=await findMyActiveMatch();
         if(cancelled)return;
         if(match){setOnlineMatch(match);saveActiveMatch({activeMatchId:match.id,lobbyId:match.lobbyId});beginLoading('online-game',onlineCriticalCards(match),'reconnect');}
         else if(saved)clearActiveMatch();
@@ -107,8 +101,28 @@ export function App() {
     return()=>{cancelled=true;};
   },[beginLoading]);
 
+  useEffect(()=>{
+    if(screen!=='online-game'||!onlineMatch||onlineMatch.status!=='playing')return;
+    let disposed=false;
+    const heartbeat=()=>{
+      if(disposed||document.visibilityState!=='visible')return;
+      void setMatchPresence(onlineMatch.id,true).catch(()=>undefined);
+    };
+    heartbeat();
+    const timer=window.setInterval(heartbeat,30000);
+    const onVisibility=()=>{if(document.visibilityState==='visible')heartbeat();};
+    document.addEventListener('visibilitychange',onVisibility);
+    return()=>{
+      disposed=true;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange',onVisibility);
+      void setMatchPresence(onlineMatch.id,false).catch(()=>undefined);
+    };
+  },[screen,onlineMatch?.id,onlineMatch?.status]);
+
   const acceptOnlineMatch=(match:OnlineMatch)=>{setOnlineMatch(match);saveActiveMatch({activeMatchId:match.id,lobbyId:match.lobbyId});beginLoading('online-game',onlineCriticalCards(match));};
-  const returnToOnlineGame=()=>{if(onlineMatch)beginLoading('online-game',onlineCriticalCards(onlineMatch),'reconnect');};
+  const returnToOnlineGame=()=>{if(onlineMatch?.status==='playing')beginLoading('online-game',onlineCriticalCards(onlineMatch),'reconnect');};
+  const leaveOnlineForLocal=()=>{clearActiveMatch();setOnlineMatch(null);void leaveMyOnlineMatches().catch(()=>undefined);};
 
   const updateSetting = (patch: Partial<LocalSettings>) => {
     setSettings((current) => {
@@ -118,7 +132,6 @@ export function App() {
     });
   };
 
-  /** Сохранение есть → сначала спрашиваем разрешение удалить старую партию. */
   const guardDestructive = (proceed: () => void) => {
     if (loadLocalGameSave() !== null) setConfirmNewGame(true);
     else proceed();
@@ -134,7 +147,7 @@ export function App() {
   };
 
   const quickGame = () => {
-    // sensible defaults: 2 local players, default names, new random gameId/seed.
+    leaveOnlineForLocal();
     const next = createLocalGameConfig({
       gameId: browserGameId(),
       seed: browserSeed(),
@@ -153,13 +166,13 @@ export function App() {
       setHasSavedGame(false);
       return;
     }
+    leaveOnlineForLocal();
     setConfig(save.config);
     setRestoredFlow(save.flow);
     setRestoredUiMatchState(save.uiMatchState);
     beginLoading('game',[save.flow.game.drawnTileDefinitionId,...Object.values(save.flow.game.board).map(tile=>tile.definitionId)].filter((id):id is string=>Boolean(id)),'reconnect');
   };
 
-  /** Stage 4C rematch: те же игроки/опции, новые id/seed; старое сохранение заменяется. */
   const rematch = () => {
     if (!config) return;
     clearLocalGameSave();
@@ -231,7 +244,7 @@ export function App() {
     return (
       <LocalLobby
         config={config}
-        onStart={() => beginLoading('game',['card-133'])}
+        onStart={() => {leaveOnlineForLocal();beginLoading('game',['card-133']);}}
         onBack={() => setScreen("setup")}
       />
     );
@@ -258,7 +271,6 @@ export function App() {
     );
   }
 
-  // Defensive fallback: without a config we cannot enter lobby/game.
   return (
     <MainMenu
       hasSavedGame={hasSavedGame}
@@ -275,7 +287,6 @@ export function App() {
 }
 
 function RoutedApp() {
-  // Stage 3E: gallery route. Full routing arrives later.
   if (typeof window !== "undefined" && window.location.pathname === "/tiles") {
     return <TileGalleryPage />;
   }

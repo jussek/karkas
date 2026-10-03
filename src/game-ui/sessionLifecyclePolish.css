@@ -1,0 +1,153 @@
+/* Stage 5I — visual refinement layered after the approved reference styles. */
+
+.main-menu__brand,
+.online-browser__header h1,
+.online-room__header h1{
+  position:relative;
+  overflow:hidden;
+}
+.main-menu__brand::after,
+.online-browser__header h1::after,
+.online-room__header h1::after{
+  content:"";
+  pointer-events:none;
+  position:absolute;
+  inset:3px;
+  border:1px solid rgba(255,224,151,.26);
+  border-radius:inherit;
+  box-shadow:inset 0 1px rgba(255,255,255,.08);
+}
+
+.lobby-card,
+.room-panel{
+  background-image:
+    linear-gradient(115deg,rgba(255,255,255,.045),transparent 24%),
+    repeating-linear-gradient(7deg,rgba(255,222,152,.018) 0 1px,transparent 1px 5px)!important;
+}
+
+.room-player{
+  transition:transform .16s ease,border-color .16s ease,background .16s ease;
+}
+.room-player:hover{
+  transform:translateY(-1px);
+  border-color:#b77b3c!important;
+}
+
+.game-scores>span,
+.online-game__players>div:not(.online-game__tools){
+  overflow:hidden;
+  position:relative;
+}
+.game-scores>span::after,
+.online-game__players>div:not(.online-game__tools)::after{
+  content:"";
+  position:absolute;
+  left:8px;
+  right:8px;
+  bottom:2px;
+  height:2px;
+  border-radius:999px;
+  background:transparent;
+}
+.game-scores>span.is-current::after,
+.online-game__players>div.is-current::after{
+  background:linear-gradient(90deg,transparent,#ffd86d 22% 78%,transparent);
+  box-shadow:0 0 8px #ffc44d;
+}
+
+.board-viewport,
+.online-game__viewport{
+  outline:1px solid rgba(220,153,74,.34);
+  outline-offset:-5px;
+}
+.board-viewport::before,
+.online-game__viewport::before{
+  content:"";
+  pointer-events:none;
+  position:absolute;
+  z-index:19;
+  inset:0;
+  background:
+    linear-gradient(90deg,rgba(255,210,122,.06),transparent 8% 92%,rgba(255,210,122,.06)),
+    linear-gradient(rgba(255,210,122,.04),transparent 8% 92%,rgba(255,210,122,.04));
+}
+
+.camera-controls,
+.online-game__camera{
+  transform:translateY(-50%) translateZ(0)!important;
+}
+.camera-button,
+.online-game__camera button{
+  transition:transform .12s ease,filter .12s ease!important;
+}
+.camera-button:active,
+.online-game__camera button:active{
+  transform:translateY(2px) scale(.97)!important;
+  filter:brightness(.92);
+}
+
+.turn-controls,
+.online-game__controls{
+  isolation:isolate;
+}
+.turn-controls::before,
+.online-game__controls::before{
+  content:"";
+  pointer-events:none;
+  position:absolute;
+  z-index:-1;
+  inset:0;
+  background:linear-gradient(110deg,rgba(255,216,133,.08),transparent 25% 75%,rgba(255,216,133,.05));
+}
+.online-game__meeple-count,
+.held-tile,
+.online-game__hand{
+  transition:transform .16s ease,filter .16s ease;
+}
+.online-game__meeple-count:not(.is-inactive){
+  filter:drop-shadow(0 5px 5px rgba(0,0,0,.35));
+}
+
+.online-game__actions .primary,
+.turn-controls .end-turn,
+.turn-controls .confirm-placement:not(:disabled),
+.turn-controls .confirm-meeple{
+  letter-spacing:.01em;
+  text-shadow:0 2px 2px rgba(0,50,20,.8)!important;
+}
+.online-game__actions .primary:active,
+.turn-controls .end-turn:active,
+.turn-controls .confirm-placement:active,
+.turn-controls .confirm-meeple:active{
+  transform:translateY(2px);
+}
+
+.game-loading__content{
+  overflow:hidden;
+}
+.game-loading__content::before{
+  content:"";
+  pointer-events:none;
+  position:absolute;
+  inset:0;
+  background:linear-gradient(125deg,rgba(255,241,190,.09),transparent 32%);
+}
+
+@media(max-width:430px){
+  .online-browser__list{padding-bottom:6px!important}
+  .room-player{min-height:51px!important}
+  .chat-panel{min-height:176px!important}
+  .online-game__players>div:not(.online-game__tools),.game-scores>span{border-radius:7px!important}
+  .board-viewport,.online-game__viewport{outline-offset:-4px}
+}
+
+@media(max-height:680px){
+  .online-room__shell{gap:7px!important}
+  .room-panel{padding:10px!important}
+  .chat-panel{min-height:160px!important}
+  .online-game__controls,.turn-controls{min-height:88px!important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .room-player,.camera-button,.online-game__camera button,.online-game__meeple-count,.held-tile,.online-game__hand{transition:none!important}
+}
