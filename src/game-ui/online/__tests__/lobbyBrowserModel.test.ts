@@ -46,6 +46,8 @@ describe('online lobby browser model', () => {
       '20261003014933_stage5i_presence_legacy_compat.sql',
       '20261003072242_lobby_player_display_name.sql',
       '20261003111221_lobby_membership_and_custom_code.sql',
+      '20261003120702_four_digit_lobby_codes.sql',
+      '20261003122201_four_digit_lobby_code_compat.sql',
     ]);
     expect(files).not.toContain('20261001150000_stage5c_real_online_lobby.sql');
     expect(files).not.toContain('20261002090000_stage5d1_authoritative_match_core.sql');

@@ -5,13 +5,13 @@ import { getSupabaseClient } from '../../online/supabaseClient';
 import type { OnlineLobbySnapshot } from '../../online/types';
 import { LobbyBrowserCard } from './LobbyBrowserCard';
 import { OnlineIcon } from './OnlineIcon';
+import { LobbyCodePad } from './LobbyCodePad';
 import { filterLobbies, onlineBrowserAvailability, type LobbyTimerFilter } from './lobbyBrowserModel';
 import './onlineBrowser.css';
 import './joinCode.css';
 
 const FILTERS: readonly { value: LobbyTimerFilter; label: string }[] = [{ value: 'any', label: 'Любой' }, { value: 15, label: '15 сек' }, { value: 30, label: '30 сек' }, { value: 60, label: '60 сек' }, { value: 0, label: 'Без таймера' }];
 type LoadState = 'loading' | 'loaded' | 'error';
-const normalizeCode=(value:string)=>value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
 const joinErrorMessage=(reason:unknown)=>{
   const text=reason&&typeof reason==='object'&&'message' in reason?String((reason as {message?:unknown}).message??''):'';
   if(text.includes('already in active lobby'))return 'Вы уже состоите в другом активном лобби.';
@@ -48,7 +48,7 @@ export function FindGamePage({ onBack, onCreate, onJoined }: { onBack: () => voi
     finally { setJoiningId(null); }
   };
   const handleCodeJoin=async()=>{
-    if(!/^[A-Z0-9]{6}$/.test(code))return;
+    if(!/^\d{4}$/.test(code))return;
     setCodePending(true);setCodeError('');
     try{onJoined(await joinLobbyByCode(code));}
     catch(error){if(import.meta.env.DEV)console.error('Не удалось войти по коду',error);setCodeError(joinErrorMessage(error));}
@@ -66,14 +66,8 @@ export function FindGamePage({ onBack, onCreate, onJoined }: { onBack: () => voi
         {state === 'loaded' && shown.map((lobby) => <LobbyBrowserCard key={lobby.id} lobby={lobby} joining={joiningId === lobby.id} onJoin={(item) => void handleJoin(item)} />)}
         {state === 'loaded' && shown.length === 0 && <div className="online-browser__state"><OnlineIcon name="map" /><h2>Сейчас нет доступных игр</h2><p>Создайте лобби или войдите в закрытое по коду.</p></div>}
       </section>
-      <footer className="online-browser__actions online-browser__actions--three"><button type="button" onClick={() => void load(true)} disabled={refreshing}><OnlineIcon name="refresh" />{refreshing ? 'Обновляем…' : 'Обновить'}</button><button type="button" className="is-code" onClick={()=>{setCodeOpen(true);setCodeError('')}}><OnlineIcon name="private"/>По коду</button><button type="button" className="is-create" onClick={onCreate}><OnlineIcon name="plus" />Создать</button></footer>
+      <footer className="online-browser__actions online-browser__actions--three"><button type="button" onClick={() => void load(true)} disabled={refreshing}><OnlineIcon name="refresh" />{refreshing ? 'Обновляем…' : 'Обновить'}</button><button type="button" className="is-code" onClick={()=>{setCode('');setCodeOpen(true);setCodeError('')}}><OnlineIcon name="private"/>По коду</button><button type="button" className="is-create" onClick={onCreate}><OnlineIcon name="plus" />Создать</button></footer>
     </div>
-    {codeOpen&&<div className="join-code-overlay" role="dialog" aria-modal="true" aria-labelledby="join-code-title" onMouseDown={(event)=>{if(event.currentTarget===event.target&&!codePending)setCodeOpen(false)}}><section className="join-code-card">
-      <button className="join-code-close" aria-label="Закрыть" disabled={codePending} onClick={()=>setCodeOpen(false)}><OnlineIcon name="close"/></button>
-      <OnlineIcon name="private"/><h2 id="join-code-title">Войти по коду</h2><p>Введите 6 символов, которые придумал создатель лобби.</p>
-      <input autoFocus value={code} inputMode="text" autoCapitalize="characters" autoComplete="off" maxLength={6} placeholder="A1B2C3" onChange={(event)=>{setCode(normalizeCode(event.target.value));setCodeError('')}} onKeyDown={(event)=>{if(event.key==='Enter')void handleCodeJoin()}}/>
-      {codeError&&<p className="join-code-error">{codeError}</p>}
-      <button className="join-code-submit" disabled={codePending||!/^[A-Z0-9]{6}$/.test(code)} onClick={()=>void handleCodeJoin()}>{codePending?'Подключаемся…':'Войти в лобби'}</button>
-    </section></div>}
+    {codeOpen&&<LobbyCodePad title="Войти по коду" description="Введите 4 цифры закрытого лобби." value={code} onChange={(value)=>{setCode(value);setCodeError('')}} onConfirm={()=>void handleCodeJoin()} onClose={()=>setCodeOpen(false)} pending={codePending} error={codeError}/>} 
   </main>;
 }
