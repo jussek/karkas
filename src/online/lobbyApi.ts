@@ -38,6 +38,9 @@ export async function setReady(lobbyId: string, ready: boolean): Promise<void> {
   });
   if (error) throw error;
 }
+export async function setLobbyDisplayName(lobbyId: string, displayName: string): Promise<OnlineLobbySnapshot> {
+  return rpcLobby('set_online_lobby_display_name', { p_lobby_id: lobbyId, p_display_name: displayName.trim() });
+}
 export async function updateLobbySettings(lobbyId: string, settings: UpdateLobbySettingsInput): Promise<OnlineLobbySnapshot> { return rpcLobby('update_online_lobby_settings', { p_lobby_id: lobbyId, p_settings: settings }); }
 export async function getLobby(lobbyId: string): Promise<OnlineLobbySnapshot> { await ensureOnlineIdentity(); const { data, error } = await requireSupabaseClient().from('online_lobbies').select(selectLobby).eq('id', lobbyId).single(); if (error) throw error; return convert(data); }
 
