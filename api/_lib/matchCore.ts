@@ -39,7 +39,7 @@ export function applyOnlineMatchIntent(flow:TurnFlowState,intent:OnlineMatchInte
   }
   throw new MatchIntentError('INVALID_INTENT','Unsupported match intent.',400);
 }
-export const SEAT_COLORS=['blue','red','green','yellow','black','purple'] as const;
+export const SEAT_COLORS=['blue','red','green','yellow','purple','black'] as const;
 export interface RosterSource {seatIndex:number;userId:string|null;displayName:string;isBot:boolean}
 export function buildEnginePlayers(matchId:string,humans:ReadonlyArray<Omit<RosterSource,'isBot'>>,maxPlayers:number,botSlots:number):{players:Player[];roster:RosterSource[]} {
  const occupied=new Map(humans.map(h=>[h.seatIndex,{...h,isBot:false}]));let bot=1;for(let seat=0;seat<maxPlayers&&bot<=botSlots;seat++)if(!occupied.has(seat))occupied.set(seat,{seatIndex:seat,userId:null,displayName:`Бот ${bot++}`,isBot:true});
