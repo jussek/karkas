@@ -1,0 +1,432 @@
+/* Stage 5L — final gameplay micro-polish. Presentation only. */
+
+:root {
+  --micro-gold: #f4cc6a;
+  --micro-gold-hi: #fff0ad;
+  --micro-blue: #42b9ff;
+  --micro-green: #20c96b;
+  --micro-wood: #3b1b0d;
+  --micro-dark: #160a05;
+}
+
+/* Replace the remaining HUD glyph feel with crisp vector-like CSS icons. */
+.game-menu-button,
+.chat-trigger,
+.camera-controls .camera-button:nth-child(3),
+.online-game__camera button:nth-child(3) {
+  position: relative;
+}
+
+.game-menu-button,
+.chat-trigger {
+  font-size: 0 !important;
+}
+
+.game-menu-button::before {
+  width: 19px;
+  height: 2px;
+  content: "";
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 -6px currentColor, 0 6px currentColor;
+}
+
+.chat-trigger::before {
+  width: 21px;
+  height: 21px;
+  content: "";
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 4.8C3 3.81 3.81 3 4.8 3h14.4c.99 0 1.8.81 1.8 1.8v10.4c0 .99-.81 1.8-1.8 1.8H9l-5.1 4v-4.17A1.8 1.8 0 0 1 3 15.2V4.8Zm4 3.1v1.8h10V7.9H7Zm0 4v1.8h7v-1.8H7Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 4.8C3 3.81 3.81 3 4.8 3h14.4c.99 0 1.8.81 1.8 1.8v10.4c0 .99-.81 1.8-1.8 1.8H9l-5.1 4v-4.17A1.8 1.8 0 0 1 3 15.2V4.8Zm4 3.1v1.8h10V7.9H7Zm0 4v1.8h7v-1.8H7Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.camera-controls .camera-button:nth-child(3),
+.online-game__camera button:nth-child(3) {
+  font-size: 0 !important;
+}
+
+.camera-controls .camera-button:nth-child(3)::before,
+.online-game__camera button:nth-child(3)::before {
+  width: 21px;
+  height: 21px;
+  content: "";
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9V4h5v2H6v3H4Zm11-5h5v5h-2V6h-3V4ZM4 15h2v3h3v2H4v-5Zm14 0h2v5h-5v-2h3v-3ZM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9V4h5v2H6v3H4Zm11-5h5v5h-2V6h-3V4ZM4 15h2v3h3v2H4v-5Zm14 0h2v5h-5v-2h3v-3ZM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* Strong, accessible interaction states. */
+.game-page button,
+.online-game button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game-page button:focus-visible,
+.online-game button:focus-visible {
+  outline: 3px solid var(--micro-gold-hi) !important;
+  outline-offset: 3px !important;
+}
+
+.game-page button:not(:disabled):active,
+.online-game button:not(:disabled):active {
+  filter: brightness(.94) saturate(.96);
+}
+
+.turn-controls button:disabled,
+.online-game__actions button:disabled,
+.camera-button:disabled,
+.online-game__camera button:disabled {
+  cursor: default;
+  filter: grayscale(.35) saturate(.55) !important;
+  opacity: .38 !important;
+}
+
+/* Current-turn emphasis: noticeable, not flashy. */
+.game-scores > span.is-current,
+.online-game__players > div.is-current {
+  animation: current-player-breathe 2.6s ease-in-out infinite;
+}
+
+.game-scores > span.is-current::before,
+.online-game__players > div.is-current::before {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 10px;
+  height: 10px;
+  content: "";
+  border: 1px solid #ffedab;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #fff9c9 0 18%, #f5c958 22% 52%, #9b581f 56% 100%);
+  box-shadow: 0 0 9px #ffd95a99, 0 1px 3px #0009;
+}
+
+/* Meeples: more like physical game pieces. */
+.online-game__meeple-count svg,
+.turn-controls button:has(> svg) svg,
+.board-meeple,
+.online-game__meeple {
+  transform-origin: 50% 78%;
+  filter:
+    drop-shadow(0 2px 0 rgb(255 255 255 / 20%))
+    drop-shadow(0 5px 2px rgb(0 0 0 / 65%))
+    drop-shadow(0 0 7px rgb(36 145 255 / 22%)) !important;
+}
+
+.online-game__meeple-count:not(.is-inactive) svg,
+.turn-controls button:has(> svg):not(:disabled) svg {
+  animation: meeple-ready 2.8s ease-in-out infinite;
+}
+
+.online-game__meeple-count,
+.turn-controls button:has(> svg) {
+  position: relative;
+  overflow: hidden;
+}
+
+.online-game__meeple-count::after,
+.turn-controls button:has(> svg)::after {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  left: 8px;
+  height: 7px;
+  content: "";
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(0 0 0 / 44%), transparent 70%);
+  filter: blur(1px);
+}
+
+/* Current tile feels like a physical piece waiting to be played. */
+.held-tile:not(.is-unplayable),
+.online-game__hand:has(img) {
+  animation: tile-in-hand-ready 2.7s ease-in-out infinite;
+}
+
+.board-tile.is-last,
+.online-game__tile.is-last {
+  animation: placed-tile-celebrate .42s cubic-bezier(.2,.8,.25,1) both !important;
+}
+
+.positioned-tile-preview,
+.online-game__draft-tile {
+  animation: tile-preview-enter .18s ease-out both !important;
+}
+
+/* Score feedback becomes a short reward burst. */
+.online-game__players em {
+  z-index: 12;
+  color: #fff5a7 !important;
+  text-shadow: 0 1px #694000, 0 0 10px #ffda52;
+  font: 900 1rem/1 Georgia, serif !important;
+  animation: score-reward-burst 1.05s cubic-bezier(.18,.72,.22,1) both !important;
+}
+
+.resolution-feedback {
+  border-color: #d8a63f !important;
+  animation: score-toast-arrive .26s ease-out both !important;
+}
+
+.turn-change-banner {
+  overflow: hidden;
+  min-width: 128px;
+  text-align: center;
+  border-color: #c88931 !important;
+  animation: turn-banner-premium 1.25s ease both !important;
+}
+
+.turn-change-banner::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 42%;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgb(255 241 177 / 24%), transparent);
+  transform: skewX(-18deg);
+  animation: banner-shine 1.25s ease both;
+}
+
+/* Main green action behaves like a real mobile-game control. */
+.online-game__actions .primary,
+.turn-controls .end-turn,
+.turn-controls .confirm-placement:not(:disabled),
+.turn-controls .confirm-meeple {
+  transform: translateZ(0);
+  transition: transform .11s ease, filter .11s ease, box-shadow .11s ease !important;
+}
+
+.online-game__actions .primary:not(:disabled):hover,
+.turn-controls .end-turn:not(:disabled):hover,
+.turn-controls .confirm-placement:not(:disabled):hover,
+.turn-controls .confirm-meeple:not(:disabled):hover {
+  filter: brightness(1.06) saturate(1.04);
+}
+
+.online-game__actions .primary:not(:disabled):active,
+.turn-controls .end-turn:not(:disabled):active,
+.turn-controls .confirm-placement:not(:disabled):active,
+.turn-controls .confirm-meeple:not(:disabled):active {
+  transform: translateY(3px) scale(.99);
+  box-shadow: inset 0 0 0 2px #69ef9c66, 0 2px #04371c, 0 5px 10px #0008 !important;
+}
+
+/* Polished target feedback. */
+.feature-meeple-target,
+.online-game__meeple-target {
+  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+}
+
+.feature-meeple-target:not(:disabled):hover,
+.online-game__meeple-target:not(:disabled):hover {
+  filter: brightness(1.12);
+  transform: scale(1.08);
+  box-shadow: 0 0 18px #ffd96f88, 0 6px 12px #0007 !important;
+}
+
+.legal-cell,
+.online-game__legal {
+  transition: filter .12s ease, transform .12s ease;
+}
+
+.legal-cell:not(:disabled):active,
+.online-game__legal:not(:disabled):active {
+  transform: scale(.94);
+}
+
+/* Game over is now a proper result screen. */
+.game-over-panel,
+.online-game__finished {
+  isolation: isolate;
+  overflow: visible !important;
+  padding-top: 48px !important;
+}
+
+.game-over-panel::before,
+.online-game__finished::before {
+  position: absolute;
+  z-index: 3;
+  top: -48px;
+  left: 50%;
+  width: 92px;
+  height: 92px;
+  content: "";
+  pointer-events: none;
+  background: url('../assets/ui/victory-crest.svg') center / contain no-repeat;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 9px 9px #0009);
+  animation: victory-crest-arrive .48s cubic-bezier(.2,.85,.28,1.15) both;
+}
+
+.game-over-panel::after,
+.online-game__finished::after {
+  position: absolute;
+  z-index: -1;
+  top: -1px;
+  right: -1px;
+  bottom: -1px;
+  left: -1px;
+  content: "";
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 50% 0, rgb(255 212 104 / 17%), transparent 32%),
+    linear-gradient(120deg, rgb(255 255 255 / 5%), transparent 28% 74%, rgb(255 220 142 / 4%));
+}
+
+.game-over-panel h2,
+.online-game__finished h2 {
+  margin-top: 0 !important;
+  color: #ffe18a !important;
+  text-align: center;
+  text-shadow: 0 2px #5b270b, 0 0 13px #e7ab3a55;
+  font: 800 1.55rem/1.05 Georgia, serif !important;
+}
+
+.final-scores {
+  gap: 7px !important;
+  padding: 0 !important;
+  list-style-position: inside;
+}
+
+.final-scores li,
+.online-game__finished p {
+  position: relative;
+  min-height: 42px;
+  border: 1px solid #82502b !important;
+  border-radius: 8px !important;
+  background: linear-gradient(90deg, rgb(255 237 190 / 8%), rgb(0 0 0 / 13%)) !important;
+  box-shadow: inset 0 1px rgb(255 240 200 / 5%);
+}
+
+.final-scores li {
+  padding: 10px 12px;
+}
+
+.final-scores li:first-child,
+.online-game__finished p.is-winner {
+  color: #fff0aa !important;
+  border-color: #d3a343 !important;
+  background: linear-gradient(90deg, rgb(225 168 51 / 22%), rgb(126 74 23 / 13%)) !important;
+  box-shadow: inset 0 0 0 1px #ffe48b24, 0 0 12px #d9a63d22;
+}
+
+.game-over-actions {
+  margin-top: 6px;
+}
+
+.game-over-actions button,
+.online-game__finished > button {
+  transition: transform .12s ease, filter .12s ease;
+}
+
+.game-over-actions button:not(:disabled):active,
+.online-game__finished > button:not(:disabled):active {
+  transform: translateY(2px);
+}
+
+/* Compact phone tuning. */
+@media (max-width: 430px) {
+  .game-scores > span.is-current::before,
+  .online-game__players > div.is-current::before {
+    width: 8px;
+    height: 8px;
+  }
+
+  .game-over-panel,
+  .online-game__finished {
+    width: min(92vw, 390px) !important;
+    padding: 44px 14px 14px !important;
+  }
+
+  .game-over-panel::before,
+  .online-game__finished::before {
+    top: -42px;
+    width: 82px;
+    height: 82px;
+  }
+}
+
+@media (max-height: 680px) {
+  .game-over-panel,
+  .online-game__finished {
+    max-height: 82dvh;
+    overflow-y: auto !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-scores > span.is-current,
+  .online-game__players > div.is-current,
+  .online-game__meeple-count:not(.is-inactive) svg,
+  .turn-controls button:has(> svg):not(:disabled) svg,
+  .held-tile:not(.is-unplayable),
+  .online-game__hand:has(img),
+  .board-tile.is-last,
+  .online-game__tile.is-last,
+  .positioned-tile-preview,
+  .online-game__draft-tile,
+  .online-game__players em,
+  .resolution-feedback,
+  .turn-change-banner,
+  .turn-change-banner::after,
+  .game-over-panel::before,
+  .online-game__finished::before {
+    animation: none !important;
+  }
+}
+
+@keyframes current-player-breathe {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+}
+
+@keyframes meeple-ready {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.025); }
+}
+
+@keyframes tile-in-hand-ready {
+  0%, 100% { transform: translateY(0); filter: brightness(1); }
+  50% { transform: translateY(-2px); filter: brightness(1.035); }
+}
+
+@keyframes placed-tile-celebrate {
+  0% { transform: scale(.9); filter: brightness(1.35) saturate(1.16); }
+  58% { transform: scale(1.045); filter: brightness(1.09); }
+  100% { transform: scale(1); filter: none; }
+}
+
+@keyframes tile-preview-enter {
+  from { opacity: .25; transform: scale(.88) translateY(4px); }
+  to { opacity: .96; transform: scale(1) translateY(0); }
+}
+
+@keyframes score-reward-burst {
+  0% { opacity: 0; transform: translateY(8px) scale(.65); }
+  22% { opacity: 1; transform: translateY(-2px) scale(1.2); }
+  65% { opacity: 1; transform: translateY(-8px) scale(1); }
+  100% { opacity: 0; transform: translateY(-19px) scale(.94); }
+}
+
+@keyframes score-toast-arrive {
+  from { opacity: 0; transform: translate(-50%, 8px) scale(.97); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+@keyframes turn-banner-premium {
+  0% { opacity: 0; transform: translate(-50%, -8px) scale(.92); }
+  16%, 72% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, 4px) scale(.98); }
+}
+
+@keyframes banner-shine {
+  0%, 12% { left: -60%; opacity: 0; }
+  32% { opacity: 1; }
+  62%, 100% { left: 120%; opacity: 0; }
+}
+
+@keyframes victory-crest-arrive {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(.65) rotate(-7deg); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1) rotate(0); }
+}
