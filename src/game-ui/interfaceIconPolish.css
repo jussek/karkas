@@ -1,0 +1,357 @@
+/* Stage 5M — unified iconography and final interface consistency. Presentation only. */
+
+.game-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1.15em;
+  height: 1.15em;
+  overflow: visible;
+  vertical-align: -0.18em;
+}
+
+.main-menu__toolbar .game-icon,
+.online-browser__header .game-icon,
+.online-room__header .game-icon,
+.online-browser__actions .game-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.create-form legend,
+.classic-map b,
+.room-toggle b,
+.panel-title,
+.label-with-icon,
+.room-code b,
+.room-code button,
+.room-chips button,
+.room-primary,
+.ready-button,
+.room-player__status,
+.online-game__chat header b {
+  align-items: center;
+  gap: 7px;
+}
+
+.create-form legend,
+.classic-map b,
+.room-toggle b,
+.panel-title,
+.label-with-icon,
+.room-code b,
+.room-code button,
+.room-chips button,
+.room-primary,
+.ready-button,
+.room-player__status,
+.online-game__chat header b {
+  display: inline-flex;
+}
+
+.create-form legend .game-icon,
+.classic-map b .game-icon,
+.room-toggle b .game-icon,
+.panel-title .game-icon,
+.label-with-icon .game-icon,
+.room-code b .game-icon,
+.room-player__status .game-icon {
+  color: #f4c861;
+}
+
+.create-form legend {
+  color: #ffe5a3 !important;
+  line-height: 1;
+}
+
+.classic-map b .game-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.room-toggle b {
+  width: max-content;
+}
+
+.room-chips button .game-icon,
+.room-code button .game-icon,
+.room-primary .game-icon,
+.ready-button .game-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.room-primary,
+.ready-button {
+  justify-content: center;
+}
+
+.room-primary:disabled .game-icon,
+.ready-button:disabled .game-icon {
+  opacity: .58;
+}
+
+.room-code b {
+  color: #ffe5a7;
+}
+
+.room-code button {
+  justify-content: center;
+}
+
+.room-player__status {
+  width: max-content;
+  max-width: 100%;
+  color: #d6c49f !important;
+  line-height: 1.1;
+}
+
+.room-player__status .game-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.room-player > .game-icon {
+  width: 30px;
+  height: 30px;
+  filter: drop-shadow(0 4px 5px rgb(0 0 0 / 45%));
+}
+
+.players-panel h2 .panel-title,
+.chat-panel h2 .panel-title {
+  color: inherit;
+}
+
+.label-with-icon {
+  color: #f0d6a5;
+  font-weight: 700;
+}
+
+.label-with-icon .game-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.lobby-card__meta .game-icon {
+  width: 14px;
+  height: 14px;
+  color: #8b541f;
+}
+
+.lobby-card__meta span {
+  align-items: center;
+  gap: 4px;
+}
+
+.lobby-card__bots {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.lobby-card__bots .game-icon {
+  width: 14px;
+  height: 14px;
+  color: #7c552d;
+}
+
+.chat-input button,
+.online-game__chat form button,
+.online-game__chat header button {
+  display: grid;
+  place-items: center;
+}
+
+.chat-input button .game-icon,
+.online-game__chat form button .game-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.online-game__chat header {
+  min-height: 38px;
+}
+
+.online-game__chat header b .game-icon {
+  color: #e8bc5b;
+  width: 18px;
+  height: 18px;
+}
+
+.online-game__chat header button {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px !important;
+  padding: 0 !important;
+}
+
+.online-game__chat header button .game-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Remove the remaining platform glyphs from gameplay without touching game logic. */
+.host-crown {
+  display: inline-grid !important;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-right: 4px !important;
+  font-size: 0 !important;
+}
+
+.host-crown::before {
+  width: 14px;
+  height: 14px;
+  content: "";
+  background: #f2c957;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 17-1-9 5 4 4-7 4 7 5-4-1 9H4Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 17-1-9 5 4 4-7 4 7 5-4-1 9H4Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  filter: drop-shadow(0 1px 1px #0008);
+}
+
+.online-game__tools .chat-trigger,
+.online-game__tools button:last-child,
+.camera-controls .camera-button:nth-child(-n+3),
+.online-game__camera button:nth-child(-n+3) {
+  font-size: 0 !important;
+}
+
+.online-game__tools .chat-trigger::before,
+.online-game__tools button:last-child::before,
+.camera-controls .camera-button:nth-child(-n+3)::before,
+.online-game__camera button:nth-child(-n+3)::before {
+  width: 21px;
+  height: 21px;
+  content: "";
+  background: currentColor;
+}
+
+.online-game__tools .chat-trigger::before {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 5h16v11H9l-5 4V5Z M8 9h8 M8 12h6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 5h16v11H9l-5 4V5Z M8 9h8 M8 12h6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.online-game__tools button:last-child::before {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5l14 14M19 5 5 19' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5l14 14M19 5 5 19' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.camera-controls .camera-button:nth-child(1)::before,
+.online-game__camera button:nth-child(1)::before {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4v16M4 12h16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4v16M4 12h16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.camera-controls .camera-button:nth-child(2)::before,
+.online-game__camera button:nth-child(2)::before {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12h14' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12h14' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.camera-controls .camera-button:nth-child(3)::before,
+.online-game__camera button:nth-child(3)::before {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9V4h5M15 4h5v5M4 15v5h5M20 15v5h-5M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9V4h5M15 4h5v5M4 15v5h5M20 15v5h-5M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.game-page .end-turn > b {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  font-size: 0;
+}
+
+.game-page .end-turn > b::before,
+.game-page .confirm-placement::before {
+  width: 17px;
+  height: 17px;
+  content: "";
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12 4 4L19 6' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12 4 4L19 6' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.game-page .confirm-placement {
+  font-size: 0 !important;
+}
+
+.game-page .confirm-placement span {
+  font-size: .95rem;
+}
+
+.game-page .replace-action {
+  font-size: 0 !important;
+}
+
+.game-page .replace-action::before {
+  width: 16px;
+  height: 16px;
+  content: "";
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 7v5h-5M19.5 12a7.5 7.5 0 1 0-2 5.2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 7v5h-5M19.5 12a7.5 7.5 0 1 0-2 5.2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.game-page .replace-action span {
+  font-size: .72rem;
+}
+
+/* Result screens: rank cards read clearly and share the same medal language. */
+.final-scores li,
+.online-game__finished p {
+  transition: transform .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.final-scores li:first-child,
+.online-game__finished p.is-winner {
+  transform: scale(1.015);
+}
+
+.online-game__finished p.is-winner span::before {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 5px;
+  content: "";
+  vertical-align: -3px;
+  background: #f2c956;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 17-1-9 5 4 4-7 4 7 5-4-1 9H4Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m4 17-1-9 5 4 4-7 4 7 5-4-1 9H4Z' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+@media (max-width: 430px) {
+  .create-form legend,
+  .room-toggle b,
+  .panel-title,
+  .label-with-icon {
+    gap: 5px;
+  }
+
+  .room-player__status .game-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .room-chips button .game-icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .online-game__tools .chat-trigger::before,
+  .online-game__tools button:last-child::before,
+  .camera-controls .camera-button:nth-child(-n+3)::before,
+  .online-game__camera button:nth-child(-n+3)::before {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .final-scores li,
+  .online-game__finished p {
+    transition: none;
+  }
+}
