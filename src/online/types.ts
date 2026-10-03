@@ -36,6 +36,7 @@ export interface CreateLobbyInput {
   turnTimerSeconds: OnlineTurnTimerSeconds;
   botFillEnabled: boolean;
   displayName?: string;
+  joinCode?: string;
 }
 export type UpdateLobbySettingsInput = Partial<Pick<CreateLobbyInput, 'name' | 'visibility' | 'maxPlayers' | 'turnTimerSeconds' | 'botFillEnabled'>>;
 
