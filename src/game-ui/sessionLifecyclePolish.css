@@ -133,12 +133,35 @@
   background:linear-gradient(125deg,rgba(255,241,190,.09),transparent 32%);
 }
 
+/* Stage 5I.1 — final reference polish for compact phones. */
+.main-menu__brand{max-width:520px;margin-inline:auto}
+.main-menu__primary{width:min(100%,500px);margin-inline:auto}
+.menu-action{transform:translateZ(0)}
+.menu-action::after{box-shadow:inset 0 0 14px rgba(255,226,150,.08)}
+.online-browser__actions,.lobby-actions{padding-bottom:max(8px,env(safe-area-inset-bottom))!important}
+.lobby-card__tiles,.classic-map__tiles{image-rendering:auto}
+.game-scores,.online-game__players{mask-image:linear-gradient(90deg,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%)}
+.game-scores>span,.online-game__players>div:not(.online-game__tools){backdrop-filter:none!important}
+.board-tile img,.online-game__tile img{filter:saturate(1.04) contrast(1.02) drop-shadow(0 2px 2px rgba(0,0,0,.55))!important}
+.turn-controls,.online-game__controls{padding-bottom:max(8px,env(safe-area-inset-bottom))!important}
+.online-game__hand img,.held-tile img{transform:translateZ(0)}
+
 @media(max-width:430px){
   .online-browser__list{padding-bottom:6px!important}
   .room-player{min-height:51px!important}
   .chat-panel{min-height:176px!important}
   .online-game__players>div:not(.online-game__tools),.game-scores>span{border-radius:7px!important}
   .board-viewport,.online-game__viewport{outline-offset:-4px}
+  .main-menu__toolbar{transform:scale(.94);transform-origin:top right}
+  .online-game__actions{min-width:0}
+  .online-game__actions .primary{flex:1 1 auto}
+}
+
+@media(max-width:390px){
+  .main-menu__brand p{max-width:260px;margin-inline:auto}
+  .online-browser__filters{scroll-snap-type:x proximity}
+  .online-browser__filters button{scroll-snap-align:center}
+  .game-scores>span,.online-game__players>div:not(.online-game__tools){min-width:84px!important}
 }
 
 @media(max-height:680px){
