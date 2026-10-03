@@ -1,0 +1,358 @@
+/* Stage 5J — final reference-detail visual pass. Presentation only. */
+
+:root{
+  --detail-gold:#f4ca67;
+  --detail-gold-soft:#ffdF92;
+  --detail-bronze:#a9652f;
+  --detail-wood-hi:#6d3819;
+  --detail-wood:#3f1e0f;
+  --detail-wood-lo:#1b0d07;
+  --detail-blue:#167be6;
+  --detail-green:#159a4e;
+}
+
+/* ---------- Shared ornamental language ---------- */
+.main-menu__brand,
+.online-browser__header h1,
+.online-room__header h1,
+.game-loading__content,
+.room-panel,
+.lobby-card,
+.turn-controls,
+.online-game__controls{
+  position:relative;
+}
+
+.main-menu__brand::before,
+.online-browser__header h1::before,
+.online-room__header h1::before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  left:7%;
+  right:7%;
+  bottom:-13px;
+  height:38px;
+  background:url('../a/ui/medieval-ornament.svg') center/100% 100% no-repeat;
+  opacity:.78;
+  pointer-events:none;
+  filter:drop-shadow(0 3px 3px rgba(0,0,0,.48));
+}
+.main-menu__brand>* ,
+.online-browser__header h1,
+.online-room__header h1{
+  position:relative;
+  z-index:1;
+}
+
+/* ---------- Main menu ---------- */
+.main-menu__content{
+  filter:drop-shadow(0 16px 26px rgba(0,0,0,.30));
+}
+.main-menu__brand{
+  overflow:visible!important;
+}
+.main-menu__brand h1{
+  background:linear-gradient(180deg,#fff3b1 0,#ffd35a 34%,#d78b21 70%,#8a3d0d 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent!important;
+  filter:drop-shadow(0 4px 0 #461706) drop-shadow(0 8px 8px rgba(0,0,0,.55));
+}
+.main-menu__brand span{
+  text-transform:uppercase;
+  font-size:.7rem!important;
+  font-weight:800;
+  opacity:.92;
+}
+.main-menu__primary{
+  perspective:900px;
+}
+.menu-action{
+  overflow:hidden!important;
+  transform:translateZ(0);
+  transition:transform .14s ease,filter .14s ease,box-shadow .14s ease!important;
+}
+.menu-action::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(110deg,rgba(255,255,255,.20),transparent 22% 72%,rgba(255,255,255,.05)),
+    radial-gradient(ellipse at 50% -20%,rgba(255,244,184,.26),transparent 54%);
+  mix-blend-mode:screen;
+}
+.menu-action:hover{filter:brightness(1.06) saturate(1.04)}
+.menu-action:active{
+  transform:translateY(4px) scale(.99);
+  box-shadow:inset 0 0 0 3px #241108,inset 0 0 0 5px rgba(255,219,135,.30),0 4px 0 #160b07,0 9px 18px rgba(0,0,0,.46)!important;
+}
+.menu-action svg{
+  filter:drop-shadow(0 4px 2px rgba(0,0,0,.46)) drop-shadow(0 0 8px rgba(255,255,255,.12))!important;
+}
+.main-menu__toolbar button[aria-pressed="false"]{
+  opacity:.62;
+  filter:saturate(.55);
+}
+
+/* ---------- Find game ---------- */
+.online-browser__header h1,
+.online-room__header h1{
+  overflow:visible!important;
+}
+.online-browser__filters{
+  box-shadow:inset 0 0 0 2px #160a05,inset 0 10px 18px rgba(255,213,135,.035),0 7px 16px #0008!important;
+}
+.online-browser__filters button{
+  position:relative;
+  overflow:hidden;
+  transition:filter .12s ease,transform .12s ease!important;
+}
+.online-browser__filters button::after{
+  content:"";
+  position:absolute;
+  inset:2px 3px auto;
+  height:1px;
+  background:rgba(255,240,198,.22);
+  pointer-events:none;
+}
+.online-browser__filters button:active{transform:translateY(1px)}
+.lobby-card{
+  overflow:hidden!important;
+  isolation:isolate;
+}
+.lobby-card::after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(108,54,18,.24),transparent 10% 90%,rgba(108,54,18,.20)),
+    repeating-linear-gradient(0deg,rgba(95,54,20,.025) 0 1px,transparent 1px 5px);
+}
+.lobby-card__title{
+  padding-bottom:3px;
+  border-bottom:1px solid rgba(104,56,22,.20);
+}
+.lobby-card__body>button{
+  position:relative;
+  overflow:hidden;
+  transition:transform .12s ease,filter .12s ease!important;
+}
+.lobby-card__body>button::after,
+.room-primary::after,
+.ready-button::after{
+  content:"";
+  position:absolute;
+  inset:2px 4px auto;
+  height:28%;
+  border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,.19),transparent);
+  pointer-events:none;
+}
+.lobby-card__body>button:active,
+.room-primary:active,
+.ready-button:active{
+  transform:translateY(2px);
+  filter:brightness(.94);
+}
+
+/* ---------- Create / lobby ---------- */
+.room-panel{
+  overflow:hidden;
+}
+.room-panel::before{
+  content:"";
+  position:absolute;
+  inset:7px;
+  border:1px solid rgba(246,198,103,.12);
+  border-radius:9px;
+  pointer-events:none;
+}
+.classic-map,
+.classic-map__tiles{
+  position:relative;
+  overflow:hidden;
+}
+.classic-map::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(125deg,rgba(255,244,190,.16),transparent 34% 70%,rgba(39,18,7,.18));
+}
+.classic-map__tiles img,
+.lobby-card__tiles img{
+  box-shadow:0 2px 4px rgba(0,0,0,.34);
+}
+.room-player{
+  box-shadow:inset 0 1px rgba(255,235,185,.055),0 2px 6px rgba(0,0,0,.22);
+}
+.room-player[aria-current="true"],
+.room-player.is-current{
+  box-shadow:inset 0 0 0 1px rgba(255,218,109,.34),0 0 14px rgba(243,184,63,.18);
+}
+.room-primary,
+.ready-button{
+  position:relative;
+  overflow:hidden;
+}
+
+/* ---------- Gameplay ---------- */
+.game-header,
+.online-game__players{
+  background:
+    linear-gradient(180deg,rgba(96,49,22,.97),rgba(40,19,10,.98)),
+    repeating-linear-gradient(90deg,rgba(255,220,151,.025) 0 1px,transparent 1px 9px)!important;
+  border-bottom:2px solid #8f5429!important;
+  box-shadow:0 5px 14px rgba(0,0,0,.43),inset 0 -1px rgba(255,210,127,.12)!important;
+}
+.game-scores>span,
+.online-game__players>div:not(.online-game__tools){
+  background:linear-gradient(180deg,rgba(78,42,22,.96),rgba(31,16,9,.97))!important;
+  border:1px solid #7c4928!important;
+  box-shadow:inset 0 1px rgba(255,235,190,.10),0 2px 5px rgba(0,0,0,.28)!important;
+}
+.game-scores>span.is-current,
+.online-game__players>div.is-current{
+  border-color:#e0a83f!important;
+  background:linear-gradient(180deg,#71411f,#34200f)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,225,139,.20),0 0 13px rgba(255,190,65,.26)!important;
+}
+.score-dot{
+  box-shadow:0 0 0 2px rgba(255,255,255,.20),0 2px 4px rgba(0,0,0,.45);
+}
+.board-viewport,
+.online-game__viewport{
+  box-shadow:inset 0 0 58px rgba(0,0,0,.54),inset 0 0 0 2px rgba(160,90,38,.28)!important;
+}
+.board-viewport::after,
+.online-game__viewport::after{
+  content:"";
+  position:absolute;
+  z-index:18;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(circle at 50% 48%,transparent 48%,rgba(13,7,4,.22) 78%,rgba(8,4,2,.50) 100%);
+}
+.camera-controls,
+.online-game__camera{
+  border:1px solid rgba(236,176,84,.34)!important;
+  border-radius:13px!important;
+  background:linear-gradient(180deg,rgba(58,28,14,.88),rgba(25,12,7,.92))!important;
+  box-shadow:inset 0 0 0 1px rgba(255,225,165,.06),0 8px 16px rgba(0,0,0,.35)!important;
+}
+.camera-button,
+.online-game__camera button{
+  border-radius:9px!important;
+}
+.turn-controls,
+.online-game__controls{
+  border-top:2px solid #8c5127!important;
+  background:
+    linear-gradient(180deg,rgba(80,39,18,.98),rgba(29,14,8,.99)),
+    repeating-linear-gradient(90deg,rgba(255,223,162,.025) 0 1px,transparent 1px 8px)!important;
+  box-shadow:0 -8px 20px rgba(0,0,0,.38),inset 0 1px rgba(255,215,137,.10)!important;
+}
+.turn-controls::after,
+.online-game__controls::after{
+  content:"";
+  position:absolute;
+  pointer-events:none;
+  top:-14px;
+  left:21%;
+  right:21%;
+  height:28px;
+  background:url('../a/ui/medieval-ornament.svg') center/100% 100% no-repeat;
+  opacity:.44;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.50));
+}
+.held-tile,
+.online-game__hand{
+  border-radius:10px!important;
+  background:linear-gradient(145deg,#5b3218,#25120a)!important;
+  border:2px solid #a46732!important;
+  box-shadow:inset 0 0 0 2px #2c1409,0 5px 12px rgba(0,0,0,.38)!important;
+}
+.held-tile img,
+.online-game__hand img{
+  border-radius:5px!important;
+  box-shadow:0 0 0 2px #d69a47,0 4px 9px rgba(0,0,0,.45)!important;
+}
+.online-game__meeple-count{
+  border-radius:10px!important;
+  background:linear-gradient(145deg,#4b2816,#211009)!important;
+  border:2px solid #85502c!important;
+  box-shadow:inset 0 0 0 1px rgba(255,220,155,.09),0 4px 10px rgba(0,0,0,.32)!important;
+}
+.legal-cell,
+.online-game__legal{
+  animation:legal-cell-breathe 1.65s ease-in-out infinite;
+}
+.online-game__actions .primary,
+.turn-controls .end-turn,
+.turn-controls .confirm-placement:not(:disabled),
+.turn-controls .confirm-meeple{
+  position:relative;
+  overflow:hidden;
+  border-color:#086630!important;
+  background:linear-gradient(180deg,#25c76b,#0a8d46 58%,#056332)!important;
+  box-shadow:inset 0 0 0 2px rgba(104,239,157,.40),0 4px 0 #043a1e,0 8px 14px rgba(0,0,0,.38)!important;
+}
+.online-game__actions .primary::after,
+.turn-controls .end-turn::after,
+.turn-controls .confirm-placement:not(:disabled)::after,
+.turn-controls .confirm-meeple::after{
+  content:"";
+  position:absolute;
+  inset:2px 4px auto;
+  height:32%;
+  border-radius:inherit;
+  background:linear-gradient(rgba(255,255,255,.20),transparent);
+  pointer-events:none;
+}
+
+/* ---------- Loading ---------- */
+.game-loading__content{
+  border-color:#91542a!important;
+  box-shadow:inset 0 0 0 2px rgba(237,181,85,.25),0 18px 45px rgba(0,0,0,.55)!important;
+}
+.game-loading__content::after{
+  content:"";
+  position:absolute;
+  left:11%;
+  right:11%;
+  top:-18px;
+  height:36px;
+  background:url('../a/ui/medieval-ornament.svg') center/100% 100% no-repeat;
+  opacity:.74;
+  pointer-events:none;
+}
+
+@keyframes legal-cell-breathe{
+  0%,100%{filter:brightness(.96);opacity:.76}
+  50%{filter:brightness(1.16);opacity:1}
+}
+
+@media(max-width:430px){
+  .main-menu__brand::before,.online-browser__header h1::before,.online-room__header h1::before{left:4%;right:4%;height:30px;bottom:-10px}
+  .main-menu__brand span{font-size:.58rem!important}
+  .menu-action{border-radius:12px!important}
+  .online-browser__filters{border-radius:10px!important}
+  .room-panel{border-radius:11px!important}
+  .turn-controls::after,.online-game__controls::after{left:15%;right:15%;top:-11px;height:22px}
+  .camera-controls,.online-game__camera{border-radius:11px!important}
+}
+
+@media(max-width:360px){
+  .main-menu__brand::before{opacity:.58}
+  .lobby-card__title{padding-bottom:2px}
+  .turn-controls::after,.online-game__controls::after{opacity:.32}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .menu-action,.online-browser__filters button,.lobby-card__body>button,.room-primary,.ready-button{transition:none!important}
+  .legal-cell,.online-game__legal{animation:none!important}
+}
