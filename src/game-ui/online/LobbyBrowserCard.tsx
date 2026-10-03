@@ -12,9 +12,9 @@ export function LobbyBrowserCard({ lobby, joining, onJoin }: { lobby: OnlineLobb
       <div className="lobby-card__title"><OnlineIcon name={lobby.players[0]?.userId === lobby.hostUserId ? 'crown' : 'meeple'} /><h2>{lobbyDisplayName(lobby)}</h2></div>
       <div className="lobby-card__meeples" aria-label={`${lobby.players.length} из ${lobby.maxPlayers} игроков`}>
         {Array.from({ length: lobby.maxPlayers }, (_, index) => <OnlineIcon key={index} name="meeple" className={index < lobby.players.length ? 'is-player' : 'is-empty'} />)}
-        <b>{lobby.players.length}/{lobby.maxPlayers}</b>{lobby.botSlots > 0 && <small>+ {lobby.botSlots} бот.</small>}
+        <b>{lobby.players.length}/{lobby.maxPlayers}</b>{lobby.botSlots > 0 && <small className="lobby-card__bots"><OnlineIcon name="bot" />+{lobby.botSlots}</small>}
       </div>
-      <div className="lobby-card__meta"><span>◷ {formatLobbyTimer(lobby.turnTimerSeconds)}</span><span><OnlineIcon name="map" /> Классическая карта</span></div>
+      <div className="lobby-card__meta"><span><OnlineIcon name="clock" />{formatLobbyTimer(lobby.turnTimerSeconds)}</span><span><OnlineIcon name="map" />Классическая карта</span></div>
       <button type="button" disabled={joining || !isLobbyJoinable(lobby)} onClick={() => onJoin(lobby)}>{lobbyJoinLabel(lobby, joining)}</button>
     </div>
   </article>;
