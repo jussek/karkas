@@ -24,6 +24,7 @@ import './lobbyIdentity.css';
 import './lobbyReferenceFinal.css';
 import './lobbyMenuV2.css';
 import './lobbyLifecycle.css';
+import './lobbyStructureV3.css';
 
 const LOBBY_MAP_PREVIEW = [TILE_ASSETS[8], TILE_ASSETS[31], TILE_ASSETS[62], TILE_ASSETS[86]];
 
