@@ -34,9 +34,16 @@ export function resolveOnlineClientConfig(env: OnlineEnvironment): OnlineClientC
 }
 
 let singleton: SupabaseClient | null | undefined;
-export function getSupabaseClient(env: OnlineEnvironment = import.meta.env as OnlineEnvironment): SupabaseClient | null {
+export function getSupabaseClient(env?: OnlineEnvironment): SupabaseClient | null {
   if (singleton !== undefined) return singleton;
-  const config = resolveOnlineClientConfig(env);
+
+  // Tests/callers that explicitly pass an environment keep the old fail-closed
+  // contract. The real browser call (no argument) gains the production-safe
+  // public fallback when Vercel did not inject VITE_* at build time.
+  const config = env === undefined
+    ? resolveOnlineClientConfig(import.meta.env as OnlineEnvironment)
+    : readOnlineEnvironment(env);
+
   singleton = config ? createClient(config.url, config.publishableKey, { auth: { persistSession: true, autoRefreshToken: true } }) : null;
   return singleton;
 }
