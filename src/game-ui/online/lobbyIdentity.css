@@ -1,0 +1,40 @@
+.online-room .room-player__identity{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 38px;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+}
+.online-room .room-player__name-input{
+  width:100%;
+  min-width:0;
+  height:38px;
+  padding:6px 9px!important;
+  font:700 .92rem Georgia,"Times New Roman",serif!important;
+}
+.online-room .room-player__name-save{
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:2px solid #376f35;
+  border-radius:8px;
+  color:#fff6d4;
+  background:linear-gradient(#2ca55c,#14723b 64%,#0d4b29);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 3px 0 #082d19,0 5px 10px rgba(0,0,0,.34);
+}
+.online-room .room-player__name-save:disabled{
+  opacity:.42;
+  filter:saturate(.45);
+  cursor:default;
+}
+.online-room .room-player__name-save svg{
+  width:19px;
+  height:19px;
+}
+@media(max-width:390px){
+  .online-room .room-player__identity{grid-template-columns:minmax(0,1fr) 36px;gap:5px}
+  .online-room .room-player__name-input,.online-room .room-player__name-save{height:36px}
+  .online-room .room-player__name-save{width:36px}
+}
