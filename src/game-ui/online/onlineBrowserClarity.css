@@ -1,0 +1,18 @@
+.online-browser .lobby-card{
+  border:2px solid rgba(214,163,91,.72)!important;
+  background:linear-gradient(145deg,#3b281c 0%,#24170f 58%,#17100b 100%)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,223,166,.10),0 12px 24px rgba(0,0,0,.42)!important;
+  backdrop-filter:none!important;
+}
+.online-browser .lobby-card::before{opacity:.28!important}
+.online-browser .lobby-card.is-private{border-color:rgba(104,176,229,.82)!important;background:linear-gradient(145deg,#29343a 0%,#1b252b 58%,#11191d 100%)!important}
+.online-browser .lobby-card__title{min-width:0!important}
+.online-browser .lobby-card__title h2{flex:1 1 auto!important;min-width:0!important;color:#fff3d2!important;text-shadow:0 1px 2px #000!important}
+.online-browser .lobby-card__title>small{flex:0 0 auto;padding:3px 6px;border:1px solid rgba(102,177,232,.55);border-radius:999px;color:#d7efff;background:#183d56;font-size:.55rem;font-weight:800;white-space:nowrap}
+.online-browser .lobby-card__meta{color:#ead7b6!important}
+.online-browser .lobby-card__body>button{border-width:2px!important}
+.online-browser .lobby-card__meeples .meeple-sprite-v4{margin-right:1px!important}
+.online-browser .lobby-card__meeples .meeple-sprite-v4.is-player{opacity:1!important;filter:drop-shadow(0 2px 1px rgba(0,0,0,.68))!important}
+.online-browser .lobby-card__meeples .meeple-sprite-v4.is-empty{opacity:.22!important;filter:grayscale(.75) brightness(.72)!important}
+.online-browser .online-browser__actions{grid-template-columns:1fr 1.18fr!important}
+.online-browser .online-browser__actions button{position:relative!important;overflow:hidden!important}

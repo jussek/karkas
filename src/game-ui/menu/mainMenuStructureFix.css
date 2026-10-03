@@ -1,0 +1,14 @@
+.main-menu .menu-action{
+  isolation:isolate!important;
+  overflow:hidden!important;
+  padding-top:16px!important;
+  padding-bottom:16px!important;
+}
+.main-menu .menu-action::after{content:none!important;display:none!important}
+.main-menu .menu-action>svg,
+.main-menu .menu-action>span{position:relative!important;z-index:2!important}
+.main-menu .menu-action span{align-self:center!important;min-width:0!important;padding:2px 0!important}
+.main-menu .menu-action b{display:block!important;line-height:1.08!important;margin:0!important}
+.main-menu .menu-action small{display:block!important;line-height:1.25!important;margin-top:3px!important;white-space:normal!important}
+.main-menu .menu-action{box-shadow:inset 0 0 0 2px rgba(255,255,255,.10),inset 0 0 0 5px rgba(255,232,180,.06),0 5px 0 #2a1409,0 11px 22px rgba(0,0,0,.50)!important}
+@media(max-height:760px){.main-menu .menu-action{padding-top:12px!important;padding-bottom:12px!important}}
