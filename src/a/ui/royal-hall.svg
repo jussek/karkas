@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#4d3d31"/><stop offset="1" stop-color="#17110d"/></linearGradient>
+    <linearGradient id="arch" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8b613a"/><stop offset=".55" stop-color="#3b281b"/><stop offset="1" stop-color="#1a120e"/></linearGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6b3c1e"/><stop offset=".48" stop-color="#3d2113"/><stop offset="1" stop-color="#1b100b"/></linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#70c9ff"/><stop offset=".56" stop-color="#c7edff"/><stop offset="1" stop-color="#e8c57c"/></linearGradient>
+    <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6fa457"/><stop offset="1" stop-color="#25442d"/></linearGradient>
+    <linearGradient id="river" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b9efff"/><stop offset=".4" stop-color="#4eb1e8"/><stop offset="1" stop-color="#155f9c"/></linearGradient>
+    <radialGradient id="fire"><stop stop-color="#fff5bb"/><stop offset=".35" stop-color="#ffc64e"/><stop offset=".75" stop-color="#e96a22"/><stop offset="1" stop-color="#9d2d12" stop-opacity="0"/></radialGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="18"/></filter>
+    <filter id="glow"><feGaussianBlur stdDeviation="7"/></filter>
+  </defs>
+
+  <rect width="1080" height="1920" fill="#120d0a"/>
+  <rect x="0" y="0" width="1080" height="1450" fill="url(#stone)"/>
+
+  <!-- grand window -->
+  <path d="M180 80h720v920H180z" fill="#100c0a" opacity=".55"/>
+  <path d="M220 155c0-150 640-150 640 0v775H220z" fill="url(#sky)" stroke="#a77a46" stroke-width="22"/>
+  <path d="M220 155c0-150 640-150 640 0" fill="none" stroke="#e1b76f" stroke-width="7" opacity=".7"/>
+  <path d="M220 700c130-130 250-170 390-95 120-115 220-104 250-75v400H220z" fill="#456e45"/>
+  <path d="M220 775c150-85 290-64 388 12 116-65 186-44 252-13v156H220z" fill="url(#hill)"/>
+  <path d="M545 560c-35 140-96 214-61 370h130c-25-155 28-233 52-370z" fill="url(#river)" opacity=".95"/>
+  <path d="M568 600c-20 105-54 180-40 280" fill="none" stroke="#e7fbff" stroke-width="14" stroke-linecap="round" opacity=".38"/>
+
+  <!-- distant castle -->
+  <g transform="translate(525 330)" fill="#d8c08a" stroke="#72492d" stroke-width="8" stroke-linejoin="round">
+    <path d="M0 300V145h58V86h64v59h52V58h76v87h58V108h72v37h60v155z"/>
+    <path d="M35 145l23-57 23 57zm69 0l18-54 19 54zm108 0l38-86 38 86zm122 0l12-46 19 46z" fill="#a93b2e"/>
+    <path d="M178 300v-76c0-38 54-38 54 0v76z" fill="#76543c"/>
+    <g fill="#6b4a34" stroke="none"><rect x="35" y="184" width="14" height="28" rx="7"/><rect x="104" y="180" width="14" height="28" rx="7"/><rect x="273" y="181" width="14" height="28" rx="7"/><rect x="350" y="180" width="14" height="28" rx="7"/></g>
+  </g>
+
+  <!-- stone columns and arch -->
+  <path d="M0 0h195v1920H0zM885 0h195v1920H885z" fill="url(#arch)"/>
+  <path d="M0 0h1080v105C870 18 740 0 540 0S210 18 0 105z" fill="#1e140e"/>
+  <path d="M65 0c110 55 123 107 123 210v830h-75V210C113 124 88 95 30 64zM1015 0c-110 55-123 107-123 210v830h75V210c0-86 25-115 83-146z" fill="#9b7148" opacity=".46"/>
+
+  <!-- royal banners -->
+  <g>
+    <path d="M65 280h104v420l-52 74-52-74z" fill="#133f88" stroke="#d5a33f" stroke-width="8"/>
+    <path d="M911 280h104v420l-52 74-52-74z" fill="#133f88" stroke="#d5a33f" stroke-width="8"/>
+    <g fill="#dcb14d"><path d="M117 397c-31-44-58 4-18 34-40 13-20 61 18 30 37 31 58-17 17-30 42-30 14-78-17-34z"/><path d="M963 397c-31-44-58 4-18 34-40 13-20 61 18 30 37 31 58-17 17-30 42-30 14-78-17-34z"/></g>
+  </g>
+
+  <!-- wall lamps -->
+  <g stroke="#2c1b10" stroke-width="10"><path d="M95 190h85v90H95zM900 190h85v90h-85z" fill="#6a4024"/><path d="M122 172h32v132h-32zM927 172h32v132h-32z" fill="#2b1c12"/></g>
+  <g><circle cx="138" cy="220" r="65" fill="url(#fire)"/><circle cx="942" cy="220" r="65" fill="url(#fire)"/><circle cx="138" cy="220" r="26" fill="#ffd36b" filter="url(#glow)"/><circle cx="942" cy="220" r="26" fill="#ffd36b" filter="url(#glow)"/></g>
+
+  <!-- shelves / interior -->
+  <g opacity=".92"><rect x="16" y="870" width="160" height="455" rx="10" fill="#25170f" stroke="#77502e" stroke-width="10"/><rect x="904" y="870" width="160" height="455" rx="10" fill="#25170f" stroke="#77502e" stroke-width="10"/>
+    <g fill="#785430"><rect x="30" y="930" width="132" height="13"/><rect x="30" y="1040" width="132" height="13"/><rect x="30" y="1150" width="132" height="13"/><rect x="918" y="930" width="132" height="13"/><rect x="918" y="1040" width="132" height="13"/><rect x="918" y="1150" width="132" height="13"/></g>
+    <g fill="#9b4c32"><rect x="45" y="890" width="20" height="40"/><rect x="80" y="884" width="27" height="46"/><rect x="120" y="895" width="18" height="35"/><rect x="928" y="887" width="20" height="43"/><rect x="965" y="892" width="27" height="38"/><rect x="1010" y="880" width="20" height="50"/></g>
+  </g>
+
+  <!-- table -->
+  <path d="M0 1385h1080v535H0z" fill="url(#wood)"/>
+  <path d="M0 1410h1080" stroke="#a1693a" stroke-width="8" opacity=".6"/>
+  <path d="M90 1490h900M35 1625h1010M70 1770h940" stroke="#2a160d" stroke-width="8" opacity=".6"/>
+  <path d="M240 1385l-75 535M520 1385l-18 535M810 1385l67 535" stroke="#8d512a" stroke-width="6" opacity=".45"/>
+
+  <!-- board tiles on table -->
+  <g transform="translate(220 1450) rotate(-5 300 180)" stroke="#3f2b17" stroke-width="6">
+    <rect x="0" y="70" width="125" height="125" rx="12" fill="#9ac65d"/><path d="M0 132h125" stroke="#dfcb83" stroke-width="20"/><circle cx="90" cy="95" r="26" fill="#3f7e3e"/>
+    <rect x="128" y="70" width="125" height="125" rx="12" fill="#8cc660"/><path d="M190 70v125" stroke="#e3d08f" stroke-width="18"/><circle cx="155" cy="100" r="28" fill="#3e843e"/>
+    <rect x="256" y="70" width="125" height="125" rx="12" fill="#8fc65b"/><path d="M256 110c52 0 74 60 125 60" stroke="#4f9bc7" stroke-width="32"/><path d="M256 110c52 0 74 60 125 60" stroke="#8dd7ee" stroke-width="6"/>
+    <rect x="128" y="198" width="125" height="125" rx="12" fill="#9bc85e"/><path d="M128 260h125" stroke="#dfc782" stroke-width="18"/><rect x="168" y="214" width="52" height="58" fill="#ba5a35"/>
+    <rect x="256" y="198" width="125" height="125" rx="12" fill="#8ec05d"/><circle cx="316" cy="248" r="38" fill="#3f7b3b"/>
+  </g>
+
+  <!-- meeple on table -->
+  <g transform="translate(720 1570)" fill="#1176dd" stroke="#073b77" stroke-width="10"><circle cx="55" cy="35" r="30"/><path d="M20 78c0-28 70-28 70 0l25 88-35 8-14-47v92H44v-92l-14 47-35-8z"/></g>
+
+  <!-- foreground candle glow -->
+  <circle cx="80" cy="1620" r="120" fill="url(#fire)" opacity=".52"/><circle cx="1010" cy="1320" r="110" fill="url(#fire)" opacity=".28"/>
+  <rect width="1080" height="1920" fill="none" stroke="#050302" stroke-width="76" opacity=".28"/>
+  <rect width="1080" height="1920" fill="url(#fire)" opacity=".025"/>
+</svg>
