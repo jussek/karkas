@@ -15,7 +15,7 @@ export function LobbyBrowserCard({ lobby, joining, onJoin }: { lobby: OnlineLobb
         <b>{lobby.players.length}/{lobby.maxPlayers}</b>{lobby.botSlots > 0 && <small className="lobby-card__bots"><OnlineIcon name="bot" />+{lobby.botSlots}</small>}
       </div>
       <div className="lobby-card__meta"><span><OnlineIcon name="clock" />{formatLobbyTimer(lobby.turnTimerSeconds)}</span><span><OnlineIcon name="map" />Классическая карта</span></div>
-      <button type="button" disabled={joining || !isLobbyJoinable(lobby)} onClick={() => onJoin(lobby)}>{lobbyJoinLabel(lobby, joining)}</button>
+      <button type="button" disabled={joining || !isLobbyJoinable(lobby)} onClick={() => onJoin(lobby)}><OnlineIcon name={joining?'refresh':'play'}/>{lobbyJoinLabel(lobby, joining)}</button>
     </div>
   </article>;
 }
