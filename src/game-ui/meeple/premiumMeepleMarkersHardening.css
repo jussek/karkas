@@ -1,0 +1,172 @@
+/* Stage 5O.1 — cascade hardening.
+   Component CSS is emitted after the global bundle in production, so the premium
+   marker reset must use explicit game-shell specificity and !important only on
+   properties that legacy component rules also own. */
+
+body .game-page .feature-meeple-target,
+body .online-game .online-game__meeple-target {
+  --meeple-marker-size: 36px;
+  --meeple-marker-hit: 54px;
+  z-index: 18 !important;
+  display: grid !important;
+  width: var(--meeple-marker-hit) !important;
+  height: var(--meeple-marker-hit) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: calc(var(--meeple-marker-hit) / -2) !important;
+  padding: 0 !important;
+  place-items: center !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  color: #f3dfaa !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body .game-page .feature-meeple-target::before,
+body .online-game .online-game__meeple-target::before {
+  width: 46px !important;
+  height: 46px !important;
+  border: 1px solid rgb(255 238 183 / 32%) !important;
+  background:
+    radial-gradient(circle, rgb(242 199 103 / 18%) 0 34%, transparent 67%),
+    radial-gradient(circle, rgb(255 236 184 / 14%), transparent 71%) !important;
+  box-shadow:
+    0 0 0 1px rgb(20 12 6 / 22%),
+    0 0 18px rgb(230 183 83 / 24%) !important;
+}
+
+body .game-page .feature-meeple-target::after,
+body .online-game .online-game__meeple-target::after {
+  width: var(--meeple-marker-size) !important;
+  height: var(--meeple-marker-size) !important;
+  border: 1px solid rgb(255 243 206 / 78%) !important;
+  background:
+    linear-gradient(145deg, rgb(255 250 226 / 34%), transparent 35%),
+    radial-gradient(circle at 48% 42%, rgb(83 66 44 / 96%) 0 42%, rgb(31 23 17 / 97%) 69%),
+    #2a1d14 !important;
+  box-shadow:
+    inset 0 0 0 2px rgb(194 148 68 / 78%),
+    inset 0 -5px 8px rgb(0 0 0 / 38%),
+    inset 0 4px 6px rgb(255 236 183 / 17%),
+    0 3px 7px rgb(0 0 0 / 56%),
+    0 0 0 1px rgb(34 20 9 / 60%) !important;
+}
+
+body .game-page .feature-meeple-target svg,
+body .online-game .online-game__meeple-target svg {
+  width: 24px !important;
+  height: 24px !important;
+  opacity: .92 !important;
+  filter:
+    drop-shadow(0 1px 0 rgb(255 255 255 / 18%))
+    drop-shadow(0 2px 2px rgb(0 0 0 / 58%)) !important;
+  transform: translateY(-.5px) scale(.84) !important;
+}
+
+body .game-page .feature-meeple-target svg path[fill="transparent"],
+body .online-game .online-game__meeple-target svg path[fill="transparent"] {
+  fill: #ead39a !important;
+  stroke: rgb(20 12 8 / 58%) !important;
+  stroke-width: 1.55px !important;
+}
+
+body .game-page .feature-meeple-target:hover:not(:disabled),
+body .game-page .feature-meeple-target:focus-visible:not(:disabled),
+body .online-game .online-game__meeple-target:hover:not(:disabled),
+body .online-game .online-game__meeple-target:focus-visible:not(:disabled) {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  filter: brightness(1.1) !important;
+  transform: scale(1.08) !important;
+}
+
+body .game-page .feature-meeple-target:hover:not(:disabled)::after,
+body .game-page .feature-meeple-target:focus-visible:not(:disabled)::after,
+body .online-game .online-game__meeple-target:hover:not(:disabled)::after,
+body .online-game .online-game__meeple-target:focus-visible:not(:disabled)::after {
+  width: 39px !important;
+  height: 39px !important;
+  box-shadow:
+    inset 0 0 0 2px rgb(225 177 86 / 92%),
+    inset 0 -5px 8px rgb(0 0 0 / 33%),
+    0 5px 11px rgb(0 0 0 / 58%),
+    0 0 18px rgb(238 194 99 / 43%),
+    0 0 0 2px rgb(255 238 188 / 22%) !important;
+}
+
+body .game-page .feature-meeple-target:hover:not(:disabled) svg,
+body .game-page .feature-meeple-target:focus-visible:not(:disabled) svg,
+body .online-game .online-game__meeple-target:hover:not(:disabled) svg,
+body .online-game .online-game__meeple-target:focus-visible:not(:disabled) svg {
+  opacity: 1 !important;
+  transform: translateY(-1px) scale(.95) !important;
+}
+
+body .game-page .feature-meeple-target:active:not(:disabled),
+body .online-game .online-game__meeple-target:active:not(:disabled) {
+  transform: scale(.96) !important;
+}
+
+@supports selector(:has(*)) {
+  body .online-game .online-game__meeple-target:has(svg path:not([fill="transparent"])) {
+    z-index: 20 !important;
+    filter: brightness(1.08) !important;
+    transform: scale(1.12) !important;
+  }
+
+  body .online-game .online-game__meeple-target:has(svg path:not([fill="transparent"]))::before {
+    width: 52px !important;
+    height: 52px !important;
+    border-color: rgb(255 236 174 / 74%) !important;
+    background: radial-gradient(circle, rgb(244 204 113 / 31%), transparent 68%) !important;
+    box-shadow:
+      0 0 0 2px rgb(230 182 80 / 27%),
+      0 0 22px rgb(247 204 109 / 48%) !important;
+    opacity: 1 !important;
+  }
+
+  body .online-game .online-game__meeple-target:has(svg path:not([fill="transparent"]))::after {
+    width: 40px !important;
+    height: 40px !important;
+    border-color: rgb(255 247 222 / 90%) !important;
+    background:
+      linear-gradient(145deg, rgb(255 255 255 / 30%), transparent 34%),
+      radial-gradient(circle at 48% 44%, #81653c, #251a12 70%) !important;
+    box-shadow:
+      inset 0 0 0 2px rgb(255 218 138 / 76%),
+      inset 0 -5px 9px rgb(0 0 0 / 35%),
+      0 5px 12px rgb(0 0 0 / 63%),
+      0 0 20px rgb(246 198 97 / 46%) !important;
+  }
+
+  body .online-game .online-game__meeple-target:has(svg path:not([fill="transparent"])) svg {
+    opacity: 1 !important;
+    transform: translateY(-1px) scale(1) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  body .game-page .feature-meeple-target,
+  body .online-game .online-game__meeple-target {
+    --meeple-marker-size: 34px;
+    --meeple-marker-hit: 52px;
+  }
+}
+
+@media (max-width: 360px) {
+  body .game-page .feature-meeple-target,
+  body .online-game .online-game__meeple-target {
+    --meeple-marker-size: 32px;
+    --meeple-marker-hit: 50px;
+  }
+
+  body .game-page .feature-meeple-target::before,
+  body .online-game .online-game__meeple-target::before {
+    width: 42px !important;
+    height: 42px !important;
+  }
+}
