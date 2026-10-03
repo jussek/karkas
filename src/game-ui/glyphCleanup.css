@@ -1,0 +1,92 @@
+/* Stage 5M.2 — remove remaining visible platform glyphs with CSS-rendered vector icons. */
+
+.rules-close {
+  display: grid;
+  place-items: center;
+  font-size: 0 !important;
+}
+
+.rules-close::before {
+  width: 21px;
+  height: 21px;
+  content: '';
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5l14 14M19 5 5 19' fill='none' stroke='black' stroke-width='2.3' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5l14 14M19 5 5 19' fill='none' stroke='black' stroke-width='2.3' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* Online END_TURN is the only primary action that is the sole action button. */
+.online-game__actions > button.primary:only-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0 !important;
+}
+
+.online-game__actions > button.primary:only-child::before {
+  width: 18px;
+  height: 18px;
+  content: '';
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12 4 4L19 6' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12 4 4L19 6' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.online-game__actions > button.primary:only-child::after {
+  content: 'Закончить ход';
+  font: 800 .9rem/1 Georgia, serif;
+}
+
+/* Hidden rotate affordances must never leak a text glyph through legacy styles. */
+.preview-rotate,
+.online-game__draft-tile b {
+  color: transparent !important;
+  font-size: 0 !important;
+}
+
+/* Refresh actions use a real spinner when busy. */
+.online-browser__actions button:disabled .game-icon,
+.room-primary:disabled .game-icon {
+  animation: ui-icon-spin .9s linear infinite;
+}
+
+/* Main menu close and online close icons should keep a danger affordance. */
+.main-menu__toolbar button:last-child .game-icon,
+.online-room__header > button:last-child .game-icon,
+.online-browser__header > button:last-child .game-icon,
+.online-game__tools button:last-child::before {
+  filter: drop-shadow(0 0 5px rgb(255 101 75 / 20%));
+}
+
+@keyframes ui-icon-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 430px) {
+  .online-game__actions > button.primary:only-child::after {
+    font-size: .72rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .online-game__actions > button.primary:only-child {
+    gap: 4px;
+  }
+
+  .online-game__actions > button.primary:only-child::before {
+    width: 15px;
+    height: 15px;
+  }
+
+  .online-game__actions > button.primary:only-child::after {
+    font-size: .63rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .online-browser__actions button:disabled .game-icon,
+  .room-primary:disabled .game-icon {
+    animation: none;
+  }
+}
