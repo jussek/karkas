@@ -44,6 +44,7 @@ describe('online lobby browser model', () => {
       '20261003012530_stage5i_match_presence_lifecycle.sql',
       '20261003012902_stage5i_departed_turn_handoff.sql',
       '20261003014933_stage5i_presence_legacy_compat.sql',
+      '20261003072242_lobby_player_display_name.sql',
     ]);
     expect(files).not.toContain('20261001150000_stage5c_real_online_lobby.sql');
     expect(files).not.toContain('20261002090000_stage5d1_authoritative_match_core.sql');
