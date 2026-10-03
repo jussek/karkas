@@ -21,6 +21,7 @@ import { playerIdentity } from '../../game/session';
 import type { LocalGameConfig } from '../../game/session';
 import { TileRenderer } from '../tiles/TileRenderer';
 import { MeepleIcon } from '../tiles/MeepleIcon';
+import { GameIcon } from '../icons/GameIcon';
 import { anchorForPlacement } from '../tiles/tileSemanticManifest';
 import { createLocalGame } from './localGameBootstrap';
 import { meepleDialogTitle, meepleTargetLabel } from './meepleDialogModel';
@@ -321,7 +322,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
           {flow.game.players.map((item, index) => (
             <span className={index === flow.game.currentPlayerIndex ? 'is-current' : ''} key={item.id}>
               <i className="score-dot" style={{ background: playerIdentity(index + 1).hex }} aria-hidden />
-              {' '}{item.name} <b>{flow.game.scores[item.id] ?? 0}</b> · {flow.game.meeples.filter((m) => m.playerId === item.id && !m.position).length} 👤
+              {' '}{item.name} <b>{flow.game.scores[item.id] ?? 0}</b> · <small className="score-meeples"><GameIcon name="meeple" />{flow.game.meeples.filter((m) => m.playerId === item.id && !m.position).length}</small>
             </span>
           ))}
         </div>
@@ -332,9 +333,9 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
               className={`turn-timer${timer.remainingSeconds <= 10 && timer.remainingSeconds > 0 ? ' is-warning' : ''}${timer.expired ? ' is-expired' : ''}`}
               role="timer"
               aria-label="Оставшееся время хода"
-            >⏱ {timer.expired ? 'Время вышло' : formatTimerRemaining(timer.remainingSeconds)}</span>
+            ><GameIcon name="clock" />{timer.expired ? 'Время вышло' : formatTimerRemaining(timer.remainingSeconds)}</span>
           )}
-          <button type="button" className="game-menu-button" aria-label="Меню игры" onClick={() => setMenuOpen(true)}>☰</button>
+          <button type="button" className="game-menu-button" aria-label="Меню игры" onClick={() => setMenuOpen(true)}><GameIcon name="menu" /></button>
         </div>
       </header>
 
@@ -404,7 +405,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
                   disabled={paused}
                   aria-label="Выбрать следующий разрешённый поворот"
                   onClick={() => {setFlow(rotatePositionedTurnTile);playGameSound('rotate');}}
-                >↻</button>}
+                ><GameIcon name="rotate" /></button>}
               </div>
             )}
             {meepleMode&&flow.game.lastPlacedTile&&legalMeeples.map(target=>{const anchor=anchorForPlacement(target),position=flow.game.lastPlacedTile!.position;return <button type="button" disabled={paused} className="feature-meeple-target" aria-label={`Выбрать место: ${meepleTargetLabel(legalMeeples,target)}`} key={key(target)} style={{left:(position.x+boardProjection.originX)*CELL+(anchor.x*CELL)/100,top:(position.y+boardProjection.originY)*CELL+(anchor.y*CELL)/100}} onClick={()=>{setMeepleDraft(target);setMeepleMode(false);setPlacementFeedback(null);}}><svg viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><MeepleIcon fill="transparent" size={28}/></svg></button>;})}
@@ -412,9 +413,9 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
         </div>
 
         <div className={`camera-controls${paused ? ' is-paused' : ''}`} aria-label="Камера доски">
-          <button type="button" className="camera-button" aria-label="Приблизить" disabled={paused} onClick={camera.zoomIn}>+</button>
-          <button type="button" className="camera-button" aria-label="Отдалить" disabled={paused} onClick={camera.zoomOut}>−</button>
-          <button type="button" className="camera-button" aria-label="Вписать доску" disabled={paused} onClick={() => camera.fitContent()}>⤢</button>
+          <button type="button" className="camera-button" aria-label="Приблизить" disabled={paused} onClick={camera.zoomIn}><GameIcon name="plus" /></button>
+          <button type="button" className="camera-button" aria-label="Отдалить" disabled={paused} onClick={camera.zoomOut}><GameIcon name="minus" /></button>
+          <button type="button" className="camera-button" aria-label="Вписать доску" disabled={paused} onClick={() => camera.fitContent()}><GameIcon name="fit" /></button>
           {flow.phase === 'TILE_IN_HAND' && (
             <button type="button" className="camera-button camera-show-moves" onClick={showLegalMoves}>Показать ходы</button>
           )}
@@ -425,8 +426,8 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
         <div className="pause-overlay" role="dialog" aria-modal="true" aria-label="Пауза">
           <section className="pause-sheet">
             <h2>Игра на паузе</h2>
-            <button type="button" onClick={togglePause}>Продолжить</button>
-            <button type="button" className="danger" onClick={exitToMenu}>Выйти в меню</button>
+            <button type="button" onClick={togglePause}><GameIcon name="play" />Продолжить</button>
+            <button type="button" className="danger" onClick={exitToMenu}><GameIcon name="home" />Выйти в меню</button>
           </section>
         </div>
       )}
@@ -451,9 +452,9 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
           )}
           <p>Сыграно ходов: {flow.game.turnNumber}</p>
           <div className="game-over-actions">
-            {onRematch && <button type="button" className="rematch-action" onClick={onRematch}>Сыграть ещё раз</button>}
-            {onNewGame && <button type="button" onClick={onNewGame}>Новая игра</button>}
-            {onExit && <button type="button" onClick={exitToMenu}>Главное меню</button>}
+            {onRematch && <button type="button" className="rematch-action" onClick={onRematch}><GameIcon name="retry" />Сыграть ещё раз</button>}
+            {onNewGame && <button type="button" onClick={onNewGame}><GameIcon name="plus" />Новая игра</button>}
+            {onExit && <button type="button" onClick={exitToMenu}><GameIcon name="home" />Главное меню</button>}
           </div>
         </section>
       )}
@@ -461,11 +462,11 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
       {menuOpen && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Меню игры">
         <section className="game-menu-sheet">
           <h2>Меню</h2>
-          <button type="button" onClick={() => setMenuOpen(false)}>Продолжить</button>
-          {!gameOver && <button type="button" aria-pressed={paused} onClick={() => { setMenuOpen(false); togglePause(); }}>Пауза</button>}
-          <button type="button" onClick={() => { setMenuOpen(false); setRulesOpen(true); }}>Правила</button>
-          {onNewGame && <button type="button" onClick={onNewGame}>Новая игра</button>}
-          {onExit && <button type="button" className="danger" onClick={() => { setMenuOpen(false); exitToMenu(); }}>Выйти в меню</button>}
+          <button type="button" onClick={() => setMenuOpen(false)}><GameIcon name="play" />Продолжить</button>
+          {!gameOver && <button type="button" aria-pressed={paused} onClick={() => { setMenuOpen(false); togglePause(); }}><GameIcon name="pause" />Пауза</button>}
+          <button type="button" onClick={() => { setMenuOpen(false); setRulesOpen(true); }}><GameIcon name="rules" />Правила</button>
+          {onNewGame && <button type="button" onClick={onNewGame}><GameIcon name="plus" />Новая игра</button>}
+          {onExit && <button type="button" className="danger" onClick={() => { setMenuOpen(false); exitToMenu(); }}><GameIcon name="home" />Выйти в меню</button>}
         </section>
       </div>}
 
@@ -473,7 +474,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
         <section className="game-menu-sheet">
           <h2>Как играть</h2>
           <p>Возьмите карту и выберите подсвеченное место. Если доступно несколько поворотов, выберите подходящий и подтвердите установку. После этого можно поставить человечка или закончить ход.</p>
-          <button type="button" onClick={() => setRulesOpen(false)}>Понятно</button>
+          <button type="button" onClick={() => setRulesOpen(false)}><GameIcon name="check" />Понятно</button>
         </section>
       </div>}
 
@@ -498,7 +499,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
         </section>
       </div>}
 
-      {skipMeepleConfirm && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Подтверждение пропуска человечка"><section className="game-menu-sheet"><h2>Закончить ход без человечка?</h2><button type="button" onClick={() => setSkipMeepleConfirm(false)}>Отмена</button><button type="button" onClick={() => { setSkipMeepleConfirm(false); endTurnAction(); }}>Закончить</button></section></div>}
+      {skipMeepleConfirm && <div className="game-menu-overlay" role="dialog" aria-modal="true" aria-label="Подтверждение пропуска человечка"><section className="game-menu-sheet"><h2>Закончить ход без человечка?</h2><button type="button" onClick={() => setSkipMeepleConfirm(false)}>Отмена</button><button type="button" onClick={() => { setSkipMeepleConfirm(false); endTurnAction(); }}><GameIcon name="check" />Закончить</button></section></div>}
 
       <section className={`turn-controls${paused ? ' is-paused' : ''}`} aria-label="Действия хода" aria-hidden={paused} inert={paused}>
         {heldId && localHandVisible(flow.phase) && <div
@@ -512,9 +513,9 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
             setPlacementFeedback(null);
             setFlow((current) => replaceUnplayableTurnTile(current));
           }}
-        >↺ <span>Заменить</span></button>}<TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={92} /><span>{flow.rotation}°</span></div>}
-        {flow.phase === 'AWAITING_DRAW' && <button type="button" className="draw-action" disabled={paused} onClick={() => setFlow(drawTurnTile)}>Взять карту</button>}
-        {flow.phase === 'TILE_POSITIONED' && <><button type="button" className="cancel-placement" disabled={paused} onClick={() => setFlow((current) => cancelPositionedTurnTile(current))}>Отмена</button><button type="button" className="confirm-placement" aria-label="Подтвердить размещение карты" disabled={paused} onClick={() => {setFlow(confirmTurnTilePlacement);playGameSound('tile');}}>✓ <span>Установить карту</span></button></>}
+        ><i className="action-icon"><GameIcon name="retry" /></i><span>Заменить</span></button>}<TileRenderer definition={getTileDefinition(heldId)} rotation={flow.rotation} size={92} /><span>{flow.rotation}°</span></div>}
+        {flow.phase === 'AWAITING_DRAW' && <button type="button" className="draw-action" disabled={paused} onClick={() => setFlow(drawTurnTile)}><i className="action-icon"><GameIcon name="map" /></i>Взять карту</button>}
+        {flow.phase === 'TILE_POSITIONED' && <><button type="button" className="cancel-placement" disabled={paused} onClick={() => setFlow((current) => cancelPositionedTurnTile(current))}>Отмена</button><button type="button" className="confirm-placement" aria-label="Подтвердить размещение карты" disabled={paused} onClick={() => {setFlow(confirmTurnTilePlacement);playGameSound('tile');}}><i className="action-icon"><GameIcon name="check" /></i><span>Установить карту</span></button></>}
         {meepleDraft ? <><button type="button" disabled={paused} onClick={() => setMeepleDraft(null)}>Отмена</button><button type="button" className="confirm-meeple" disabled={paused} onClick={() => { setFlow((current) => selectTurnMeeple(current, meepleDraft)); setMeepleDraft(null); playGameSound('meeple'); }}>Поставить человечка</button></> : ['TILE_PLACED', 'MEEPLE_SELECTION'].includes(flow.phase) && <button
           type="button"
           aria-pressed={meepleMode}
@@ -535,7 +536,7 @@ export function GamePage({ config, initialFlow, initialUiMatchState, onExit, onN
             if (legalMeeples.length > 0 && available > 0 && flow.phase === 'TILE_PLACED') { setSkipMeepleConfirm(true); return; }
             endTurnAction();
           }}
-        ><b>✓</b><span>Закончить ход</span></button>}
+        ><b><GameIcon name="check" /></b><span>Закончить ход</span></button>}
       </section>
     </main>
   );

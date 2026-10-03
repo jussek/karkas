@@ -1,0 +1,158 @@
+/* Stage 5O — local gameplay now uses the same native shared SVG controls as online. */
+
+.game-page .game-menu-button::before,
+.game-page .camera-controls .camera-button:nth-child(-n+3)::before,
+.game-page .confirm-placement::before,
+.game-page .replace-action::before,
+.game-page .end-turn > b::before {
+  display: none !important;
+  content: none !important;
+}
+
+.game-page .game-menu-button {
+  display: grid;
+  place-items: center;
+  font-size: inherit !important;
+}
+
+.game-page .game-menu-button .game-icon,
+.game-page .camera-controls .camera-button .game-icon {
+  display: block;
+  width: 21px;
+  height: 21px;
+}
+
+.game-page .turn-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.game-page .turn-timer .game-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.game-page .score-meeples {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #f0d99e;
+  font-size: .72rem;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.game-page .score-meeples .game-icon {
+  width: 13px;
+  height: 13px;
+  color: currentColor;
+}
+
+.game-page .preview-rotate .game-icon {
+  width: 19px;
+  height: 19px;
+}
+
+.game-page .action-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  font-style: normal;
+}
+
+.game-page .action-icon .game-icon,
+.game-page .end-turn > b .game-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.game-page .confirm-placement,
+.game-page .replace-action,
+.game-page .draw-action,
+.game-page .end-turn,
+.game-page .game-menu-sheet button,
+.game-page .pause-sheet button,
+.game-page .game-over-actions button {
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.game-page .confirm-placement,
+.game-page .replace-action,
+.game-page .draw-action,
+.game-page .end-turn,
+.game-page .game-menu-sheet button,
+.game-page .pause-sheet button,
+.game-page .game-over-actions button {
+  display: inline-flex;
+}
+
+.game-page .confirm-placement {
+  font-size: .95rem !important;
+}
+
+.game-page .replace-action {
+  font-size: .72rem !important;
+}
+
+.game-page .game-menu-sheet button .game-icon,
+.game-page .pause-sheet button .game-icon,
+.game-page .game-over-actions button .game-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.game-page .game-menu-sheet .danger .game-icon,
+.game-page .pause-sheet .danger .game-icon {
+  color: #ef8f72;
+}
+
+.game-page .game-over-actions .rematch-action .game-icon {
+  color: #eaffd9;
+}
+
+/* The meeple control remains the only direct SVG child styled as a physical piece. */
+.game-page .turn-controls button:has(> .game-icon) {
+  width: auto !important;
+  min-width: 58px !important;
+  height: auto !important;
+  min-height: 58px !important;
+  color: #f8e6bc !important;
+}
+
+@media (max-width: 430px) {
+  .game-page .game-menu-button .game-icon,
+  .game-page .camera-controls .camera-button .game-icon {
+    width: 19px;
+    height: 19px;
+  }
+
+  .game-page .score-meeples {
+    font-size: .65rem;
+  }
+
+  .game-page .score-meeples .game-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .game-page .action-icon,
+  .game-page .game-menu-sheet button .game-icon,
+  .game-page .pause-sheet button .game-icon,
+  .game-page .game-over-actions button .game-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 360px) {
+  .game-page .confirm-placement,
+  .game-page .replace-action,
+  .game-page .draw-action,
+  .game-page .end-turn {
+    gap: 4px;
+  }
+}

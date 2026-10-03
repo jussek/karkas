@@ -1,5 +1,5 @@
 export type GameIconName =
-  | 'search' | 'plus' | 'minus' | 'refresh' | 'back' | 'close'
+  | 'search' | 'plus' | 'minus' | 'refresh' | 'back' | 'close' | 'menu'
   | 'sound' | 'music' | 'meeple' | 'crown' | 'map' | 'clock'
   | 'check' | 'send' | 'copy' | 'bot' | 'users' | 'public' | 'private'
   | 'chat' | 'fit' | 'rotate' | 'trophy' | 'home' | 'pause' | 'play'
@@ -12,6 +12,7 @@ const paths: Record<GameIconName, string[]> = {
   refresh: ['M20 7v5h-5', 'M4 17v-5h5', 'M6.5 8a7 7 0 0 1 11.8-1L20 12', 'M4 12l1.7 5a7 7 0 0 0 11.8-1'],
   back: ['M19 12H5', 'm11 6-6 6 6 6'],
   close: ['M5 5l14 14', 'M19 5 5 19'],
+  menu: ['M5 7h14', 'M5 12h14', 'M5 17h14'],
   sound: ['M4 10v4h4l5 4V6l-5 4H4', 'M16 9a5 5 0 0 1 0 6'],
   music: ['M9 18V6l10-2v12', 'M6 18a3 2 0 1 0 6 0 3 2 0 1 0-6 0Z', 'M16 16a3 2 0 1 0 6 0 3 2 0 1 0-6 0Z'],
   meeple: ['M12 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z', 'm9 10-5 5 3 2 2-2v6h6v-6l2 2 3-2-5-5H9Z'],
