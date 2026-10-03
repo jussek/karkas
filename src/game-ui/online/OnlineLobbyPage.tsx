@@ -175,9 +175,7 @@ export function OnlineLobbyPage({
           onChange={(event) => setLobby({ ...lobby, name: event.target.value })}
           onBlur={(event) => void settings({ name: event.target.value })}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.currentTarget.blur();
-            }
+            if (event.key === 'Enter') event.currentTarget.blur();
           }}
         /> : <h1>{lobbyDisplayName(lobby)}</h1>}
         <button type="button" className="lobby-code-copy" onClick={() => void copy()} aria-label="Скопировать код лобби">
@@ -198,7 +196,6 @@ export function OnlineLobbyPage({
         <small>Классическая карта</small>
       </div>
       <div className="lobby-settings-stack">
-        <strong>Таймер на ход</strong>
         <fieldset className="lobby-timer" disabled={!host || busy || lobby.status !== 'waiting'}>
           <legend>Таймер на ход</legend>
           <div>{CREATE_TIMER_OPTIONS.map((value) => <button type="button" key={value} aria-pressed={lobby.turnTimerSeconds === value} onClick={() => void settings({ turnTimerSeconds: value })}>{timerLabel(value)}</button>)}</div>
@@ -235,37 +232,29 @@ export function OnlineLobbyPage({
             {bot ? <span className="room-player__bot"><OnlineIcon name="bot"/></span> : <span className="lobby-meeple" aria-hidden="true"/>}
             <span className="room-player__body">
               {p ? <>
-                {mine ? <div className="room-player__identity">
-                  <div className="room-player__name-wrap">
-                    <input
-                      className="room-player__name-input"
-                      aria-label="Ваше имя"
-                      value={nameDraft}
-                      maxLength={32}
-                      disabled={busy || lobby.status !== 'waiting'}
-                      onChange={(event) => setNameDraft(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault();
-                          saveName();
-                        }
-                      }}
-                    />
-                    {p.ready && <span className="room-player__ready-check" aria-label="Готов"><OnlineIcon name="check"/></span>}
-                  </div>
-                  <button
-                    type="button"
-                    className="room-player__name-save"
-                    aria-label="Сохранить имя"
-                    disabled={busy || lobby.status !== 'waiting' || !nameDraft.trim() || nameDraft.trim() === p.displayName}
-                    onClick={saveName}
-                  ><OnlineIcon name="check"/></button>
+                {mine ? <div className="room-player__label room-player__label--mine">
+                  <input
+                    className="room-player__name-input"
+                    aria-label="Ваше имя"
+                    value={nameDraft}
+                    maxLength={32}
+                    disabled={busy || lobby.status !== 'waiting'}
+                    onChange={(event) => setNameDraft(event.target.value)}
+                    onBlur={saveName}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        event.currentTarget.blur();
+                      }
+                    }}
+                  />
+                  {p.ready && <span className="room-player__ready-check" aria-label="Готов"><OnlineIcon name="check"/></span>}
                 </div> : <div className="room-player__label"><b>{p.displayName}</b>{p.ready && <span className="room-player__ready-check" aria-label="Готов"><OnlineIcon name="check"/></span>}</div>}
                 <small className="room-player__status">{p.userId === lobby.hostUserId ? <><OnlineIcon name="crown"/>Организатор</> : p.ready ? <>Готов</> : <>Не готов</>}</small>
-              </> : bot ? <><b>Бот</b><small className="room-player__status"><OnlineIcon name="bot"/>Дозаполнение</small></> : <><b>Ожидание игрока…</b><small>Свободное место</small></>}
+              </> : bot ? <><b>Бот</b><small className="room-player__status"><OnlineIcon name="bot"/>Дозаполнение</small></> : <><b>Ожидание игрока</b><small>Свободное место</small></>}
             </span>
-            <span className={`room-player__ready-state${p?.ready ? ' is-ready' : ''}${!p ? ' is-empty' : ''}`} aria-label={p?.ready ? 'Готов' : p ? 'Не готов' : 'Свободное место'}>
-              {p?.ready ? <><OnlineIcon name="check"/><em>Готов</em></> : p ? <em>Не готов</em> : <i/>}
+            <span className={`room-player__slot-state${p?.ready ? ' is-ready' : ''}${!p ? ' is-empty' : ''}`} aria-hidden="true">
+              {!p ? <i/> : p.ready ? <OnlineIcon name="check"/> : <i/>}
             </span>
           </div>;
         })}
