@@ -33,6 +33,20 @@ export function OnlineGamePage({initialMatch,onExit}:{initialMatch:OnlineMatch;o
  const refetch=useCallback(async()=>{try{acceptAuthoritative(await getMatch(match.id));setConnection('connected');}catch{setConnection('offline');setFeedback('Нет связи с сервером');}},[acceptAuthoritative,match.id]);
  useEffect(()=>{void ensureOnlineIdentity().then(setUserId).catch(()=>setFeedback('Не удалось подключиться к сетевой игре'));return subscribeToMatch(match.id,(incoming,error)=>{if(error){setFeedback('Нет связи с сервером');return;}if(incoming)acceptAuthoritative(incoming);},setConnection);},[acceptAuthoritative,match.id]);
  useEffect(()=>{const online=()=>{setConnection('reconnecting');void refetch();},offline=()=>{setConnection('offline');setFeedback('Нет связи с сервером');},visible=()=>{if(document.visibilityState==='visible'){setConnection('reconnecting');void refetch();}};window.addEventListener('online',online);window.addEventListener('offline',offline);document.addEventListener('visibilitychange',visible);return()=>{window.removeEventListener('online',online);window.removeEventListener('offline',offline);document.removeEventListener('visibilitychange',visible);};},[refetch]);
+ useEffect(()=>{
+   if(connection==='connected')return;
+   let stopped=false,running=false;
+   const poll=async()=>{
+     if(stopped||running||document.visibilityState==='hidden')return;
+     running=true;
+     try{const fresh=await getMatch(match.id);if(!stopped)acceptAuthoritative(fresh);}
+     catch{if(!stopped)setFeedback('Нет связи с сервером');}
+     finally{running=false;}
+   };
+   void poll();
+   const timer=window.setInterval(()=>void poll(),2500);
+   return()=>{stopped=true;window.clearInterval(timer);};
+ },[acceptAuthoritative,connection,match.id]);
  const snapshot=match.snapshot,activeId=currentPlayerId(match),botTurn=activeId?.startsWith('bot:')??false,myTurn=activeId===userId,statusFinished=match.status==='finished'||snapshot.flow.phase==='GAME_OVER';
  const available=availableMeeples(match,userId);
  const rankedPlayers=useMemo(()=>snapshot.game.players.map((player,index)=>({player,index,score:snapshot.game.scores[player.id]??player.score??0})).sort((a,b)=>b.score-a.score||a.index-b.index),[snapshot.game.players,snapshot.game.scores]);

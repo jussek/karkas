@@ -72,6 +72,38 @@ export function OnlineLobbyPage({ lobbyId, initialLobby, onExit, onMatch }: { lo
 
   useEffect(() => { if (nearBottom.current) chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' }); }, [messages]);
 
+  // Realtime can be unavailable on some mobile networks/browsers. Keep a small
+  // HTTP polling fallback so lobby state (especially "in_game") still advances.
+  useEffect(() => {
+    let stopped = false;
+    let running = false;
+    const poll = async () => {
+      if (stopped || running || document.visibilityState === 'hidden') return;
+      running = true;
+      try {
+        const fresh = await getLobby(lobbyId);
+        if (!stopped) {
+          setLobby(fresh);
+          setError((current) => current === 'Связь с лобби прервана.' ? '' : current);
+        }
+      } catch {
+        // The Realtime subscription may still be healthy; avoid replacing a
+        // useful UI state with a transient polling error.
+      } finally {
+        running = false;
+      }
+    };
+    void poll();
+    const timer = window.setInterval(() => void poll(), 3000);
+    const onVisible = () => { if (document.visibilityState === 'visible') void poll(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [lobbyId]);
+
   const me = currentLobbyPlayer(lobby, userId);
   const host = isLobbyHost(lobby, userId);
   const startReason = startBlockReason(lobby, userId);
