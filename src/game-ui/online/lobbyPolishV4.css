@@ -1,0 +1,201 @@
+/* Lobby V4 — clean portrait proportions based on production screenshots. */
+body .lobby-menu-v2.online-room .lobby-shell{
+  gap:8px!important;
+  padding:max(7px,env(safe-area-inset-top)) 7px max(10px,env(safe-area-inset-bottom))!important;
+}
+body .lobby-menu-v2 .lobby-reference-header{
+  min-height:60px!important;
+  grid-template-columns:46px minmax(0,1fr) 46px!important;
+  gap:7px!important;
+}
+body .lobby-menu-v2 .lobby-reference-header>button{
+  width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;
+}
+body .lobby-menu-v2 .lobby-reference-header__title{min-height:56px!important;gap:2px!important}
+body .lobby-menu-v2 .lobby-reference-header h1,
+body .lobby-menu-v2 .lobby-title-editor{
+  height:40px!important;min-height:40px!important;
+  padding:5px 10px!important;
+  border-radius:10px!important;
+  font-size:1.06rem!important;line-height:28px!important;
+}
+body .lobby-menu-v2 .lobby-code-copy{height:16px!important;min-height:16px!important;font-size:.62rem!important;line-height:16px!important}
+
+/* Settings align to one consistent baseline. */
+body .lobby-menu-v2 .lobby-menu-settings{
+  grid-template-columns:112px minmax(0,1fr)!important;
+  gap:10px!important;
+  padding:9px!important;
+  border-radius:12px!important;
+}
+body .lobby-menu-v2 .lobby-map-card{grid-template-rows:19px 88px 17px!important;gap:3px!important}
+body .lobby-menu-v2 .lobby-map-preview{height:88px!important;min-height:88px!important;border-radius:8px!important}
+body .lobby-menu-v2 .lobby-map-card>strong,
+body .lobby-menu-v2 .lobby-timer legend{
+  font-size:.70rem!important;line-height:18px!important;
+}
+body .lobby-menu-v2 .lobby-map-card>small{font-size:.50rem!important;line-height:15px!important}
+body .lobby-menu-v2 .lobby-settings-stack{grid-template-rows:auto auto!important;gap:9px!important}
+body .lobby-menu-v2 .lobby-timer{grid-template-rows:19px 38px!important;gap:4px!important}
+body .lobby-menu-v2 .lobby-timer>div{height:38px!important;gap:4px!important}
+body .lobby-menu-v2 .lobby-timer button{
+  height:38px!important;min-height:38px!important;
+  border-radius:7px!important;font-size:.56rem!important;
+}
+body .lobby-menu-v2 .lobby-settings-bottom{
+  height:auto!important;
+  grid-template-columns:minmax(56px,.75fr) minmax(64px,.90fr) minmax(104px,1.35fr)!important;
+  align-items:end!important;gap:5px!important;
+}
+body .lobby-menu-v2 .lobby-settings-bottom label{
+  grid-template-rows:15px 36px!important;gap:3px!important;
+  font-size:.54rem!important;line-height:15px!important;
+}
+body .lobby-menu-v2 .lobby-settings-bottom select,
+body .lobby-menu-v2 .lobby-settings-bottom button{
+  height:36px!important;min-height:36px!important;
+  border-radius:7px!important;font-size:.56rem!important;
+}
+body .lobby-menu-v2 .lobby-visibility{height:36px!important;gap:4px!important}
+
+/* Player rows: no clipped sprites and no oversized empty seats. */
+body .lobby-menu-v2 .lobby-reference-players{
+  padding:9px!important;border-radius:12px!important;
+}
+body .lobby-menu-v2 .lobby-reference-players>h2{
+  min-height:28px!important;height:28px!important;
+  margin:0 0 6px!important;line-height:28px!important;
+}
+body .lobby-menu-v2 .room-players{gap:5px!important}
+body .lobby-menu-v2 .room-player{
+  box-sizing:border-box!important;
+  height:50px!important;min-height:50px!important;
+  grid-template-columns:25px 34px minmax(0,1fr) 25px!important;
+  align-items:center!important;
+  gap:6px!important;
+  padding:4px 6px!important;
+  overflow:hidden!important;
+  border-radius:9px!important;
+}
+body .lobby-menu-v2 .room-player__seat-number{
+  width:24px!important;height:32px!important;
+  border-radius:6px!important;font-size:.64rem!important;
+}
+body .lobby-menu-v2 .lobby-meeple{display:none!important}
+body .lobby-menu-v2 .lobby-seat-meeple{
+  width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;
+  align-self:center!important;justify-self:center!important;
+  filter:drop-shadow(0 2px 1px rgba(0,0,0,.65))!important;
+}
+body .lobby-menu-v2 .room-player__bot{
+  width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;
+}
+body .lobby-menu-v2 .room-player__bot svg{width:21px!important;height:21px!important}
+body .lobby-menu-v2 .room-player__body{
+  height:38px!important;
+  display:grid!important;grid-template-rows:21px 15px!important;
+  align-content:center!important;justify-content:stretch!important;
+}
+body .lobby-menu-v2 .room-player__label{height:21px!important;line-height:21px!important}
+body .lobby-menu-v2 .room-player__body>b,
+body .lobby-menu-v2 .room-player__label b,
+body .lobby-menu-v2 .room-player__name-input{
+  font-size:.72rem!important;line-height:21px!important;
+}
+body .lobby-menu-v2 .room-player__name-input{height:21px!important;min-height:21px!important}
+body .lobby-menu-v2 .room-player__status,
+body .lobby-menu-v2 .room-player__body>small{
+  min-height:15px!important;height:15px!important;
+  font-size:.49rem!important;line-height:15px!important;
+}
+body .lobby-menu-v2 .room-player__slot-state{
+  width:23px!important;height:23px!important;justify-self:center!important;
+}
+
+/* Chat remains useful without occupying half the screen when empty. */
+body .lobby-menu-v2 .lobby-reference-chat{
+  min-height:132px!important;
+  max-height:154px!important;
+  padding:9px!important;
+  grid-template-rows:25px minmax(48px,1fr) 38px!important;
+  gap:5px!important;
+  border-radius:12px!important;
+}
+body .lobby-menu-v2 .lobby-reference-chat h2{
+  height:25px!important;line-height:25px!important;font-size:.86rem!important;
+}
+body .lobby-menu-v2 .lobby-reference-chat .chat-messages{
+  min-height:48px!important;max-height:70px!important;
+}
+body .lobby-menu-v2 .lobby-reference-chat .chat-input{
+  height:38px!important;grid-template-columns:minmax(0,1fr) 42px!important;gap:6px!important;
+}
+body .lobby-menu-v2 .lobby-reference-chat .chat-input input,
+body .lobby-menu-v2 .lobby-reference-chat .chat-input button{
+  height:38px!important;min-height:38px!important;border-radius:7px!important;
+}
+
+/* Start reason gets its own row; buttons can never overlap it. */
+body .lobby-menu-v2 .lobby-reference-actions{
+  box-sizing:border-box!important;
+  min-height:58px!important;height:auto!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,.92fr) minmax(0,1.38fr)!important;
+  grid-template-rows:auto 50px!important;
+  align-items:stretch!important;
+  gap:5px 7px!important;
+  padding:6px!important;
+  border-radius:11px!important;
+}
+body .lobby-menu-v2 .lobby-reference-actions .lobby-start-note{
+  grid-column:1/-1!important;
+  grid-row:1!important;
+  min-height:0!important;
+  margin:0!important;padding:0 4px!important;
+  color:#dcc9a7!important;
+  font:700 .50rem/1.15 Georgia,"Times New Roman",serif!important;
+  text-align:center!important;
+  white-space:normal!important;
+}
+body .lobby-menu-v2 .lobby-reference-actions .lobby-start-wrap{
+  grid-column:1!important;grid-row:2!important;
+  min-width:0!important;height:50px!important;
+  display:grid!important;
+}
+body .lobby-menu-v2 .lobby-reference-actions .ready-button{
+  grid-column:2!important;grid-row:2!important;
+  width:100%!important;height:50px!important;min-height:50px!important;
+  align-self:stretch!important;
+}
+body .lobby-menu-v2 .lobby-reference-actions .room-primary{
+  width:100%!important;height:50px!important;min-height:50px!important;
+}
+body .lobby-menu-v2 .lobby-reference-actions .ready-button,
+body .lobby-menu-v2 .lobby-reference-actions .room-primary{
+  margin:0!important;padding:6px 8px!important;
+  border-radius:9px!important;
+  font-size:.74rem!important;line-height:1.05!important;
+}
+body .lobby-menu-v2 .lobby-reference-actions .ready-button svg,
+body .lobby-menu-v2 .lobby-reference-actions .room-primary svg{
+  width:18px!important;height:18px!important;
+}
+body .lobby-menu-v2 .lobby-reference-actions.is-guest{
+  grid-template-columns:1fr!important;
+  grid-template-rows:auto 50px!important;
+}
+body .lobby-menu-v2 .lobby-reference-actions.is-guest .ready-button{grid-column:1!important}
+
+@media(max-width:390px){
+  body .lobby-menu-v2 .lobby-menu-settings{grid-template-columns:102px minmax(0,1fr)!important;gap:7px!important;padding:8px!important}
+  body .lobby-menu-v2 .lobby-map-card{grid-template-rows:18px 80px 15px!important}
+  body .lobby-menu-v2 .lobby-map-preview{height:80px!important;min-height:80px!important}
+  body .lobby-menu-v2 .lobby-settings-bottom{grid-template-columns:minmax(52px,.72fr) minmax(58px,.88fr) minmax(94px,1.4fr)!important;gap:4px!important}
+  body .lobby-menu-v2 .lobby-settings-bottom select,
+  body .lobby-menu-v2 .lobby-settings-bottom button{font-size:.51rem!important;padding-inline:3px!important}
+  body .lobby-menu-v2 .room-player{grid-template-columns:23px 31px minmax(0,1fr) 23px!important;gap:5px!important}
+  body .lobby-menu-v2 .lobby-seat-meeple{width:28px!important;height:28px!important;min-width:28px!important;min-height:28px!important}
+  body .lobby-menu-v2 .lobby-reference-actions{grid-template-columns:minmax(0,.88fr) minmax(0,1.42fr)!important}
+  body .lobby-menu-v2 .lobby-reference-actions .ready-button,
+  body .lobby-menu-v2 .lobby-reference-actions .room-primary{font-size:.69rem!important}
+}

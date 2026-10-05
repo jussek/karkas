@@ -8,6 +8,7 @@ import type { OnlineMatch } from '../../online/matchTypes';
 import type { OnlineLobbyMessage, OnlineLobbySnapshot } from '../../online/types';
 import { TILE_ASSETS } from '../tiles/tileAssets';
 import { OnlineIcon } from './OnlineIcon';
+import { MeepleSprite } from './MeepleSprite';
 import {
   CREATE_PLAYER_OPTIONS,
   CREATE_TIMER_OPTIONS,
@@ -25,6 +26,7 @@ import './lobbyReferenceFinal.css';
 import './lobbyMenuV2.css';
 import './lobbyLifecycle.css';
 import './lobbyStructureV3.css';
+import './lobbyPolishV4.css';
 
 const LOBBY_MAP_PREVIEW = [TILE_ASSETS[8], TILE_ASSETS[31], TILE_ASSETS[62], TILE_ASSETS[86]];
 
@@ -189,7 +191,7 @@ export function OnlineLobbyPage({ lobbyId, initialLobby, onExit, onMatch }: { lo
         const seatColor = SEAT_COLORS[seat] ?? 'black';
         return <div className={`room-player seat-${seatColor}${p?.ready ? ' is-ready' : ''}${mine ? ' is-mine' : ''}`} key={seat}>
           <span className="room-player__seat-number" aria-hidden="true">{seat + 1}</span>
-          {bot ? <span className="room-player__bot"><OnlineIcon name="bot"/></span> : <span className="lobby-meeple" aria-hidden="true"/>}
+          {bot ? <span className="room-player__bot"><OnlineIcon name="bot"/></span> : <MeepleSprite className="lobby-seat-meeple" color={seatColor} size={32}/>} 
           <span className="room-player__body">{p ? <>{mine ? <div className="room-player__label room-player__label--mine"><input className="room-player__name-input" aria-label="Ваше имя" value={nameDraft} maxLength={32} disabled={busy || lobby.status !== 'waiting'} onChange={(event) => setNameDraft(event.target.value)} onBlur={saveName} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); } }}/>{p.ready && <span className="room-player__ready-check" aria-label="Готов"><OnlineIcon name="check"/></span>}</div> : <div className="room-player__label"><b>{p.displayName}</b>{p.ready && <span className="room-player__ready-check" aria-label="Готов"><OnlineIcon name="check"/></span>}</div>}<small className="room-player__status">{p.userId === lobby.hostUserId ? <><OnlineIcon name="crown"/>Организатор</> : p.ready ? <>Готов</> : <>Не готов</>}</small></> : bot ? <><b>Бот</b><small className="room-player__status"><OnlineIcon name="bot"/>Дозаполнение</small></> : <><b>Ожидание игрока</b><small>Свободное место</small></>}</span>
           <span className={`room-player__slot-state${p?.ready ? ' is-ready' : ''}${!p ? ' is-empty' : ''}`} aria-hidden="true">{!p ? <i/> : p.ready ? <OnlineIcon name="check"/> : <i/>}</span>
         </div>;
@@ -199,7 +201,7 @@ export function OnlineLobbyPage({ lobbyId, initialLobby, onExit, onMatch }: { lo
     <section className="room-panel chat-panel lobby-reference-chat"><h2><span className="panel-title"><OnlineIcon name="chat"/>Чат лобби</span></h2><div className="chat-messages" ref={chatRef} onScroll={(event) => { const element = event.currentTarget; nearBottom.current = element.scrollHeight - element.scrollTop - element.clientHeight < 48; }}>{messages.map((message) => <p className={message.userId === userId ? 'is-own' : ''} key={message.id}><b>{message.displayName}</b><span>{message.body}</span><time>{new Date(message.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}</time></p>)}</div><div className="chat-input"><input value={body} maxLength={280} placeholder="Написать сообщение…" onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') send(); }}/><button aria-label="Отправить" disabled={!validateChatBody(body) || busy} onClick={send}><OnlineIcon name="send"/></button></div></section>
 
     {error && <p className="room-error">{error}</p>}
-    <footer className="lobby-actions lobby-reference-actions">{host ? <div className="lobby-start-wrap"><button className="room-primary" disabled={!!startReason || busy} onClick={() => void mutate(async () => setLobby(await startLobby(lobbyId)))}><OnlineIcon name="play"/>Начать игру</button>{startReason && <small>{startReason}</small>}</div> : <p>Ожидание организатора</p>}<button className={`ready-button${me?.ready ? ' is-ready' : ''}`} aria-pressed={Boolean(me?.ready)} disabled={!me || lobby.status !== 'waiting' || busy} onClick={() => void mutate(() => setReady(lobbyId, !me?.ready))}><OnlineIcon name={me?.ready ? 'close' : 'check'}/>{me?.ready ? 'Не готов' : 'Готов'}</button></footer>
+    <footer className={`lobby-actions lobby-reference-actions${host?' is-host':' is-guest'}`}>{host&&startReason&&<p className="lobby-start-note">{startReason}</p>}{!host&&<p className="lobby-start-note">Ожидание организатора</p>}{host&&<div className="lobby-start-wrap"><button className="room-primary" disabled={!!startReason || busy} onClick={() => void mutate(async () => setLobby(await startLobby(lobbyId)))}><OnlineIcon name="play"/>Начать игру</button></div>}<button className={`ready-button${me?.ready ? ' is-ready' : ''}`} aria-pressed={Boolean(me?.ready)} disabled={!me || lobby.status !== 'waiting' || busy} onClick={() => void mutate(() => setReady(lobbyId, !me?.ready))}><OnlineIcon name={me?.ready ? 'close' : 'check'}/>{me?.ready ? 'Не готов' : 'Готов'}</button></footer>
   </div>
   {lobby.status === 'starting' && <div className="lobby-starting-overlay" role="status" aria-live="polite"><section><span className="online-browser__spinner"/><h2>Игра запускается</h2><p>Подготовка сетевой партии…</p></section></div>}
   </main>;
