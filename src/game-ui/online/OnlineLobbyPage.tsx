@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { ensureOnlineIdentity } from '../../online/auth';
-import { listLobbyMessages, mergeLobbyMessages, sendLobbyMessage } from '../../online/chatApi';
 import { getLobby, leaveLobby, setLobbyDisplayName, setReady, startLobby, updateLobbySettings } from '../../online/lobbyApi';
-import { subscribeToLobby, subscribeToLobbyMessages } from '../../online/realtime';
+import { subscribeToLobby } from '../../online/realtime';
 import { getMatchByLobby, startOnlineMatch } from '../../online/matchApi';
 import type { OnlineMatch } from '../../online/matchTypes';
-import type { OnlineLobbyMessage, OnlineLobbySnapshot } from '../../online/types';
+import type { OnlineLobbySnapshot } from '../../online/types';
 import { TILE_ASSETS } from '../tiles/tileAssets';
 import { OnlineIcon } from './OnlineIcon';
 import { MeepleSprite } from './MeepleSprite';
@@ -17,7 +16,6 @@ import {
   isLobbyHost,
   startBlockReason,
   timerLabel,
-  validateChatBody,
 } from './onlineLobbyModel';
 import { lobbyDisplayName } from './lobbyBrowserModel';
 import './onlineLobby.css';
@@ -33,46 +31,34 @@ const LOBBY_MAP_PREVIEW = [TILE_ASSETS[8], TILE_ASSETS[31], TILE_ASSETS[62], TIL
 export function OnlineLobbyPage({ lobbyId, initialLobby, onExit, onMatch }: { lobbyId: string; initialLobby: OnlineLobbySnapshot; onExit: () => void; onMatch: (match: OnlineMatch) => void; }) {
   const [lobby, setLobby] = useState(initialLobby);
   const [userId, setUserId] = useState('');
-  const [messages, setMessages] = useState<OnlineLobbyMessage[]>([]);
-  const [body, setBody] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
-  const chatRef = useRef<HTMLDivElement>(null);
-  const nearBottom = useRef(true);
   const materializing = useRef(false);
   const closedHandled = useRef(false);
 
   useEffect(() => {
     let active = true;
     let stopLobby = () => {};
-    let stopChat = () => {};
     (async () => {
       try {
         const id = await ensureOnlineIdentity();
         const fresh = await getLobby(lobbyId);
-        const initial = await listLobbyMessages(lobbyId);
         if (!active) return;
         setUserId(id);
         setLobby(fresh);
-        setMessages(initial);
         stopLobby = subscribeToLobby(lobbyId, (next, reason) => {
           if (next) setLobby(next);
           if (reason) setError('Связь с лобби прервана.');
-        });
-        stopChat = subscribeToLobbyMessages(lobbyId, (next, reason) => {
-          if (!reason) setMessages((current) => mergeLobbyMessages(current, next));
         });
       } catch (reason) {
         if (import.meta.env.DEV) console.error(reason);
         if (active) setError('Не удалось подключиться к лобби.');
       }
     })();
-    return () => { active = false; stopLobby(); stopChat(); };
+    return () => { active = false; stopLobby(); };
   }, [lobbyId]);
-
-  useEffect(() => { if (nearBottom.current) chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' }); }, [messages]);
 
   // Realtime can be unavailable on some mobile networks/browsers. Keep a small
   // HTTP polling fallback so lobby state (especially "in_game") still advances.
@@ -149,10 +135,6 @@ export function OnlineLobbyPage({ lobbyId, initialLobby, onExit, onMatch }: { lo
     if (!me || !value || value === me.displayName || lobby.status !== 'waiting' || busy) return;
     void mutate(async () => { setLobby(await setLobbyDisplayName(lobbyId, value)); });
   };
-  const send = () => {
-    const value = validateChatBody(body); if (!value) return;
-    void mutate(async () => { await sendLobbyMessage(lobbyId, value); setBody(''); });
-  };
   const copy = async () => {
     try { await navigator.clipboard?.writeText(lobby.code); setCopied(true); setTimeout(() => setCopied(false), 1400); }
     catch { setError('Не удалось скопировать код.'); }
@@ -197,8 +179,6 @@ export function OnlineLobbyPage({ lobbyId, initialLobby, onExit, onMatch }: { lo
         </div>;
       })}</div>
     </section>
-
-    <section className="room-panel chat-panel lobby-reference-chat"><h2><span className="panel-title"><OnlineIcon name="chat"/>Чат лобби</span></h2><div className="chat-messages" ref={chatRef} onScroll={(event) => { const element = event.currentTarget; nearBottom.current = element.scrollHeight - element.scrollTop - element.clientHeight < 48; }}>{messages.map((message) => <p className={message.userId === userId ? 'is-own' : ''} key={message.id}><b>{message.displayName}</b><span>{message.body}</span><time>{new Date(message.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}</time></p>)}</div><div className="chat-input"><input value={body} maxLength={280} placeholder="Написать сообщение…" onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') send(); }}/><button aria-label="Отправить" disabled={!validateChatBody(body) || busy} onClick={send}><OnlineIcon name="send"/></button></div></section>
 
     {error && <p className="room-error">{error}</p>}
     <footer className={`lobby-actions lobby-reference-actions${host?' is-host':' is-guest'}`}>{host&&startReason&&<p className="lobby-start-note">{startReason}</p>}{!host&&<p className="lobby-start-note">Ожидание организатора</p>}{host&&<div className="lobby-start-wrap"><button className="room-primary" disabled={!!startReason || busy} onClick={() => void mutate(async () => setLobby(await startLobby(lobbyId)))}><OnlineIcon name="play"/>Начать игру</button></div>}<button className={`ready-button${me?.ready ? ' is-ready' : ''}`} aria-pressed={Boolean(me?.ready)} disabled={!me || lobby.status !== 'waiting' || busy} onClick={() => void mutate(() => setReady(lobbyId, !me?.ready))}><OnlineIcon name={me?.ready ? 'close' : 'check'}/>{me?.ready ? 'Не готов' : 'Готов'}</button></footer>

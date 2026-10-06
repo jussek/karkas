@@ -382,3 +382,37 @@ body .lobby-menu-v2 .lobby-reference-actions .room-primary{
     min-height:32px!important;
   }
 }
+
+
+/* V4.2 — chat removed; compact settings stay pinned to the top of the card. */
+body .lobby-menu-v2 .lobby-reference-chat{display:none!important}
+
+body .lobby-menu-v2 .lobby-menu-settings{
+  align-items:start!important;
+}
+body .lobby-menu-v2 .lobby-settings-stack{
+  align-self:start!important;
+  align-content:start!important;
+  grid-template-rows:max-content max-content!important;
+  gap:4px!important;
+}
+body .lobby-menu-v2 .lobby-timer{
+  align-self:start!important;
+  margin:0!important;
+}
+body .lobby-menu-v2 .lobby-settings-bottom{
+  align-self:start!important;
+  margin:0!important;
+}
+
+/* With no chat, reserve only the fixed action bar area. */
+body .lobby-menu-v2.online-room{
+  scroll-padding-bottom:88px!important;
+}
+body .lobby-menu-v2.online-room .lobby-shell{
+  padding-bottom:calc(88px + env(safe-area-inset-bottom))!important;
+}
+
+@media(max-height:780px){
+  body .lobby-menu-v2 .lobby-settings-stack{gap:3px!important}
+}
