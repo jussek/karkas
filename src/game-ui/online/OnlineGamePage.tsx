@@ -23,6 +23,7 @@ import './onlineGamePolishV4.css';
 import './onlineGamePolishV5.css';
 import './onlineGamePolishV6.css';
 import './onlineGamePolishV7.css';
+import './onlineGamePolishV8.css';
 
 const CELL=86,PADDING=2,TOTAL_TILE_COUNT=143;
 const targetKey=(target:MeeplePlacement)=>`${target.featureType}:${target.edge??'center'}`;
@@ -85,13 +86,13 @@ export function OnlineGamePage({initialMatch,onExit}:{initialMatch:OnlineMatch;o
  const endTurn=()=>{const safety=shouldPromptSkipMeeple(snapshot.derived.legalMeeplePlacements.length,available,drafts.meepleDraft);if(safety==='blocked'){setFeedback('Сначала поставьте человечка или отмените выбор.');return;}if(safety==='prompt'){setSkipConfirm(true);return;}void send({type:'END_TURN'});};
  const playerName=snapshot.game.players.find(p=>p.id===activeId)?.name??'—';
  const handVisible=Boolean(snapshot.game.drawnTileDefinitionId&&onlineHandVisible(snapshot.flow.phase,Boolean(drafts.tileDraft)));
- return <main className="online-game online-game--v2 online-game--v3 online-game--v4 online-game--v5 online-game--v6 online-game--v7">
+ return <main className="online-game online-game--v2 online-game--v3 online-game--v4 online-game--v5 online-game--v6 online-game--v7 online-game--v8">
   <header className="online-game__topbar">
    <div className="online-game__left-tools">
     <button className="chat-trigger" aria-label="Открыть чат" aria-pressed={chatOpen} onClick={()=>setChatOpen(value=>!value)}><SimpleChatGlyph/></button>
     <span className="online-game__deck-count" title="Карт осталось"><GameIcon name="map"/><b>{remainingTiles}</b></span>
    </div>
-   <section className={`online-game__players count-${Math.min(Math.max(hudPlayers.length,1),6)}`} aria-label="Игроки и свободные миплы">{hudPlayers.map(({player:p,index,score})=><div className={`online-game__player-card${index===snapshot.game.currentPlayerIndex?' is-current':''}`} key={p.id}><span className="online-game__player-name"><strong>{index===0&&<span className="host-crown" title="Хозяин лобби"><GameIcon name="crown"/></span>}{p.name}</strong></span><span className="online-game__player-stats"><span className="online-game__player-score"><MeepleSprite className="online-game__score-meeple" color={p.color} size={16}/><b>{score}</b><small>очк.</small></span><span className="online-game__player-free" title="Свободные миплы"><MeepleSprite color={p.color} size={10}/><b>{availableMeeples(match,p.id)}</b></span></span>{deltas[p.id]&&<em>+{deltas[p.id]}</em>}</div>)}</section>
+   <section className={`online-game__players count-${Math.min(Math.max(hudPlayers.length,1),6)}`} aria-label="Игроки, очки и свободные миплы">{hudPlayers.map(({player:p,index,score})=><article className={`online-game__player-card color-${p.color}${index===snapshot.game.currentPlayerIndex?' is-current':''}`} key={p.id} title={p.name}><div className="online-game__player-head"><span className="online-game__player-color-dot" aria-hidden="true"/><strong>{p.name}</strong>{index===0&&<span className="host-crown" title="Хозяин лобби"><GameIcon name="crown"/></span>}</div><div className="online-game__player-row"><span className="online-game__player-score" title="Очки"><b>{score}</b><small>очк.</small></span><span className="online-game__player-free" title="Свободные миплы"><MeepleSprite color={p.color} size={11}/><b>{availableMeeples(match,p.id)}</b></span></div>{deltas[p.id]&&<em>+{deltas[p.id]}</em>}</article>)}</section>
    <div className="online-game__top-actions"><button className="online-game__exit" aria-label="Выйти из игры" onClick={exitGame}><GameIcon name="close"/></button></div>
   </header>
   <OnlineTurnHud deadline={statusFinished?null:match.turnDeadlineAt} label={statusFinished?'Игра окончена':botTurn?'Бот думает…':myTurn?'Ваш ход':`Ход: ${playerName}`} connection={connection} onExpired={requestPump}/>{turnNotice&&<div className="turn-change-banner" role="status">{turnNotice}</div>}
