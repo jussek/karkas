@@ -1,0 +1,274 @@
+/* V9 — top-two leaderboard + expandable full ranking + compact meeple chip. */
+body .online-game.online-game--v9{
+  --hud-blue:#2e8cff;
+  --hud-red:#f34a43;
+  --hud-green:#36c765;
+  --hud-yellow:#f2be39;
+  --hud-purple:#a66cff;
+  --hud-black:#777;
+}
+
+/* Two readable leaders + a ranking button. */
+body .online-game.online-game--v9 .online-game__topbar{
+  grid-template-columns:44px minmax(0,1fr) 44px!important;
+  gap:5px!important;
+}
+body .online-game.online-game--v9 .online-game__leaders{
+  box-sizing:border-box!important;
+  width:100%!important;height:60px!important;min-width:0!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px!important;
+  gap:4px!important;
+  overflow:hidden!important;
+}
+body .online-game.online-game--v9 .online-game__leader-card{
+  --player-accent:#8b6848;
+  box-sizing:border-box!important;
+  position:relative!important;
+  min-width:0!important;height:58px!important;
+  display:grid!important;
+  grid-template-columns:18px minmax(0,1fr)!important;
+  grid-template-rows:25px 21px!important;
+  gap:1px 5px!important;
+  padding:5px 6px!important;
+  overflow:hidden!important;
+  border:1px solid #7e4b2b!important;
+  border-top:3px solid var(--player-accent)!important;
+  border-radius:10px!important;
+  background:linear-gradient(180deg,rgba(102,54,29,.985),rgba(43,22,13,.995))!important;
+  box-shadow:inset 0 1px rgba(255,240,205,.08),0 2px 6px rgba(0,0,0,.45)!important;
+}
+body .online-game.online-game--v9 .online-game__leader-card.color-blue,
+body .online-game.online-game--v9 .online-game__ranking-panel .color-blue{--player-accent:var(--hud-blue)}
+body .online-game.online-game--v9 .online-game__leader-card.color-red,
+body .online-game.online-game--v9 .online-game__ranking-panel .color-red{--player-accent:var(--hud-red)}
+body .online-game.online-game--v9 .online-game__leader-card.color-green,
+body .online-game.online-game--v9 .online-game__ranking-panel .color-green{--player-accent:var(--hud-green)}
+body .online-game.online-game--v9 .online-game__leader-card.color-yellow,
+body .online-game.online-game--v9 .online-game__ranking-panel .color-yellow{--player-accent:var(--hud-yellow)}
+body .online-game.online-game--v9 .online-game__leader-card.color-purple,
+body .online-game.online-game--v9 .online-game__ranking-panel .color-purple{--player-accent:var(--hud-purple)}
+body .online-game.online-game--v9 .online-game__leader-card.color-black,
+body .online-game.online-game--v9 .online-game__ranking-panel .color-black{--player-accent:var(--hud-black)}
+body .online-game.online-game--v9 .online-game__leader-card.is-current{
+  border-color:#e8b64c!important;
+  border-top-color:var(--player-accent)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,232,158,.16),0 0 8px rgba(232,174,55,.30),0 2px 6px rgba(0,0,0,.46)!important;
+}
+body .online-game.online-game--v9 .online-game__leader-rank{
+  grid-row:1/3!important;
+  align-self:center!important;justify-self:center!important;
+  width:18px!important;height:18px!important;
+  display:grid!important;place-items:center!important;
+  border:1px solid rgba(226,174,89,.52)!important;
+  border-radius:999px!important;
+  color:#ffe5a0!important;
+  background:rgba(28,14,9,.62)!important;
+  font:900 .55rem/1 Inter,system-ui,sans-serif!important;
+}
+body .online-game.online-game--v9 .online-game__leader-name{
+  min-width:0!important;height:24px!important;
+  display:grid!important;
+  grid-template-columns:7px minmax(0,1fr) auto!important;
+  align-items:center!important;gap:3px!important;
+  overflow:hidden!important;
+}
+body .online-game.online-game--v9 .online-game__leader-dot{
+  width:7px!important;height:7px!important;
+  border-radius:999px!important;background:var(--player-accent)!important;
+}
+body .online-game.online-game--v9 .online-game__leader-name>strong{
+  min-width:0!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+  color:#fff0cf!important;
+  font:800 .64rem/1 Georgia,"Times New Roman",serif!important;
+}
+body .online-game.online-game--v9 .online-game__leader-stats{
+  min-width:0!important;height:20px!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:4px!important;
+}
+body .online-game.online-game--v9 .online-game__leader-stats>span:first-child{
+  min-width:0!important;display:flex!important;align-items:baseline!important;gap:2px!important;white-space:nowrap!important;
+}
+body .online-game.online-game--v9 .online-game__leader-stats b{
+  color:#ffe4a1!important;font:900 .75rem/1 Inter,system-ui,sans-serif!important;
+}
+body .online-game.online-game--v9 .online-game__leader-stats small{
+  color:#cbb48c!important;font:700 .39rem/1 Inter,system-ui,sans-serif!important;
+}
+body .online-game.online-game--v9 .online-game__leader-free{
+  flex:0 0 auto!important;
+  min-width:29px!important;height:19px!important;
+  padding:0 4px!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:2px!important;
+  border:1px solid rgba(197,137,72,.52)!important;border-radius:999px!important;
+  background:rgba(28,14,9,.84)!important;color:#fff0b8!important;
+}
+body .online-game.online-game--v9 .online-game__leader-free>.meeple-sprite-v4{
+  width:10px!important;height:10px!important;min-width:10px!important;min-height:10px!important;
+}
+body .online-game.online-game--v9 .online-game__leader-card>em{
+  position:absolute!important;right:3px!important;top:2px!important;
+  color:#ffe57f!important;font:900 .48rem/1 Inter,system-ui,sans-serif!important;
+}
+
+/* Ranking toggle */
+body .online-game.online-game--v9 .online-game__ranking-toggle{
+  box-sizing:border-box!important;
+  width:36px!important;height:58px!important;min-width:36px!important;
+  margin:0!important;padding:4px 2px!important;
+  display:grid!important;place-items:center!important;align-content:center!important;gap:2px!important;
+  border:1px solid #87512d!important;border-radius:10px!important;
+  color:#f3dcae!important;
+  background:linear-gradient(180deg,#63351f,#351b10)!important;
+  box-shadow:inset 0 1px rgba(255,236,196,.08),0 2px 6px rgba(0,0,0,.42)!important;
+}
+body .online-game.online-game--v9 .online-game__ranking-toggle svg{width:18px!important;height:18px!important}
+body .online-game.online-game--v9 .online-game__ranking-toggle span{
+  font:900 .50rem/1 Inter,system-ui,sans-serif!important;color:#ffe8ad!important;
+}
+body .online-game.online-game--v9 .online-game__ranking-toggle.is-open{
+  border-color:#e5b14b!important;
+  box-shadow:inset 0 0 0 1px rgba(255,229,151,.16),0 0 7px rgba(231,173,53,.30)!important;
+}
+
+/* Expanded full standings. */
+body .online-game.online-game--v9 .online-game__ranking-panel{
+  position:fixed!important;
+  z-index:120!important;
+  top:calc(max(6px,env(safe-area-inset-top)) + 68px)!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  box-sizing:border-box!important;
+  width:min(calc(100vw - 24px),430px)!important;
+  max-height:min(62dvh,430px)!important;
+  padding:8px!important;
+  overflow:hidden!important;
+  border:1px solid #9b6034!important;border-radius:13px!important;
+  background:linear-gradient(180deg,rgba(74,37,19,.995),rgba(27,13,8,.998))!important;
+  box-shadow:0 10px 28px rgba(0,0,0,.62),inset 0 1px rgba(255,230,187,.09)!important;
+}
+body .online-game.online-game--v9 .online-game__ranking-panel>header{
+  height:32px!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  padding:0 2px 5px!important;
+}
+body .online-game.online-game--v9 .online-game__ranking-panel>header>strong{
+  color:#ffe8b4!important;font:800 .82rem/1 Georgia,"Times New Roman",serif!important;
+}
+body .online-game.online-game--v9 .online-game__ranking-panel>header>button{
+  width:28px!important;height:28px!important;min-width:28px!important;
+  display:grid!important;place-items:center!important;
+  border:1px solid #81502d!important;border-radius:8px!important;
+  color:#f5dfb5!important;background:#4a2819!important;
+}
+body .online-game.online-game--v9 .online-game__ranking-panel>header>button svg{width:15px!important;height:15px!important}
+body .online-game.online-game--v9 .online-game__ranking-panel>div{
+  max-height:calc(min(62dvh,430px) - 46px)!important;
+  display:grid!important;gap:5px!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+}
+body .online-game.online-game--v9 .online-game__ranking-panel article{
+  --player-accent:#8b6848;
+  box-sizing:border-box!important;
+  min-height:43px!important;
+  display:grid!important;
+  grid-template-columns:25px 22px minmax(0,1fr) auto auto!important;
+  align-items:center!important;gap:7px!important;
+  padding:5px 7px!important;
+  border:1px solid #704326!important;border-left:3px solid var(--player-accent)!important;
+  border-radius:9px!important;
+  background:rgba(73,37,21,.76)!important;
+}
+body .online-game.online-game--v9 .online-game__ranking-panel article.is-current{
+  border-color:#dba94b!important;border-left-color:var(--player-accent)!important;
+  background:rgba(92,48,25,.90)!important;
+}
+body .online-game.online-game--v9 .online-game__rank-number{
+  width:22px!important;height:22px!important;display:grid!important;place-items:center!important;
+  border-radius:999px!important;background:#2d170d!important;color:#ffe5a0!important;
+  font:900 .62rem/1 Inter,system-ui,sans-serif!important;
+}
+body .online-game.online-game--v9 .online-game__rank-name{
+  min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+  color:#fff0cf!important;font:800 .66rem/1 Georgia,"Times New Roman",serif!important;
+}
+body .online-game.online-game--v9 .online-game__rank-score{
+  color:#ffe4a1!important;font:900 .68rem/1 Inter,system-ui,sans-serif!important;white-space:nowrap!important;
+}
+body .online-game.online-game--v9 .online-game__rank-score small{color:#cbb48c!important;font-size:.38rem!important}
+body .online-game.online-game--v9 .online-game__rank-free{
+  min-width:31px!important;height:21px!important;padding:0 4px!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:2px!important;
+  border:1px solid rgba(193,133,70,.50)!important;border-radius:999px!important;
+  color:#fff0b8!important;background:#241209!important;
+  font:900 .56rem/1 Inter,system-ui,sans-serif!important;
+}
+
+/* New bottom meeple token: compact, centred and not boxed like a giant button. */
+body .online-game.online-game--v9 .online-game__controls{
+  grid-template-columns:62px 68px minmax(0,1fr)!important;
+}
+body .online-game.online-game--v9 .online-game__controls.no-hand{
+  grid-template-columns:62px minmax(0,1fr)!important;
+}
+body .online-game.online-game--v9 .online-game__meeple-count{display:none!important}
+body .online-game.online-game--v9 .online-game__meeple-chip{
+  box-sizing:border-box!important;
+  width:62px!important;height:48px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:4px!important;
+  margin:0!important;padding:4px 7px!important;
+  overflow:hidden!important;
+  border:1px solid #986039!important;border-radius:999px!important;
+  background:linear-gradient(180deg,rgba(97,52,30,.98),rgba(45,23,14,.99))!important;
+  box-shadow:inset 0 1px rgba(255,235,198,.12),0 2px 6px rgba(0,0,0,.42)!important;
+}
+body .online-game.online-game--v9 .online-game__meeple-chip>.meeple-sprite-v4{
+  flex:0 0 26px!important;
+  width:26px!important;height:26px!important;min-width:26px!important;min-height:26px!important;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.60))!important;
+}
+body .online-game.online-game--v9 .online-game__meeple-chip>span{
+  color:#fff0b8!important;
+  font:900 .68rem/1 Inter,system-ui,sans-serif!important;
+  white-space:nowrap!important;
+}
+body .online-game.online-game--v9 .online-game__meeple-chip.is-inactive{opacity:.46!important}
+
+@media(max-width:390px){
+  body .online-game.online-game--v9 .online-game__topbar{
+    grid-template-columns:41px minmax(0,1fr) 41px!important;
+    gap:3px!important;
+  }
+  body .online-game.online-game--v9 .online-game__leaders{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) 32px!important;
+    gap:3px!important;
+  }
+  body .online-game.online-game--v9 .online-game__leader-card{
+    padding:5px 4px!important;
+    grid-template-columns:16px minmax(0,1fr)!important;
+    gap:1px 3px!important;
+  }
+  body .online-game.online-game--v9 .online-game__leader-name>strong{font-size:.58rem!important}
+  body .online-game.online-game--v9 .online-game__leader-stats b{font-size:.69rem!important}
+  body .online-game.online-game--v9 .online-game__leader-stats small{display:none!important}
+  body .online-game.online-game--v9 .online-game__leader-free{min-width:24px!important;padding-inline:2px!important}
+  body .online-game.online-game--v9 .online-game__ranking-toggle{width:32px!important;min-width:32px!important}
+  body .online-game.online-game--v9 .online-game__controls{grid-template-columns:56px 64px minmax(0,1fr)!important}
+  body .online-game.online-game--v9 .online-game__controls.no-hand{grid-template-columns:56px minmax(0,1fr)!important}
+  body .online-game.online-game--v9 .online-game__meeple-chip{
+    width:56px!important;height:46px!important;padding-inline:5px!important;gap:3px!important;
+  }
+  body .online-game.online-game--v9 .online-game__meeple-chip>.meeple-sprite-v4{
+    width:23px!important;height:23px!important;min-width:23px!important;min-height:23px!important;flex-basis:23px!important;
+  }
+  body .online-game.online-game--v9 .online-game__meeple-chip>span{font-size:.62rem!important}
+}
+@media(max-width:350px){
+  body .online-game.online-game--v9 .online-game__leader-name>strong{font-size:.53rem!important}
+  body .online-game.online-game--v9 .online-game__leader-rank{display:none!important}
+  body .online-game.online-game--v9 .online-game__leader-card{grid-template-columns:minmax(0,1fr)!important}
+  body .online-game.online-game--v9 .online-game__leader-free>.meeple-sprite-v4{display:none!important}
+  body .online-game.online-game--v9 .online-game__leader-free{min-width:19px!important}
+}
