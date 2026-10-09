@@ -23,16 +23,16 @@ import './onlineGamePolishV4.css';
 import './onlineGamePolishV5.css';
 import './onlineGamePolishV6.css';
 import './onlineGamePolishV7.css';
-import './onlineGamePolishV8.css';
-import './onlineGamePolishV9.css';
+import './onlineGamePanels.css';
 
 const CELL=86,PADDING=2,TOTAL_TILE_COUNT=143;
+const PLAYER_COLOR_NAMES:Record<string,string>={blue:'синий',red:'красный',green:'зелёный',yellow:'жёлтый',purple:'фиолетовый',black:'чёрный'};
 const targetKey=(target:MeeplePlacement)=>`${target.featureType}:${target.edge??'center'}`;
 const featureLabel=(target:MeeplePlacement)=>target.featureType==='city'?'город':target.featureType==='road'?'дорогу':'монастырь';
 const SimpleChatGlyph=()=> <svg className="simple-chat-glyph" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h16v11H9l-5 4V5Z"/></svg>;
 
 export function OnlineGamePage({initialMatch,onExit}:{initialMatch:OnlineMatch;onExit:()=>void}){
- const [match,setMatch]=useState(initialMatch),[userId,setUserId]=useState(''),[drafts,setDrafts]=useState<OnlineDraftState>(EMPTY_ONLINE_DRAFTS),[attempt,setAttempt]=useState<LogicalIntentAttempt|null>(null),[pending,setPending]=useState(false),[feedback,setFeedback]=useState(''),[skipConfirm,setSkipConfirm]=useState(false),[chatOpen,setChatOpen]=useState(false),[connection,setConnection]=useState<MatchConnectionStatus>('reconnecting'),[deltas,setDeltas]=useState<Record<string,number>>({}),[turnNotice,setTurnNotice]=useState(''),[rankingOpen,setRankingOpen]=useState(false);
+ const [match,setMatch]=useState(initialMatch),[userId,setUserId]=useState(''),[drafts,setDrafts]=useState<OnlineDraftState>(EMPTY_ONLINE_DRAFTS),[attempt,setAttempt]=useState<LogicalIntentAttempt|null>(null),[pending,setPending]=useState(false),[feedback,setFeedback]=useState(''),[skipConfirm,setSkipConfirm]=useState(false),[chatOpen,setChatOpen]=useState(false),[connection,setConnection]=useState<MatchConnectionStatus>('reconnecting'),[deltas,setDeltas]=useState<Record<string,number>>({}),[turnNotice,setTurnNotice]=useState('');
  const pendingRef=useRef(false),draftsRef=useRef(drafts),pumped=useRef(new Set<string>()),previousScores=useRef(initialMatch.snapshot.game.scores),previousPlayer=useRef(initialMatch.currentPlayerId),viewportRef=useRef<HTMLDivElement>(null);draftsRef.current=drafts;
  const acceptAuthoritative=useCallback((incoming:OnlineMatch)=>{setMatch(current=>{const next=reconcileMatch(current,incoming,draftsRef.current);if(next.changed){setDrafts(next.drafts);setAttempt(null);setSkipConfirm(false);setFeedback('');}return next.match;});},[]);
  const refetch=useCallback(async()=>{try{acceptAuthoritative(await getMatch(match.id));setConnection('connected');}catch{setConnection('offline');setFeedback('Нет связи с сервером');}},[acceptAuthoritative,match.id]);
@@ -55,8 +55,6 @@ export function OnlineGamePage({initialMatch,onExit}:{initialMatch:OnlineMatch;o
  const snapshot=match.snapshot,activeId=currentPlayerId(match),botTurn=activeId?.startsWith('bot:')??false,myTurn=activeId===userId,statusFinished=match.status==='finished'||snapshot.flow.phase==='GAME_OVER';
  const available=availableMeeples(match,userId);
  const hudPlayers=useMemo(()=>snapshot.game.players.map((player,index)=>({player,index,score:snapshot.game.scores[player.id]??player.score??0})),[snapshot.game.players,snapshot.game.scores]);
- const rankedPlayers=useMemo(()=>hudPlayers.slice().sort((a,b)=>b.score-a.score||a.index-b.index),[hudPlayers]);
- const podiumPlayers=rankedPlayers.slice(0,2);
  const boardTiles=useMemo(()=>Object.values(snapshot.game.board),[snapshot.game.board]);
  const remainingTiles=snapshot.flow.remainingTileCount??Math.max(0,TOTAL_TILE_COUNT-boardTiles.length-(snapshot.game.drawnTileDefinitionId?1:0));
  const currentPlayerColor=snapshot.game.players[snapshot.game.currentPlayerIndex]?.color??'blue';
@@ -89,29 +87,56 @@ export function OnlineGamePage({initialMatch,onExit}:{initialMatch:OnlineMatch;o
  const endTurn=()=>{const safety=shouldPromptSkipMeeple(snapshot.derived.legalMeeplePlacements.length,available,drafts.meepleDraft);if(safety==='blocked'){setFeedback('Сначала поставьте человечка или отмените выбор.');return;}if(safety==='prompt'){setSkipConfirm(true);return;}void send({type:'END_TURN'});};
  const playerName=snapshot.game.players.find(p=>p.id===activeId)?.name??'—';
  const handVisible=Boolean(snapshot.game.drawnTileDefinitionId&&onlineHandVisible(snapshot.flow.phase,Boolean(drafts.tileDraft)));
- return <main className="online-game online-game--v2 online-game--v3 online-game--v4 online-game--v5 online-game--v6 online-game--v7 online-game--v8 online-game--v9">
-  <header className="online-game__topbar">
-   <div className="online-game__left-tools">
-    <button className="chat-trigger" aria-label="Открыть чат" aria-pressed={chatOpen} onClick={()=>setChatOpen(value=>!value)}><SimpleChatGlyph/></button>
-    <span className="online-game__deck-count" title="Карт осталось"><GameIcon name="map"/><b>{remainingTiles}</b></span>
+ const [controlTitle,controlHint]=statusFinished?['Партия завершена','Итоги игры показаны на экране.']
+  :!myTurn?[`Ход: ${playerName}`,'Дождитесь своей очереди.']
+  :drafts.tileDraft?['Размещение карты','Нажмите на карту, чтобы повернуть её.']
+  :drafts.meepleDraft?['Размещение мипа','Проверьте выбранный участок.']
+  :snapshot.flow.phase==='MEEPLE_SELECTION'?['Мип на поле','Завершите ход, чтобы передать очередь.']
+  :snapshot.flow.phase==='TILE_PLACED'?(available===0?['Мипы закончились','Завершите ход, чтобы передать очередь.']:snapshot.derived.legalMeeplePlacements.length===0?['Карта на поле','Нет доступных участков для мипа. Завершите ход.']:['Карта на поле','Поставьте мипа или завершите ход.'])
+  :['Ваша карта','Выберите подсвеченную клетку на поле.'];
+ return <main className="online-game online-game--v2 online-game--v3 online-game--v4 online-game--v5 online-game--v6 online-game--v7 online-game--mobile">
+  <header className="match-header">
+   <div className="match-toolbar">
+    <button className="match-icon-button" aria-label="Открыть чат" aria-pressed={chatOpen} onClick={()=>setChatOpen(value=>!value)}><SimpleChatGlyph/></button>
+    <div className="match-turn-panel"><OnlineTurnHud deadline={statusFinished?null:match.turnDeadlineAt} label={statusFinished?'Игра окончена':botTurn?'Бот думает…':myTurn?'Ваш ход':`Ход: ${playerName}`} connection={connection} onExpired={requestPump}/><span className="match-deck" aria-label={`Карт осталось: ${remainingTiles}`}><GameIcon name="map"/><b>{remainingTiles}</b><small>карт осталось</small></span></div>
+    <button className="match-icon-button" aria-label="Выйти из игры" onClick={exitGame}><GameIcon name="close"/></button>
    </div>
-   <section className="online-game__leaders" aria-label="Лидеры по очкам">
-    {podiumPlayers.map(({player:p,index,score},rank)=><article className={`online-game__leader-card color-${p.color}${index===snapshot.game.currentPlayerIndex?' is-current':''}`} key={p.id} title={p.name}><span className="online-game__leader-rank">{rank+1}</span><span className="online-game__leader-name"><span className="online-game__leader-dot" aria-hidden="true"/><strong>{p.name}</strong>{index===0&&<span className="host-crown" title="Хозяин лобби"><GameIcon name="crown"/></span>}</span><span className="online-game__leader-stats"><span><b>{score}</b><small>очк.</small></span><span className="online-game__leader-free" title="Свободные миплы"><MeepleSprite color={p.color} size={11}/><b>{availableMeeples(match,p.id)}</b></span></span>{deltas[p.id]&&<em>+{deltas[p.id]}</em>}</article>)}
-    <button className={`online-game__ranking-toggle${rankingOpen?' is-open':''}`} aria-label={rankingOpen?'Закрыть рейтинг':'Открыть рейтинг игроков'} aria-expanded={rankingOpen} onClick={()=>setRankingOpen(value=>!value)}><GameIcon name="users"/><span>{snapshot.game.players.length}</span></button>
+   <section className={`match-players count-${hudPlayers.length}`} aria-label="Игроки и их показатели">
+    {hudPlayers.map(({player:p,index,score})=>{
+     const free=availableMeeples(match,p.id),current=index===snapshot.game.currentPlayerIndex;
+     return <article className={`match-player color-${p.color}${current?' is-current':''}${p.id===userId?' is-self':''}`} key={p.id} aria-current={current?'true':undefined} aria-label={`${p.name}, цвет: ${PLAYER_COLOR_NAMES[p.color]??p.color}, очки: ${score}, доступные мипы: ${free}${current?', сейчас ходит':''}`}>
+      <span className="match-player__avatar" aria-hidden="true"><MeepleSprite className="match-meeple" color={p.color} size={24}/>{p.id===userId&&<small className="match-player__you">Вы</small>}</span>
+      <span className="match-player__identity"><strong className="match-player__name" title={p.name}>{p.name}</strong></span>
+      <dl className="match-player__stats"><div><dt>Очки</dt><dd><b>{score}</b></dd></div><div><dt>Мипы</dt><dd><b>{free}</b></dd></div></dl>
+      {deltas[p.id]&&<em className="match-player__gain" aria-label={`Получено очков: ${deltas[p.id]}`}>+{deltas[p.id]}</em>}
+     </article>;
+    })}
    </section>
-   <div className="online-game__top-actions"><button className="online-game__exit" aria-label="Выйти из игры" onClick={exitGame}><GameIcon name="close"/></button></div>
   </header>
-  {rankingOpen&&<section className="online-game__ranking-panel" aria-label="Рейтинг игроков"><header><strong>Рейтинг</strong><button aria-label="Закрыть рейтинг" onClick={()=>setRankingOpen(false)}><GameIcon name="close"/></button></header><div>{rankedPlayers.map(({player:p,index,score},rank)=><article className={`color-${p.color}${index===snapshot.game.currentPlayerIndex?' is-current':''}`} key={p.id}><b className="online-game__rank-number">{rank+1}</b><MeepleSprite color={p.color} size={22}/><span className="online-game__rank-name">{p.name}</span><span className="online-game__rank-score">{score}<small> очк.</small></span><span className="online-game__rank-free"><MeepleSprite color={p.color} size={10}/>{availableMeeples(match,p.id)}</span></article>)}</div></section>}
-  <OnlineTurnHud deadline={statusFinished?null:match.turnDeadlineAt} label={statusFinished?'Игра окончена':botTurn?'Бот думает…':myTurn?'Ваш ход':`Ход: ${playerName}`} connection={connection} onExpired={requestPump}/>{turnNotice&&<div className="turn-change-banner" role="status">{turnNotice}</div>}
   <section className="online-game__viewport" ref={viewportRef}><div className="online-game__canvas" style={{transform:`translate(${camera.camera.offsetX}px,${camera.camera.offsetY}px) scale(${camera.camera.scale})`}} {...camera.handlers}><div className="online-game__board" style={{width:projection.width,height:projection.height}}>
    {boardTiles.map(tile=><div className={`online-game__tile${snapshot.game.lastPlacedTile?.position.x===tile.position.x&&snapshot.game.lastPlacedTile.position.y===tile.position.y?' is-last':''}`} key={`${tile.position.x},${tile.position.y}`} style={{left:(tile.position.x+projection.originX)*CELL,top:(tile.position.y+projection.originY)*CELL}}><TileRenderer definition={getTileDefinition(tile.definitionId)} rotation={tile.rotation} size={CELL}/></div>)}
    {snapshot.game.meeples.filter(m=>m.position&&m.placement).map(m=>{const a=anchorForPlacement(m.placement!),owner=snapshot.game.players.find(p=>p.id===m.playerId);return <span className="online-game__meeple" key={m.id} style={{left:(m.position!.x+projection.originX)*CELL+a.x*CELL/100,top:(m.position!.y+projection.originY)*CELL+a.y*CELL/100}}><MeepleSprite color={owner?.color??'black'} size={25}/></span>})}
    {myTurn&&!drafts.tileDraft&&snapshot.flow.phase==='TILE_IN_HAND'&&snapshot.derived.legalTilePlacementOptions.map(option=><button className="online-game__legal" aria-label={`Выбрать клетку ${option.position.x}, ${option.position.y}`} key={`${option.position.x},${option.position.y}`} style={{left:(option.position.x+projection.originX)*CELL,top:(option.position.y+projection.originY)*CELL}} onClick={()=>{const next=selectTileDraft(match,option.position);setAttempt(current=>attemptAfterTileDraftChange(current,drafts.tileDraft,next));setDrafts({tileDraft:next,meepleDraft:null});}}><span/></button>)}
    {drafts.tileDraft&&snapshot.game.drawnTileDefinitionId&&<button disabled={pending} className="online-game__tile online-game__draft-tile" aria-label="Повернуть карту" style={{left:(drafts.tileDraft.position.x+projection.originX)*CELL,top:(drafts.tileDraft.position.y+projection.originY)*CELL}} onClick={()=>{const next=rotateTileDraft(match,drafts.tileDraft!);setAttempt(current=>attemptAfterTileDraftChange(current,drafts.tileDraft,next));setDrafts(current=>({...current,tileDraft:next}));}}><TileRenderer definition={getTileDefinition(snapshot.game.drawnTileDefinitionId)} rotation={drafts.tileDraft.rotation} size={CELL}/><span className="online-game__rotate-badge"><GameIcon name="rotate"/></span></button>}
    {myTurn&&['TILE_PLACED','MEEPLE_SELECTION'].includes(snapshot.flow.phase)&&snapshot.game.lastPlacedTile&&available>0&&snapshot.derived.legalMeeplePlacements.map(target=>{const a=anchorForPlacement(target),pos=snapshot.game.lastPlacedTile!.position,selected=Boolean(drafts.meepleDraft&&targetKey(drafts.meepleDraft)===targetKey(target));return <button disabled={pending} className={`online-game__meeple-target${selected?' is-selected':''}`} aria-label={`Поставить человечка на ${featureLabel(target)}`} title={`Поставить на ${featureLabel(target)}`} key={targetKey(target)} style={{left:(pos.x+projection.originX)*CELL+a.x*CELL/100,top:(pos.y+projection.originY)*CELL+a.y*CELL/100}} onClick={()=>selectMeeple(target)}><span className="online-game__placement-square" aria-hidden="true"/></button>})}
-  </div></div><div className="online-game__camera"><button aria-label="Приблизить" onClick={camera.zoomIn}><GameIcon name="plus"/></button><button aria-label="Отдалить" onClick={camera.zoomOut}><GameIcon name="minus"/></button><button aria-label="Вписать поле" onClick={camera.fitContent}><GameIcon name="target"/></button></div></section>
-  {feedback&&<p className="online-game__feedback">{feedback}</p>}
-  <footer className={`online-game__controls ${handVisible?'has-hand':'no-hand'}`}><div className={`online-game__meeple-chip${available===0?' is-inactive':''}`} aria-label={`Свободных миплов: ${available}`} title="Свободные миплы"><MeepleSprite color={myColor} size={25}/><span>×{available}</span></div>{handVisible&&snapshot.game.drawnTileDefinitionId&&<div className="online-game__hand"><TileRenderer definition={getTileDefinition(snapshot.game.drawnTileDefinitionId)} rotation={0} size={82}/></div>}<div className="online-game__actions">{drafts.tileDraft?<><button disabled={pending} onClick={()=>{setDrafts(EMPTY_ONLINE_DRAFTS);setAttempt(null)}}>Отмена</button><button className="primary" disabled={pending} onClick={()=>void send(tileIntent(drafts.tileDraft!))}>{pending?'Отправка…':'Установить карту'}</button></>:drafts.meepleDraft?<><button disabled={pending} onClick={()=>{setDrafts(current=>({...current,meepleDraft:null}));setAttempt(null)}}>Отмена</button><button className="primary" disabled={pending} onClick={()=>void send({type:'PLACE_MEEPLE',...drafts.meepleDraft!})}>Поставить человечка</button></>:myTurn&&['TILE_PLACED','MEEPLE_SELECTION'].includes(snapshot.flow.phase)?<button className="primary" disabled={pending||statusFinished} onClick={endTurn}><GameIcon name="check"/>Закончить ход</button>:<span>{myTurn?'Выберите место':'Ожидание хода'}</span>}{attempt&&!pending&&<button className="retry" onClick={()=>void send(attempt.intent)}><GameIcon name="retry"/>Повторить</button>}</div></footer>
+  </div></div><div className="online-game__camera"><button aria-label="Приблизить" onClick={camera.zoomIn}><GameIcon name="plus"/></button><button aria-label="Отдалить" onClick={camera.zoomOut}><GameIcon name="minus"/></button><button aria-label="Вписать поле" onClick={camera.fitContent}><GameIcon name="target"/></button></div>{turnNotice&&<div className="turn-change-banner" role="status">{turnNotice}</div>}{feedback&&<p className="online-game__feedback" role="alert">{feedback}</p>}</section>
+  <footer className={`match-controls${handVisible?' has-hand':' no-hand'}`} aria-label="Управление ходом">
+   <div className="match-controls__overview">
+    <div className={`match-reserve${available===0?' is-empty':''}`} aria-label={`Ваши доступные мипы: ${available}`}><MeepleSprite className="match-meeple" color={myColor} size={30}/><div><small>Ваши мипы</small><strong>{available}</strong></div></div>
+    {handVisible&&snapshot.game.drawnTileDefinitionId&&<div className="match-hand" aria-label="Карта в руке"><TileRenderer definition={getTileDefinition(snapshot.game.drawnTileDefinitionId)} rotation={0} size={64}/></div>}
+    <div className="match-instruction"><strong>{controlTitle}</strong><span>{controlHint}</span></div>
+   </div>
+   {(drafts.tileDraft||drafts.meepleDraft||(myTurn&&['TILE_PLACED','MEEPLE_SELECTION'].includes(snapshot.flow.phase))||attempt)&&<div className="match-controls__actions">
+    {drafts.tileDraft?<>
+     <button className="match-button is-secondary" disabled={pending} onClick={()=>{setDrafts(EMPTY_ONLINE_DRAFTS);setAttempt(null)}}>Отмена</button>
+     <button className="match-button is-primary" disabled={pending} onClick={()=>void send(tileIntent(drafts.tileDraft!))}><GameIcon name="check"/>{pending?'Отправка…':'Поставить карту'}</button>
+    </>:drafts.meepleDraft?<>
+     <button className="match-button is-secondary" disabled={pending} onClick={()=>{setDrafts(current=>({...current,meepleDraft:null}));setAttempt(null)}}>Отмена</button>
+     <button className="match-button is-primary" disabled={pending} onClick={()=>void send({type:'PLACE_MEEPLE',...drafts.meepleDraft!})}><GameIcon name="meeple"/>{pending?'Отправка…':'Поставить мипа'}</button>
+    </>:myTurn&&['TILE_PLACED','MEEPLE_SELECTION'].includes(snapshot.flow.phase)&&<button className="match-button is-primary" disabled={pending||statusFinished} onClick={endTurn}><GameIcon name="check"/>{pending?'Отправка…':'Закончить ход'}</button>}
+    {attempt&&!pending&&<button className="match-button is-retry" onClick={()=>void send(attempt.intent)}><GameIcon name="retry"/>Повторить отправку</button>}
+   </div>}
+  </footer>
   {skipConfirm&&<div className="online-game__dialog" role="dialog" aria-modal="true"><section><h2>Закончить ход без человечка?</h2><button onClick={()=>setSkipConfirm(false)}>Отмена</button><button className="primary" onClick={()=>{setSkipConfirm(false);void send({type:'END_TURN'})}}><GameIcon name="check"/>Закончить</button></section></div>}
   {chatOpen&&<OnlineMatchChat lobbyId={match.lobbyId} onClose={()=>setChatOpen(false)}/>} 
   {statusFinished&&<section className="online-game__finished" role="dialog" aria-modal="true"><h2>Игра окончена</h2>{snapshot.game.players.slice().sort((a,b)=>(snapshot.game.scores[b.id]??0)-(snapshot.game.scores[a.id]??0)).map((p,index)=><p className={index===0?'is-winner':''} key={p.id}><span>{index+1}. {index===0&&<GameIcon name="crown"/>}{p.name}</span><b>{snapshot.game.scores[p.id]??0}</b></p>)}<button className="primary" onClick={exitGame}><GameIcon name="home"/>В меню</button></section>}
