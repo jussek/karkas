@@ -83,7 +83,10 @@ body .lobby-menu-v2 .room-player__seat-number{
 }
 body .lobby-menu-v2 .lobby-meeple{display:none!important}
 body .lobby-menu-v2 .lobby-seat-meeple{
-  width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;
+  width:24px!important;height:32px!important;min-width:24px!important;min-height:32px!important;
+  /* Keep the sprite sheet's aspect ratio and frame the solid row. */
+  background-size:600% auto!important;
+  background-position:var(--meeple-x) 31%!important;
   align-self:center!important;justify-self:center!important;
   filter:drop-shadow(0 2px 1px rgba(0,0,0,.65))!important;
 }
@@ -194,7 +197,7 @@ body .lobby-menu-v2 .lobby-reference-actions.is-guest .ready-button{grid-column:
   body .lobby-menu-v2 .lobby-settings-bottom select,
   body .lobby-menu-v2 .lobby-settings-bottom button{font-size:.51rem!important;padding-inline:3px!important}
   body .lobby-menu-v2 .room-player{grid-template-columns:23px 31px minmax(0,1fr) 23px!important;gap:5px!important}
-  body .lobby-menu-v2 .lobby-seat-meeple{width:28px!important;height:28px!important;min-width:28px!important;min-height:28px!important}
+  body .lobby-menu-v2 .lobby-seat-meeple{width:22px!important;height:30px!important;min-width:22px!important;min-height:30px!important}
   body .lobby-menu-v2 .lobby-reference-actions{grid-template-columns:minmax(0,.88fr) minmax(0,1.42fr)!important}
   body .lobby-menu-v2 .lobby-reference-actions .ready-button,
   body .lobby-menu-v2 .lobby-reference-actions .room-primary{font-size:.69rem!important}
@@ -338,10 +341,10 @@ body .lobby-menu-v2 .lobby-reference-actions .room-primary{
     min-height:45px!important;
   }
   body .lobby-menu-v2 .lobby-seat-meeple{
-    width:27px!important;
-    height:27px!important;
-    min-width:27px!important;
-    min-height:27px!important;
+    width:22px!important;
+    height:30px!important;
+    min-width:22px!important;
+    min-height:30px!important;
   }
   body .lobby-menu-v2 .lobby-reference-chat{
     min-height:92px!important;
@@ -397,8 +400,14 @@ body .lobby-menu-v2 .lobby-settings-stack{
   gap:4px!important;
 }
 body .lobby-menu-v2 .lobby-timer{
+  /* The fieldset legend sits outside grid flow; avoid an empty second row. */
+  display:block!important;
+  grid-template-rows:none!important;
   align-self:start!important;
   margin:0!important;
+}
+body .lobby-menu-v2 .lobby-timer legend{
+  margin:0 0 4px!important;
 }
 body .lobby-menu-v2 .lobby-settings-bottom{
   align-self:start!important;
@@ -415,4 +424,10 @@ body .lobby-menu-v2.online-room .lobby-shell{
 
 @media(max-height:780px){
   body .lobby-menu-v2 .lobby-settings-stack{gap:3px!important}
+}
+
+@media(max-width:355px){
+  body .lobby-menu-v2 .lobby-menu-settings{grid-template-columns:1fr!important}
+  body .lobby-menu-v2 .lobby-map-card{grid-template-rows:auto auto!important}
+  body .lobby-menu-v2 .lobby-map-preview{height:70px!important;min-height:70px!important}
 }
