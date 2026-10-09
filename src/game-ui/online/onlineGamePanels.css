@@ -165,20 +165,28 @@ body .online-game.online-game--mobile .game-turn-status.is-expired b {
 }
 
 .online-game--mobile .match-players {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 6px;
   min-width: 0;
+  max-width: 100%;
+  padding: 1px 1px 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
 }
 
 .online-game--mobile .match-players:has(> :only-child) {
-  grid-template-columns: minmax(0, 1fr);
+  overflow-x: hidden;
 }
 
 .online-game--mobile .match-player {
   --player-accent: #92a7bb;
   position: relative;
   display: grid;
+  flex: 0 0 clamp(156px, 44vw, 216px);
   grid-template-columns: 24px minmax(0, 1fr);
   grid-template-rows: auto auto;
   align-content: center;
@@ -192,6 +200,7 @@ body .online-game.online-game--mobile .game-turn-status.is-expired b {
   border-radius: 10px;
   background: linear-gradient(165deg, #49301f, #2d1e16);
   box-shadow: inset 0 1px rgba(255, 239, 199, .06), 0 2px 4px #0003;
+  scroll-snap-align: start;
 }
 
 .online-game--mobile .match-player.color-blue { --player-accent: #57a9ff; }
