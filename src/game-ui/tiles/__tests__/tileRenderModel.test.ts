@@ -16,6 +16,7 @@ import type {
   Rotation,
   TileDefinition,
 } from '../../../game/types/geometry';
+import { rotateEdge } from '../../../game/engine/geometry';
 import { GAME_CARD_CATALOG } from '../../../game/cards/canonicalCatalog';
 import { cardToTileDefinition } from '../../../game/cards/toTileDefinition';
 import {
@@ -271,6 +272,22 @@ describe('render model — verified real river cards', () => {
     expect(m.rivers).toHaveLength(0);
     expect(getRiverEdgesForCard('no-river')).toBeUndefined();
   });
+
+  it('rotates river edges with the same contract as roads and cities', () => {
+    const rotations: readonly Rotation[] = [0, 90, 180, 270];
+    for (const card of GAME_CARD_CATALOG) {
+      const declared = card.topology.riverEdges ?? [];
+      if (declared.length === 0) continue;
+      const definition = cardToTileDefinition(card);
+      for (const rotation of rotations) {
+        const model = createRotatedTileRenderModel(definition, rotation);
+        expect(model.rivers, `${card.id}@${rotation}`).toHaveLength(1);
+        expect(groupKey(model.rivers[0].edges), `${card.id}@${rotation}`).toBe(
+          groupKey(declared.map((edge) => rotateEdge(edge, rotation))),
+        );
+      }
+    }
+  });
 });
 
 /* ------------------------------------------------------------------ */
@@ -322,5 +339,23 @@ describe('render model — catalog-wide audit (all cards)', () => {
       expect(groupKey(m.rivers[0].edges), card.id).toBe(groupKey(declared));
     }
     expect(riverCards).toBeGreaterThan(0);
+  });
+
+  it('preserves every independent road and city group through all four rotations', () => {
+    const rotations: readonly Rotation[] = [0, 90, 180, 270];
+    for (const card of GAME_CARD_CATALOG) {
+      const definition = cardToTileDefinition(card);
+      for (const rotation of rotations) {
+        const model = createRotatedTileRenderModel(definition, rotation);
+        const rotateGroups = (groups: readonly (readonly EdgeIndex[])[]) =>
+          groups.map((edges) => groupKey(edges.map((edge) => rotateEdge(edge, rotation))));
+        expect(keysOf(model.roads), `${card.id}@${rotation} roads`).toEqual(
+          rotateGroups(card.topology.roads),
+        );
+        expect(keysOf(model.cities), `${card.id}@${rotation} cities`).toEqual(
+          rotateGroups(card.topology.cities),
+        );
+      }
+    }
   });
 });

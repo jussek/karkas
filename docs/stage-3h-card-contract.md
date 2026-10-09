@@ -1,6 +1,6 @@
 # Canonical card-data contract
 
-This document records the runtime card and river contract after re-auditing the user-supplied JPG artwork. `GAME_CARD_CATALOG` is the sole runtime card collection. The older `CARD_CATALOG` is only a historical/import layer and is not authoritative when it conflicts with the audited JPG data.
+This document records the runtime card and river contract after re-auditing the user-supplied JPG artwork. `GAME_CARD_CATALOG` is the sole runtime card collection. `CARD_CATALOG` remains as a compatibility export of that same collection, so no consumer can read a stale second copy of the card data.
 
 ## Physical set
 

@@ -16,7 +16,7 @@ import type {
   Rotation,
   TileDefinition,
 } from '../../game/types/geometry';
-import { rotateTile } from '../../game/engine/geometry';
+import { rotateEdge, rotateTile } from '../../game/engine/geometry';
 import { GAME_CARD_CATALOG } from '../../game/cards/canonicalCatalog';
 import {
   buildCityMassPath,
@@ -113,8 +113,9 @@ function groupsFromEdgeSegments(
  * engine's public rotateTile() API, then call this function — do NOT
  * re-implement rotation here.
  */
-export function createTileRenderModel(
+function createTileRenderModelWithRiverEdges(
   definition: TileDefinition,
+  riverEdgesOverride?: readonly EdgeIndex[],
 ): TileRenderModel {
   const sourceId = baseSourceId(definition.id);
   const decorationSeed = `seed:${hashString(sourceId).toString(36)}`;
@@ -140,7 +141,7 @@ export function createTileRenderModel(
     spine: buildCitySpine(edges),
   }));
 
-  const riverEdges = getRiverEdgesForCard(definition.id);
+  const riverEdges = riverEdgesOverride ?? getRiverEdgesForCard(definition.id);
   const rivers: RenderFeature[] =
     riverEdges && riverEdges.length > 0
       ? [
@@ -162,6 +163,12 @@ export function createTileRenderModel(
   };
 }
 
+export function createTileRenderModel(
+  definition: TileDefinition,
+): TileRenderModel {
+  return createTileRenderModelWithRiverEdges(definition);
+}
+
 /**
  * Convenience wrapper: derive the rotated definition via the existing
  * public engine API, then build its render model. Rotation logic is
@@ -171,7 +178,10 @@ export function createRotatedTileRenderModel(
   definition: TileDefinition,
   rotation: Rotation,
 ): TileRenderModel {
-  return createTileRenderModel(rotateTile(definition, rotation));
+  const rotatedDefinition = rotateTile(definition, rotation);
+  const riverEdges = getRiverEdgesForCard(definition.id);
+  const rotatedRiverEdges = riverEdges?.map((edge) => rotateEdge(edge, rotation));
+  return createTileRenderModelWithRiverEdges(rotatedDefinition, rotatedRiverEdges);
 }
 
 /** All anchor coordinates referenced by a feature's declared edges. */

@@ -15,7 +15,7 @@ export function MeepleSprite({ color, ghost = false, size = 28, className = '' }
   const style = {
     '--meeple-size': `${size}px`,
     '--meeple-x': `${index * 20}%`,
-    '--meeple-y': ghost ? '100%' : '0%',
+    '--meeple-y': ghost ? '76%' : '31%',
   } as CSSProperties;
   return <span className={`meeple-sprite-v4${ghost ? ' is-ghost' : ''}${className ? ` ${className}` : ''}`} style={style} aria-hidden="true" />;
 }

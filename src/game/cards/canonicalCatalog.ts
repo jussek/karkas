@@ -8,7 +8,8 @@ import type { CardDefinition } from './types.js';
  * Crossroads split roads into independent road features when the artwork
  * terminates them at a junction. Blue coat-of-arms are recorded visually,
  * but shield scoring is intentionally not implemented until its rule is confirmed.
- * Runtime consumers use GAME_CARD_CATALOG; the legacy catalog is only an id/source layer.
+ * Runtime consumers use GAME_CARD_CATALOG; catalog.ts re-exports this exact
+ * collection for compatibility so card semantics cannot drift between APIs.
  */
 const AUDITED_001_050: readonly CardDefinition[] = [
   { id:'card-001', asset:'1 (1).jpg', edges:{north:'city',east:'city',south:'field',west:'field'}, topology:{roads:[],cities:[[0,1]],cityShields:[0]}, shields:0 },

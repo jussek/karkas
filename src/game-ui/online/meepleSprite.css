@@ -1,15 +1,15 @@
 .meeple-sprite-v4{
   --meeple-size:28px;
   --meeple-x:0%;
-  --meeple-y:0%;
+  --meeple-y:31%;
   display:block;
   width:var(--meeple-size);
-  height:var(--meeple-size);
+  height:calc(var(--meeple-size) * 1.28);
   min-width:var(--meeple-size);
-  min-height:var(--meeple-size);
+  min-height:calc(var(--meeple-size) * 1.28);
   background-image:url('../../a/5a2d79bc-dbb2-4c38-af95-d5e39f561491.png');
   background-repeat:no-repeat;
-  background-size:600% 200%;
+  background-size:600% auto;
   background-position:var(--meeple-x) var(--meeple-y);
   filter:drop-shadow(0 2px 2px rgba(0,0,0,.62));
   transform-origin:50% 82%;
